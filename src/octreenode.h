@@ -1,0 +1,136 @@
+#ifndef OCTREENODE_H
+#define OCTREENODE_H
+
+#include <QList>
+
+#include <QGLViewer/vec.h>
+using namespace qglviewer;
+
+class OctreeNode
+{
+ public :
+  OctreeNode();
+  ~OctreeNode();
+
+  QString fileName() { return m_fileName; }
+
+  bool inBox(Vec);
+  bool inBoxXY(Vec);
+
+  bool isLeaf();
+
+
+  void setParent(OctreeNode *p) { m_parent = p; }
+  void setPriority(int i) { m_priority = i; }
+  void setTime(int i) { m_time = i; }
+  void setId(int);
+  void setUId(int i) { m_uid = i; }
+  void setScale(float);
+  void setActive(bool a) { m_active = a; }
+  void setFileName(QString flnm) { m_fileName = flnm; }
+  void setLevelString(QString l) { m_levelString = l; }
+  void setBMin(Vec bmin) { m_bmin = bmin; }
+  void setBMax(Vec bmax) { m_bmax = bmax; }
+  void setTightMin(Vec bmin) { m_tightMin = bmin; }
+  void setTightMax(Vec bmax) { m_tightMax = bmax; }
+  void setNumPoints(qint64 n) { m_numpoints = n; }
+
+  void addChild(int i, OctreeNode* o) { m_child[i] = o; }
+  void setLevel(int l) { m_level = l; }
+  void setLevelsBelow(int l) { m_levelsBelow = l; }
+  void setDataPerVertex(int d) { m_dpv = d; }
+  void setShift(Vec);
+  void setColorPresent(bool b) { m_colorPresent = b; }
+  void setClassPresent(bool b) { m_classPresent = b; }
+  void setColorMap(QList<Vec> cm) { m_colorMap = cm; }
+  void setGlobalMinMax(Vec, Vec);
+  void setXform(float[16]);
+  void setPointSize(float ps) { m_pointSize = ps; }
+  void setPointSizeFactor(float ps) { m_pointSize *= ps; }
+  void setSpacing(float s) { m_spacing = s; }
+
+
+  void loadData();
+  void unloadData();
+
+
+  OctreeNode* parent() { return m_parent; }
+  int priority() { return m_priority; }
+  int time() { return m_time; }
+  int id() { return m_id; }
+  int uid() { return m_uid; }
+  bool isActive() { return m_active; }
+  QString filename() { return m_fileName; }
+  QString levelString() { return m_levelString; }
+  Vec bmin() { return m_bmin; }
+  Vec bmax() { return m_bmax; }
+  qint64 numpoints() { return m_numpoints; }
+  uchar* coords() { return m_coord; }
+  OctreeNode* getChild(int i) { return m_child[i]; }
+  OctreeNode* childAt(int); // will create child if not present
+  int level() { return m_level; }
+  int levelsBelow() { return m_levelsBelow; }
+  int dataPerVertex() { return m_dpv; }
+  Vec shift() { return m_shift; }
+  float pointSize() { return m_pointSize; }
+  float spacing() { return m_spacing; }
+  uchar maxVisibleLevel() { return m_maxVisLevel; }
+
+  void computeBB();
+
+  Vec tightOctreeMin() { return m_tightMin; }
+  Vec tightOctreeMax() { return m_tightMax; }
+
+  uchar setMaxVisibleLevel();
+
+  void markForDeletion();
+  bool markedForDeletion() { return m_removalFlag; }
+
+  QList<OctreeNode*> allActiveNodes();
+  int setPointSizeForActiveNodes(float);
+
+  static void pruneDeletedNodes();
+
+ private :
+  OctreeNode* m_parent;
+
+  int m_priority;
+  int m_time;
+  int m_id, m_uid;
+  float m_scale;
+  float m_pointSize;
+
+  bool m_active;
+  QString m_fileName;
+  QString m_levelString;
+  Vec m_bmin, m_bmax;
+  Vec m_tightMin, m_tightMax;
+  qint64 m_numpoints;
+  uchar *m_coord;
+  OctreeNode* m_child[8];
+  int m_level;
+  uchar m_maxVisLevel;
+  int m_levelsBelow;
+  int m_dpv;
+  Vec m_shift;
+  bool m_colorPresent;
+  bool m_classPresent;
+  float m_spacing;
+
+  QList<Vec> m_colorMap;
+  Vec m_globalMin;
+  Vec m_globalMax;
+
+  bool m_xformPresent;
+  float m_xform[16];
+
+  bool m_dataLoaded;
+
+  bool m_removalFlag;
+
+  void loadDataFromFile();
+
+  void setIdentity();
+};
+
+#endif
