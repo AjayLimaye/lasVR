@@ -19,7 +19,7 @@ class Menu01 : public QObject
   Menu01();
   ~Menu01();
 
-  void draw(QMatrix4x4, QMatrix4x4);
+  void draw(QMatrix4x4, QMatrix4x4, bool);
 
   int checkOptions(QMatrix4x4, QMatrix4x4, bool);
 
@@ -30,6 +30,8 @@ class Menu01 : public QObject
   void resetModel();
   void updatePointSize(int);
   void updateScale(int);
+  void updateSoftShadows(bool);
+  void updateEdges(bool);
 
  private :
   bool m_visible;
@@ -44,6 +46,8 @@ class Menu01 : public QObject
   float *m_vertData;
 
   int m_selected;
+  bool m_softShadows;
+  bool m_edges;
 
   QList<QString> m_menuList;
   QList<QRect> m_relGeom;

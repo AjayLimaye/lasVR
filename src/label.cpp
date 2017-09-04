@@ -493,7 +493,7 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
   glUniform1i(rcShaderParm[1], 4); // texture
   glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
-  glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
+  glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
   glUniform1i(rcShaderParm[5], 3); // point sprite
   glUniform1f(rcShaderParm[6], 20); // pointsize
 

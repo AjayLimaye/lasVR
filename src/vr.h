@@ -126,11 +126,16 @@ class VR : public QObject
   float scaleFactor() { return m_scaleFactor; }
   float flightSpeed() { return m_flightSpeed; }
   float pointSize() { return m_pointSize; }
-  
+
+  bool edges() { return m_edges; }
+  bool softShadows() { return m_softShadows; }
+
  public slots:
   void resetModel();
   void updatePointSize(int);
   void updateScale(int);  
+  void updateSoftShadows(bool);
+  void updateEdges(bool);
 
  private :
   vr::IVRSystem *m_hmd;
@@ -250,6 +255,9 @@ class VR : public QObject
   QStringList m_menuPanels;
   int m_currPanel;
 
+
+  bool m_edges;
+  bool m_softShadows;
 
 
   void buildAxes();

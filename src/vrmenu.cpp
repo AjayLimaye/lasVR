@@ -15,6 +15,10 @@ VrMenu::VrMenu() : QObject()
 	  this, SIGNAL(updatePointSize(int)));
   connect(m_menus["02"], SIGNAL(updateScale(int)),
 	  this, SIGNAL(updateScale(int)));
+  connect(m_menus["02"], SIGNAL(updateSoftShadows(bool)),
+	  this, SIGNAL(updateSoftShadows(bool)));
+  connect(m_menus["02"], SIGNAL(updateEdges(bool)),
+	  this, SIGNAL(updateEdges(bool)));
 }
 
 VrMenu::~VrMenu()
@@ -56,14 +60,14 @@ VrMenu::setImage(QImage img)
 }
 
 void
-VrMenu::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
+VrMenu::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 {
   if (m_currMenu == "00")
     ((Map*)(m_menus[m_currMenu]))->draw(mvp, matL);
   if (m_currMenu == "01")
     ((Menu00*)(m_menus[m_currMenu]))->draw(mvp, matL);
   if (m_currMenu == "02")
-    ((Menu01*)(m_menus[m_currMenu]))->draw(mvp, matL);
+    ((Menu01*)(m_menus[m_currMenu]))->draw(mvp, matL, triggerPressed);
 }
 
 int

@@ -57,6 +57,8 @@ VR::VR() : QObject()
   m_currPanel = -1;
   m_leftMenu.setCurrentMenu("none");
 
+  m_edges = true;
+  m_softShadows = true;
 
   connect(&m_leftMenu, SIGNAL(resetModel()),
 	  this, SLOT(resetModel()));
@@ -64,6 +66,11 @@ VR::VR() : QObject()
 	  this, SLOT(updatePointSize(int)));
   connect(&m_leftMenu, SIGNAL(updateScale(int)),
 	  this, SLOT(updateScale(int)));
+
+  connect(&m_leftMenu, SIGNAL(updateEdges(bool)),
+	  this, SLOT(updateEdges(bool)));
+  connect(&m_leftMenu, SIGNAL(updateSoftShadows(bool)),
+	  this, SLOT(updateSoftShadows(bool)));
 }
 
 void
@@ -71,6 +78,9 @@ VR::updatePointSize(int sz)
 {
   m_pointSize = qMax(0.5f, m_pointSize + sz*0.1f);
 }
+
+void VR::updateEdges(bool b) { m_edges = b; }
+void VR::updateSoftShadows(bool b) { m_softShadows = b; }
 
 void
 VR::setDataDir(QString d)
@@ -1876,7 +1886,7 @@ VR::renderMenu(vr::Hmd_Eye eye)
 
   QMatrix4x4 mvp = currentViewProjection(eye);
 
-  m_leftMenu.draw(mvp, matL);
+  m_leftMenu.draw(mvp, matL, m_triggerActiveRight);
 }
 
 void

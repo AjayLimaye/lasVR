@@ -22,7 +22,7 @@ class VrMenu : public QObject
   VrMenu();
   ~VrMenu();
 
-  void draw(QMatrix4x4, QMatrix4x4);
+  void draw(QMatrix4x4, QMatrix4x4, bool);
 
   void setImage(QImage);
 
@@ -50,6 +50,8 @@ class VrMenu : public QObject
   void resetModel();
   void updatePointSize(int);
   void updateScale(int);
+  void updateSoftShadows(bool);
+  void updateEdges(bool);
 
  private :
   QMap<QString, QObject*> m_menus;

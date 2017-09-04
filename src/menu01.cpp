@@ -20,11 +20,11 @@ Menu01::Menu01() : QObject()
 
   m_menuList.clear();
 
-  m_menuList << "Reset";
-  m_menuList << "Pt-";
-  m_menuList << "Pt+";
-  m_menuList << "Scl-";
-  m_menuList << "Scl+";
+//  m_menuList << "Reset";
+//  m_menuList << "-";
+//  m_menuList << "+";
+//  m_menuList << "-";
+//  m_menuList << "+";
 
   m_relGeom.clear();
   m_optionsGeom.clear();
@@ -32,6 +32,9 @@ Menu01::Menu01() : QObject()
   m_selected = -1;
 
   m_visible = true;
+
+  m_softShadows = true;
+  m_edges = true;
 }
 
 Menu01::~Menu01()
@@ -113,46 +116,54 @@ Menu01::genVertData()
   glBindVertexArray( 0 );
     
 
-  QFont font = QFont("Helvetica", 48);
-  QColor color(200, 220, 250); 
+//  QFont font = QFont("Helvetica", 48);
+//  QColor color(200, 220, 250); 
+//
+//  int wd = 0;
+//  QList<QImage> img;
+//  for (int i=0; i<m_menuList.count(); i++)
+//    {
+//      QImage textimg = StaticFunctions::renderText(m_menuList[i],
+//						   font,
+//						   Qt::black, QColor(200, 220, 250));
+//      wd = qMax(wd, textimg.width());
+//      img << textimg;
+//    }
+//  
+//  m_relGeom.clear();
+//  int ht = 0;
+//  for (int i=0; i<img.count(); i++)
+//    {
+//      m_relGeom << QRect(0, ht, img[i].width(), img[i].height());	  
+//      ht = ht + img[i].height();
+//    }
+//  
+//  m_texWd = wd;
+//  m_texHt = ht;
+//  
+//  m_image = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
+//  m_image.fill(Qt::transparent);
+//  QPainter p(&m_image);
+//  for (int i=0; i<img.count(); i++)
+//    {
+//      QRect geom = m_relGeom[i];
+//      p.drawImage(geom.x(), geom.y(), img[i].rgbSwapped());
+//    }
+//  
+//  m_optionsGeom.clear();
+//  m_optionsGeom << QRectF(0,    0.1,  1,   0.4);
+//
+//  m_optionsGeom << QRectF(0.05, 0.55, 0.4, 0.4);
+//  m_optionsGeom << QRectF(0.5,  0.55, 0.4, 0.4);
+//
+//  m_optionsGeom << QRectF(0.05, 1.0,  0.4, 0.4);
+//  m_optionsGeom << QRectF(0.5,  1.0,  0.4, 0.4);
 
-  int wd = 0;
-  QList<QImage> img;
-  for (int i=0; i<m_menuList.count(); i++)
-    {
-      QImage textimg = StaticFunctions::renderText(m_menuList[i],
-						   font,
-						   Qt::black, QColor(200, 220, 250));
-      wd = qMax(wd, textimg.width());
-      img << textimg;
-    }
-  
-  m_relGeom.clear();
-  int ht = 0;
-  for (int i=0; i<img.count(); i++)
-    {
-      m_relGeom << QRect(0, ht, img[i].width(), img[i].height());	  
-      ht = ht + img[i].height();
-    }
-  
-  m_texWd = wd;
-  m_texHt = ht;
-  
-  m_image = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
-  m_image.fill(Qt::transparent);
-  QPainter p(&m_image);
-  for (int i=0; i<img.count(); i++)
-    {
-      QRect geom = m_relGeom[i];
-      p.drawImage(geom.x(), geom.y(), img[i].rgbSwapped());
-    }
-  
-  m_optionsGeom.clear();
-  m_optionsGeom << QRectF(0,    0.1,  1,   0.4);
-  m_optionsGeom << QRectF(0.05, 0.55, 0.4, 0.4);
-  m_optionsGeom << QRectF(0.5,  0.55, 0.4, 0.4);
-  m_optionsGeom << QRectF(0.05, 1.0,  0.4, 0.4);
-  m_optionsGeom << QRectF(0.5,  1.0,  0.4, 0.4);
+
+
+  QImage menuImg(":/images/menu01.png");
+  m_texWd = menuImg.width();
+  m_texHt = menuImg.height();
   
   glGenTextures(1, &m_glTexture);
   glActiveTexture(GL_TEXTURE4);
@@ -169,13 +180,40 @@ Menu01::genVertData()
 	       0,
 	       GL_RGBA,
 	       GL_UNSIGNED_BYTE,
-	       m_image.bits());
+	       menuImg.bits());
   
   glDisable(GL_TEXTURE_2D);
+
+
+  m_relGeom.clear();
+  m_relGeom << QRect(20, 10, 480, 90); // RESET
+
+  m_relGeom << QRect(300, 100, 100, 100); // point size -
+  m_relGeom << QRect(400, 100, 100, 100); // point size +
+  m_relGeom << QRect(300, 200, 100, 100); // scaling -
+  m_relGeom << QRect(400, 200, 100, 100); // scaling +
+  m_relGeom << QRect(400, 300, 100, 100); // soft shadows
+  m_relGeom << QRect(400, 400, 100, 90); // edges
+
+
+  m_optionsGeom.clear();
+  for (int i=0; i<m_relGeom.count(); i++)
+    {
+       float cx = m_relGeom[i].x();
+       float cy = m_relGeom[i].y();
+      float cwd = m_relGeom[i].width();
+      float cht = m_relGeom[i].height();
+
+      m_optionsGeom << QRectF(cx/(float)m_texWd,
+			      cy/(float)m_texHt,
+			      cwd/(float)m_texWd,
+			      cht/(float)m_texHt);
+    }
+
 }
 
 void
-Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
+Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 {
   if (!m_visible)
     return;
@@ -214,6 +252,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
+  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], opmod); // opacity modulator
   glUniform1i(rcShaderParm[5], 5); // texture + color
@@ -222,62 +261,102 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
 
   QVector3D vfront = 2*front;
   QVector3D vright = 2*right;
-  QVector3D vleft = center - right;
+  QVector3D vleft = center - right - 0.1*front;
+
+  QVector3D v[4];  
+  v[0] = vleft;
+  v[1] = v[0] - vfront;
+  v[2] = v[1] + vright;
+  v[3] = v[2] + vfront;
+      
+  for(int i=0; i<4; i++)
+    {
+      m_vertData[8*i + 0] = v[i].x();
+      m_vertData[8*i + 1] = v[i].y();
+      m_vertData[8*i + 2] = v[i].z();
+      m_vertData[8*i+3] = 0;
+      m_vertData[8*i+4] = 0;
+      m_vertData[8*i+5] = 0;
+    }
+  float texC[] = {0,1, 0,0, 1,0, 1,1};
+  m_vertData[6] =  texC[0];  m_vertData[7] =  texC[1];
+  m_vertData[14] = texC[2];  m_vertData[15] = texC[3];
+  m_vertData[22] = texC[4];  m_vertData[23] = texC[5];
+  m_vertData[30] = texC[6];  m_vertData[31] = texC[7];
+  
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  0,
+		  sizeof(float)*8*4,
+		  &m_vertData[0]);
+
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+    
 
   for(int og=0; og<m_optionsGeom.count(); og++)
     {
-      float cx = m_optionsGeom[og].x();
-      float cy = m_optionsGeom[og].y();
-      float cwd = m_optionsGeom[og].width();
-      float cht = m_optionsGeom[og].height();
-
-      QVector3D v[4];  
-      v[0] = vleft + cx*vright - cy*vfront;
-      v[1] = v[0] - cht*vfront;
-      v[2] = v[1] + cwd*vright;
-      v[3] = v[2] + cht*vfront;
-      
-      for(int i=0; i<4; i++)
+      bool ok = false;
+      ok = (m_selected == og);
+      ok |= (og == 5 && m_softShadows);
+      ok |= (og == 6 && m_edges);
+      if (ok)
 	{
-	  m_vertData[8*i + 0] = v[i].x();
-	  m_vertData[8*i + 1] = v[i].y();
-	  m_vertData[8*i + 2] = v[i].z();
-	  m_vertData[8*i+3] = 0;
-	  m_vertData[8*i+4] = 0;
-	  m_vertData[8*i+5] = 0;
+	  float cx = m_optionsGeom[og].x();
+	  float cy = m_optionsGeom[og].y();
+	  float cwd = m_optionsGeom[og].width();
+	  float cht = m_optionsGeom[og].height();
+	  
+	  QVector3D v[4];  
+	  v[0] = vleft + cx*vright - cy*vfront + 0.01*up; // slightly raised
+	  v[1] = v[0] - cht*vfront;
+	  v[2] = v[1] + cwd*vright;
+	  v[3] = v[2] + cht*vfront;
+	  
+	  for(int i=0; i<4; i++)
+	    {
+	      m_vertData[8*i + 0] = v[i].x();
+	      m_vertData[8*i + 1] = v[i].y();
+	      m_vertData[8*i + 2] = v[i].z();
+	      m_vertData[8*i+3] = 0;
+	      m_vertData[8*i+4] = 0;
+	      m_vertData[8*i+5] = 0;
+	    }
+	  
+	  float tx0 = 0;
+	  float ty0 = 0;
+	  float tx1 = 1;
+	  float ty1 = 1;
+	  
+	  tx0 = m_relGeom[og].x()/(float)m_texWd;
+	  tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
+	  
+	  ty0 = m_relGeom[og].y()/(float)m_texHt;
+	  ty1 = ty0 + m_relGeom[og].height()/(float)m_texHt;
+	  
+	  float texC[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
+	  
+	  m_vertData[6] =  texC[0];  m_vertData[7] =  texC[1];
+	  m_vertData[14] = texC[2];  m_vertData[15] = texC[3];
+	  m_vertData[22] = texC[4];  m_vertData[23] = texC[5];
+	  m_vertData[30] = texC[6];  m_vertData[31] = texC[7];
+	  
+	  glBufferSubData(GL_ARRAY_BUFFER,
+			  0,
+			  sizeof(float)*8*4,
+			  &m_vertData[0]);
+	  
+	  if (og == m_selected)
+	    {
+	      if (triggerPressed)
+		glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2); // mix color
+	      else
+		glUniform3f(rcShaderParm[2], 0.5, 0.7, 1); // mix color
+	    }
+	  else
+	    glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5); // mix color
+
+	  
+	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 	}
-      
-      float tx0 = 0;
-      float ty0 = 0;
-      float tx1 = 1;
-      float ty1 = 1;
-
-      tx0 = m_relGeom[og].x()/(float)m_texWd;
-      tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
-      
-      ty0 = m_relGeom[og].y()/(float)m_texHt;
-      ty1 = ty0 + m_relGeom[og].height()/(float)m_texHt;
-
-      float texC[] = {tx0,ty0, tx0,ty1, tx1,ty1, tx1,ty0};
-      
-      m_vertData[6] =  texC[0];  m_vertData[7] =  texC[1];
-      m_vertData[14] = texC[2];  m_vertData[15] = texC[3];
-      m_vertData[22] = texC[4];  m_vertData[23] = texC[5];
-      m_vertData[30] = texC[6];  m_vertData[31] = texC[7];
-
-      glBufferSubData(GL_ARRAY_BUFFER,
-		      0,
-		      sizeof(float)*8*4,
-		      &m_vertData[0]);
-
-
-      if (m_selected == og)
-	glUniform3f(rcShaderParm[2], 0.5, 0.7, 1); // mix color
-      else
-	glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
-      
-
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
     }
   
   glBindVertexArray(0);
@@ -358,6 +437,16 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
       else if (m_selected == 2) emit updatePointSize(1);
       else if (m_selected == 3) emit updateScale(-1);
       else if (m_selected == 4) emit updateScale(1);
+      else if (m_selected == 5)
+	{
+	  m_softShadows = !m_softShadows;
+	  emit updateSoftShadows(m_softShadows);
+	}
+      else if (m_selected == 6)
+	{
+	  m_edges = !m_edges;
+	  emit updateEdges(m_edges);
+	}
     }
 
   return m_selected;

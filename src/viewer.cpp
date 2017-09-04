@@ -1549,8 +1549,10 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
   glUniform1i(m_shadowParm[1], 0); // colors
   glUniform1i(m_shadowParm[2], 1); // depthTex1
 
-  glUniform1i(m_shadowParm[3], m_showEdges); // showedges
-  glUniform1i(m_shadowParm[4], m_softShadows); // softShadows
+  //glUniform1i(m_shadowParm[3], m_showEdges); // showedges
+  //glUniform1i(m_shadowParm[4], m_softShadows); // softShadows
+  glUniform1i(m_shadowParm[3], m_vr.edges()); // showedges
+  glUniform1i(m_shadowParm[4], m_vr.softShadows()); // softShadows
 
   glUniform1f(m_shadowParm[5], m_nearDist);
   glUniform1f(m_shadowParm[6], m_farDist);
