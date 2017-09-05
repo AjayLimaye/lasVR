@@ -257,6 +257,8 @@ class Viewer : public QGLViewer
     void sendCurrPosToMenu();
     void sendTeleportsToMenu();
     void projectPinPoint();
+
+    bool nextHit(QMatrix4x4, QMatrix4x4);
 };
 
 #endif

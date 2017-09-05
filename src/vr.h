@@ -47,6 +47,7 @@ class VR : public QObject
   void setCurrPosOnMenuImage(Vec, Vec);
   void sendTeleportsToMenu(QList<QVector3D>);
   QVector2D pinPoint2D();
+  void setPinPoint2D(QVector2D v) { m_pinPt = v; }
   void setProjectedPinPoint(QVector3D p) { m_projectedPinPt = p; }
 
   float* depthBuffer() { return m_depthBuffer; }
@@ -96,6 +97,7 @@ class VR : public QObject
   QMatrix4x4 matrixDevicePoseRight();
 
   QMatrix4x4 final_xform() { return m_final_xform; }
+  QMatrix4x4 final_xformInverted() { return m_final_xformInverted; }
 
 
   void preDraw();
@@ -177,7 +179,7 @@ class VR : public QObject
   bool m_touchActiveRight;
   bool m_touchActiveLeft;
 
-  bool m_touchTriggerActiveRight;
+  bool m_flightActive;
   bool m_touchTriggerActiveLeft;
   
   bool m_gripActiveRight;
@@ -303,13 +305,15 @@ class VR : public QObject
   void handleBothTriggersPressed(vr::TrackedDeviceIndex_t,
 				 vr::TrackedDeviceIndex_t);
   
-  void handleControllerRight(vr::TrackedDeviceIndex_t,
-			     bool&, bool&);
   void handleControllerLeft(vr::TrackedDeviceIndex_t,
 			    bool&, bool&);
 
-  void handleFlight(vr::TrackedDeviceIndex_t,
+  void handleRight(vr::TrackedDeviceIndex_t,
 		    bool&, bool&);
+  void handleFlight(vr::TrackedDeviceIndex_t,
+		    bool&);
+  void handleRightTrigger(vr::TrackedDeviceIndex_t,
+			  bool&);
   
   void handleGripRight(vr::TrackedDeviceIndex_t,
 		       bool&);
