@@ -37,10 +37,18 @@ class Map : public QObject
   QVector3D pinPoint() { return m_pinPt; }
 
   bool isVisible() { return m_visible; }
-  void setVisible(bool v) { m_visible = v; }
+  void setVisible(bool v)
+  {
+    m_visible = v;
+    if (!m_visible)
+      m_pointingToMenu = false;
+  }
+
+  bool pointingToMenu() { return m_pointingToMenu; }
 
  private :
   bool m_visible;
+  bool m_pointingToMenu;
 
   QImage m_image;
 

@@ -32,6 +32,7 @@ Menu01::Menu01() : QObject()
   m_selected = -1;
 
   m_visible = true;
+  m_pointingToMenu = false;
 
   m_softShadows = true;
   m_edges = true;
@@ -370,6 +371,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 int
 Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 {
+  m_pointingToMenu = false;
   m_selected = -1;
 
   if (!m_visible || m_optionsGeom.count()==0)
@@ -392,9 +394,9 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
   if (opmod < 0.1)
     return m_selected;
 
-  QVector3D vleft = centerL - rightL;
-  QVector3D vft = -2*frontL;
+  QVector3D vft = 2*frontL;
   QVector3D vrt = 2*rightL;
+  QVector3D vleft = centerL - rightL - 0.1*frontL;
 
 
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
@@ -403,9 +405,15 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   QVector3D pinPoint = centerR + frontR;
 
+
+  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleft, -vft, vrt,
+							oupL.normalized(),
+							centerR, frontR.normalized());
+
+
   // project pinPoint onto map plane
   QVector3D pp = pinPoint-vleft;
-  float rw = QVector3D::dotProduct(pp, vft.normalized());
+  float rw = QVector3D::dotProduct(pp, -vft.normalized());
   float rh = QVector3D::dotProduct(pp, vrt.normalized());
   float rz = QVector3D::dotProduct(pp, oupL.normalized());
 

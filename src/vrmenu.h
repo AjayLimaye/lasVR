@@ -46,6 +46,8 @@ class VrMenu : public QObject
 
   void setTimeStep(QString);
 
+  bool pointingToMenu();
+
  signals :
   void resetModel();
   void updatePointSize(int);

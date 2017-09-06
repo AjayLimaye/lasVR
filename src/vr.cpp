@@ -614,9 +614,10 @@ VR::handleFlight(vr::TrackedDeviceIndex_t i,
 	  QVector3D moveD = QVector3D(center-point);
 
 	  moveD.normalize();
-	  QVector3D move = moveD*m_flightSpeed*m_speedDamper;
+	  float throttle = qBound(0.01f, 0.2f, m_flightSpeed*m_speedDamper);
+	  QVector3D move = moveD*throttle;
 
-	  if (m_touchY < -0.5) // move backward
+	  if (m_touchY < 0) // move backward
 	    move = -move;
 	  
 	  m_model_xform.translate(-move);
@@ -626,14 +627,17 @@ VR::handleFlight(vr::TrackedDeviceIndex_t i,
 	  float sf = m_teleportScale/m_scaleFactor;
 	  if (sf > 1.0)
 	    {
-	      sf = qPow(sf, 0.05f);
+	      sf = qPow(sf, 0.01f);
 
-	      //QVector3D cenL = getPosition(m_rightController);
-	      QVector3D cenL = m_final_xform.map(m_coordCen);
+	      QVector3D cenL;
+	      if (m_pinPt.x() >= 0)
+		cenL = m_final_xform.map(m_projectedPinPt);
+	      else 
+		cenL = getPosition(m_rightController);
 	      
-	      m_model_xform.translate(cenL-move);
+	      m_model_xform.translate(cenL);
 	      m_model_xform.scale(sf);
-	      m_model_xform.translate(-(cenL-move));
+	      m_model_xform.translate(-cenL);
 	      
 	      m_scaleFactor *= sf;
 	      m_flightSpeed *= sf;
@@ -673,7 +677,7 @@ VR::handleRight(vr::TrackedDeviceIndex_t i,
 			   vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger));
 
   if (!touchPressedRight)
-    touchPressedRight = (state.ulButtonTouched &
+    touchPressedRight = (state.ulButtonPressed &
 			vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
 
 
@@ -1363,21 +1367,18 @@ VR::quatToMat(QQuaternion q)
 
 void
 VR::renderAxes(vr::Hmd_Eye eye)
-{
-  glUseProgram(m_pshader);
-
-  
+{  
   QMatrix4x4 mvp = currentViewProjection(eye);
 
+  glUseProgram(m_pshader);
   glUniformMatrix4fv(m_pshaderParm[0], 1, GL_FALSE, mvp.data());
   glUniform1f(m_pshaderParm[1], 20);
-
   // send dummy positions
   glUniform3f(m_pshaderParm[2], -1, -1, -1); // head position
   glUniform3f(m_pshaderParm[3], -1, -1, -1); // left controller
   glUniform3f(m_pshaderParm[4], -1, -1, -1); // right controller
-
   glUniform1i(m_pshaderParm[5], 1); // lines
+
 
   glLineWidth(2.0);
 
@@ -1986,9 +1987,12 @@ VR::checkTeleport(bool triggered)
 
   if (triggered)
     {
-      //m_pinPt = m_leftMenu.pinPoint2D();
       if (m_pinPt.x() >= 0)
-	teleport(m_projectedPinPt);
+	{
+	  if (!m_leftMenu.pointingToMenu() ||
+	      m_menuPanels[m_currPanel] == "00")
+	    teleport(m_projectedPinPt);
+	}
     }
 }
 
@@ -2106,10 +2110,16 @@ VR::pinPoint2D()
 void
 VR::buildPinPoint()
 {
-  // don't draw pin point if teleport detected
-  // or pin point out of range
-  if (m_pinPt.x() < 0 ||
-      m_currTeleportNumber >= 0)
+  // don't draw pin point if -
+  // flying 
+  // pin point out of range
+  // teleport detected
+  // point to menu
+  if (m_flightActive ||
+      m_pinPt.x() < 0 ||
+      m_currTeleportNumber >= 0 ||
+      (m_leftMenu.pointingToMenu() &&
+       m_menuPanels[m_currPanel] != "00") )
     {
       m_pinPoints = 0;
       return;

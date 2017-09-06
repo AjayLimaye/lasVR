@@ -26,12 +26,20 @@ class Menu00 : public QObject
   void setPlay(bool p) { m_play = p; }
 
   bool isVisible() { return m_visible; }
-  void setVisible(bool v) { m_visible = v; }
+  void setVisible(bool v)
+  {
+    m_visible = v;
+    if (!m_visible)
+      m_pointingToMenu = false;
+  }
+
+  bool pointingToMenu() { return m_pointingToMenu; }
 
   void setTimeStep(QString);
 
  private :
   bool m_visible;
+  bool m_pointingToMenu;
 
   GLuint m_glTexture;
   GLuint m_glVertBuffer;

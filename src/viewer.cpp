@@ -297,16 +297,6 @@ Viewer::start()
 
   m_showSphere = m_pointClouds[0]->showSphere();
   m_pointType = m_pointClouds[0]->pointType();
-
-  if (m_vr.vrEnabled())
-    {
-      m_vr.setShowMap(m_pointClouds[0]->showMap());
-      m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
-      m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
-      //  if (m_volume->timeseries())
-      //    m_vr.setShowTimeseriesMenu(true);
-    }
-
   
   createMinMaxTexture();
 
@@ -328,6 +318,15 @@ Viewer::start()
   if (m_vr.vrEnabled())
     m_vr.initModel(cmin, cmax);
   //--------------------
+
+  if (m_vr.vrEnabled())
+    {
+      m_vr.setShowMap(m_pointClouds[0]->showMap());
+      m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
+      m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
+      //  if (m_volume->timeseries())
+      //    m_vr.setShowTimeseriesMenu(true);
+    }
 
   if (!m_shadowShader)
     createShaders();
@@ -2778,8 +2777,10 @@ Viewer::projectPinPoint()
 
   // if we are not pointing into the map then
   // may be we are looking directly on the terrain
-  nextHit(m_vr.matrixDevicePoseRight(),
-	  m_vr.final_xformInverted());    
+  if (!nextHit(m_vr.matrixDevicePoseRight(),
+	      m_vr.final_xformInverted()))
+    m_vr.setPinPoint2D(QVector2D(-1, -1));
+    
 }
 
 bool

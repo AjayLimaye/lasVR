@@ -48,6 +48,10 @@ class StaticFunctions
   static float easeOut(float);
   static float smoothstep(float);
   static float smoothstep(float, float, float);
+
+  static bool intersectRayPlane(QVector3D, QVector3D,
+				QVector3D, QVector3D,
+				QVector3D, QVector3D);
 };
 
 #endif

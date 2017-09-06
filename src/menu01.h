@@ -24,7 +24,14 @@ class Menu01 : public QObject
   int checkOptions(QMatrix4x4, QMatrix4x4, bool);
 
   bool isVisible() { return m_visible; }
-  void setVisible(bool v) { m_visible = v; }
+  void setVisible(bool v)
+  {
+    m_visible = v;
+    if (!m_visible)
+      m_pointingToMenu = false;
+  }
+
+  bool pointingToMenu() { return m_pointingToMenu; }
 
  signals :
   void resetModel();
@@ -35,6 +42,7 @@ class Menu01 : public QObject
 
  private :
   bool m_visible;
+  bool m_pointingToMenu;
 
   QImage m_image;
 

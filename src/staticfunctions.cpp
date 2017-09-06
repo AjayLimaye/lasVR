@@ -375,3 +375,29 @@ StaticFunctions::smoothstep(float min, float max, float v)
   return a*a*(3.0f-2.0f*a);
 }
 
+
+bool
+StaticFunctions::intersectRayPlane(QVector3D v0, QVector3D vy,
+				   QVector3D vx, QVector3D pn,
+				   QVector3D rayO, QVector3D ray)
+{
+  float deno = QVector3D::dotProduct(ray, pn);
+
+  if (deno > -0.00001) // point along same direction
+    return false;
+
+  float t = -QVector3D::dotProduct(rayO - v0, pn) / deno;
+  if (t >= 0)
+    {
+      QVector3D pt = rayO + t*ray;
+      float lx = vx.length();
+      float ly = vy.length();
+      float x = QVector3D::dotProduct(pt-v0, vx.normalized());
+      float y = QVector3D::dotProduct(pt-v0, vy.normalized());
+      if (x >= 0 && x <= lx &&
+	  y >= 0 && y <= ly)
+	return true;
+    } 
+
+  return false;
+}

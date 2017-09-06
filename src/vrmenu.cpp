@@ -116,3 +116,15 @@ VrMenu::setCurrentMenu(QString m)
   if (m_currMenu == "02")
     ((Menu01*)(m_menus["02"]))->setVisible(true);
 }
+
+bool
+VrMenu::pointingToMenu()
+{
+  bool pm = false;
+  
+  pm = pm || ((Map*)(m_menus["00"]))->pointingToMenu();
+  pm = pm || ((Menu00*)(m_menus["01"]))->pointingToMenu();
+  pm = pm || ((Menu01*)(m_menus["02"]))->pointingToMenu();
+
+  return pm;
+}

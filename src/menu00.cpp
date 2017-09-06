@@ -367,6 +367,7 @@ Menu00::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
 int
 Menu00::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR)
 {
+  m_pointingToMenu = false;
   m_selected = -1;
 
   if (!m_visible || m_optionsGeom.count()==0)
@@ -399,6 +400,12 @@ Menu00::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR)
   frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;    
 
   QVector3D pinPoint = centerR + frontR;
+
+
+  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleft, vft, vrt,
+							oupL.normalized(),
+							centerR, frontR.normalized());
+
 
   // project pinPoint onto map plane
   QVector3D pp = pinPoint-vleft;

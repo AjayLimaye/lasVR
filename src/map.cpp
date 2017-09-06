@@ -503,6 +503,8 @@ Map::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
 int
 Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
 {
+  m_pointingToMenu = false;
+
   if (!m_visible)
     return -1;
 
@@ -593,6 +595,12 @@ Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
     }
 
   m_teleportTouched = tp;
+
+
+  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleftRot, vftRot, vrtRot,
+							  oupL.normalized(),
+							  centerR, frontR.normalized());
+
 
   return tp;
 }
