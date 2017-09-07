@@ -2793,9 +2793,7 @@ Viewer::nextHit(QMatrix4x4 matR,
   
 
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  QVector3D frontR;
-  frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
-  QVector3D pinPoint = centerR + frontR;
+  QVector3D pinPoint = QVector3D(matR * QVector4D(0,0,-0.1,1));
 
   QVector3D cenV = finalxformInverted.map(centerR);
   QVector3D pinV = finalxformInverted.map(pinPoint);
@@ -2878,7 +2876,7 @@ Viewer::nextHit(QMatrix4x4 matR,
 
   Vec v = startP + dvec;
   while(1)
-    {      
+    {
       int dx = v.x;
       int dy = v.y;
       if (dx < 0 || dx > wd-1 ||

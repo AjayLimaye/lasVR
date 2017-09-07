@@ -1199,6 +1199,9 @@ VR::quatToMat(QQuaternion q)
 void
 VR::renderAxes(vr::Hmd_Eye eye)
 {  
+  if (m_pinPoints > 0 || !m_showMap)
+    return;
+  
   QMatrix4x4 mvp = currentViewProjection(eye);
 
   glUseProgram(m_pshader);
@@ -1282,7 +1285,7 @@ VR::buildAxesVB()
 
   glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
   glBufferData(GL_ARRAY_BUFFER,
-	       100*sizeof(float),
+	       1000*sizeof(float),
 	       NULL,
 	       GL_STATIC_DRAW);
   //------------------------
@@ -1942,9 +1945,9 @@ void
 VR::buildPinPoint()
 {
   // don't draw pin point if -
-  // flying 
-  // pin point out of range
-  // teleport detected
+  // flying,
+  // pin point out of range,
+  // teleport detected,
   // point to menu
   if (m_flightActive ||
       m_pinPt.x() < 0 ||
@@ -1960,11 +1963,19 @@ VR::buildPinPoint()
   QVector3D telPos = m_projectedPinPt;
   QVector3D telPosU = telPos + QVector3D(0,0,tht);
 
+  if (!m_leftMenu.pointingToMenu())
+    {
+      QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+      QVector3D cenR = QVector3D(matR * QVector4D(0,0,0,1));
+      QVector3D cenW = m_final_xformInverted.map(cenR);
+      
+      telPosU = telPos;
+      telPos = cenW;
+    }
+  
+  QVector3D color(255,255,255);
   QVector<float> vert;
   QVector<uchar> col;
-  int npt = 0;
-
-  QVector3D color(255,255,255);
 
   vert << telPos.x();
   vert << telPos.y();
@@ -1972,27 +1983,28 @@ VR::buildPinPoint()
   vert << telPosU.x();
   vert << telPosU.y();
   vert << telPosU.z();      
-      
+  
   col << color.x();
   col << color.y();
   col << color.z();      
   col << color.x();
   col << color.y();
   col << color.z();
-  
-  npt = vert.count()/3;
 
 
-  float vt[100];  
-  memset(vt, 0, sizeof(float)*100);
+  int npt = vert.count()/3;
+
+  float vt[1000];  
+  memset(vt, 0, sizeof(float)*1000);
   for(int v=0; v<npt; v++)
     {
       vt[8*v + 0] = vert[3*v+0];
       vt[8*v + 1] = vert[3*v+1];
       vt[8*v + 2] = vert[3*v+2];
 
-      vt[8*v + 6] = 1-v; // texture coordinates
-      vt[8*v + 7] = 1-v;
+      float tc = (float)v/(float)(npt-1);
+      vt[8*v + 6] = 1-tc; // texture coordinates
+      vt[8*v + 7] = 1-tc;
     }
   
   glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
@@ -2001,7 +2013,17 @@ VR::buildPinPoint()
 		  sizeof(float)*npt*8,
 		  &vt[0]);
 
-  m_pinPoints = npt;
+  if (!m_leftMenu.pointingToMenu())
+    {
+      m_telPoints = 0;
+      m_pinPoints = npt;
+    }
+  else
+    {
+      m_telPoints = npt;
+      m_pinPoints = 0;
+    }
+
   m_nboxPoints = m_axesPoints + m_telPoints + m_pinPoints;
 }
 
@@ -2020,7 +2042,12 @@ VR::renderTeleport(vr::Hmd_Eye eye)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 1, 1, 1); // mix color
+
+  if (m_telPoints > 0)
+    glUniform3f(rcShaderParm[2], 1, 1, 1); // mix color
+  else
+    glUniform3f(rcShaderParm[2], 1, 1, 0); // mix color
+
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
   glUniform1i(rcShaderParm[5], 4); // do not apply texture
@@ -2054,18 +2081,13 @@ VR::renderTeleport(vr::Hmd_Eye eye)
 			 sizeof(float)*8,
 			 (char *)NULL + m_axesPoints*15 + sizeof(float)*6 );
 
-  glLineWidth(20);
+  if (m_telPoints > 0)
+    glLineWidth(20);
+  else
+    glLineWidth(2);
 
-  glDrawArrays(GL_LINES, 0, m_telPoints+m_pinPoints);
+  glDrawArrays(GL_LINE_STRIP, 0, m_telPoints+m_pinPoints);
 
-//  if (m_telPoints > 0)
-//    glDrawArrays(GL_LINES, 0, m_telPoints);
-//
-//  if (m_pinPoints > 0)
-//    {
-//      glUniform3f(rcShaderParm[2], 1, 1, 1); // mix color
-//      glDrawArrays(GL_LINES, m_telPoints*sizeof(float)*8, m_pinPoints);
-//    }
   
 	
   glDisableVertexAttribArray(0);
