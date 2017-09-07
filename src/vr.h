@@ -175,12 +175,16 @@ class VR : public QObject
   
   bool m_triggerActiveRight;
   bool m_triggerActiveLeft;
+  bool m_triggerActiveBoth;
   
+  bool m_touchPressActiveRight;
+  bool m_touchPressActiveLeft;
+
   bool m_touchActiveRight;
   bool m_touchActiveLeft;
 
   bool m_flightActive;
-  bool m_touchTriggerActiveLeft;
+//  bool m_touchTriggerActiveLeft;
   
   bool m_gripActiveRight;
   bool m_gripActiveLeft;
@@ -190,7 +194,7 @@ class VR : public QObject
   QVector3D m_prevDirection;
   QVector3D m_prevPosL, m_prevPosR;
   float m_lrDist;
-  bool m_bothTriggersActive;
+  //bool m_bothTriggersActive;
 
   bool m_genDrawList;
 
@@ -298,27 +302,33 @@ class VR : public QObject
     
   QMatrix4x4 modelViewNoHmd();
   
+  vr::VRControllerState_t m_stateRight;
+  vr::VRControllerState_t m_stateLeft;
     
   bool isTriggered(vr::VRControllerState_t&);
   bool isTouched(vr::VRControllerState_t&);
-  
-  void handleBothTriggersPressed(vr::TrackedDeviceIndex_t,
-				 vr::TrackedDeviceIndex_t);
-  
-  void handleControllerLeft(vr::TrackedDeviceIndex_t,
-			    bool&, bool&);
+  bool isTouchPressed(vr::VRControllerState_t&);
 
-  void handleRight(vr::TrackedDeviceIndex_t,
-		    bool&, bool&);
-  void handleFlight(vr::TrackedDeviceIndex_t,
-		    bool&);
-  void handleRightTrigger(vr::TrackedDeviceIndex_t,
-			  bool&);
-  
-  void handleGripRight(vr::TrackedDeviceIndex_t,
-		       bool&);
-  void handleGripLeft(vr::TrackedDeviceIndex_t,
-			bool&);
+  void leftTriggerPressed();
+  void leftTriggerMove();
+  void leftTriggerReleased();
+
+  void rightTriggerPressed();
+  void rightTriggerMove();
+  void rightTriggerReleased();
+
+  void bothTriggerPressed();
+  void bothTriggerMove();
+  void bothTriggerReleased();
+
+  void leftTouchPressed();
+  void leftTouchPressMove();
+  void leftTouchPressReleased();
+
+  void rightTouchPressed();
+  void rightTouchPressMove();
+  void rightTouchPressReleased();
+
   
   QMatrix4x4 quatToMat(QQuaternion); 
 

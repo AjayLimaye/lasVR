@@ -2787,6 +2787,11 @@ bool
 Viewer::nextHit(QMatrix4x4 matR,
 		QMatrix4x4 finalxformInverted)
 {
+  float *depth = m_vr.depthBuffer();
+  if (depth == 0) // we don't have any depth buffer
+    return false;
+  
+
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
   QVector3D frontR;
   frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
@@ -2808,66 +2813,69 @@ Viewer::nextHit(QMatrix4x4 matR,
   int ht = m_vr.screenHeight();
 
   Vec startP = cenP;
+
   //---------------------------
-  // get to the edge before start of search
-  // ray box intersection
-  // screen box is (0,0) and (wd,ht)
-  if (qAbs(dvec.x) > 0 &&
-      qAbs(dvec.y) > 0)
+  if (startP.x < 0 ||
+      startP.x >= wd ||
+      startP.y < 0 ||
+      startP.y >= ht)
     {
-      float t[6];
-      t[0] = (0  - cenP.x)/dvec.x;
-      t[1] = (wd - cenP.x)/dvec.x;
-      
-      t[2] = (0  - cenP.y)/dvec.y;
-      t[3] = (ht - cenP.y)/dvec.y;
-      
-      t[4] = qMax(qMin(t[0],t[1]), qMin(t[2],t[3]));
-      t[5] = qMin(qMax(t[0],t[1]), qMax(t[2],t[3]));
-      
-      float db;
-      if (t[5] < 0 || t[4]>t[5])
-	return false;
-      else
-	db = t[4];
-      
-      startP = cenP + db*dvec;
-    }
-  else
-    {
-      float t[4];
-      if (qAbs(dvec.x) > 0)
+      // if we are not on the map then get to the edge
+      // before start of search
+      // find ray box intersection
+      // screen box is (0,0) and (wd,ht)
+      if (qAbs(dvec.x) > 0 &&
+	  qAbs(dvec.y) > 0)
 	{
+	  float t[6];
 	  t[0] = (0  - cenP.x)/dvec.x;
 	  t[1] = (wd - cenP.x)/dvec.x;
-	}
-      else if (qAbs(dvec.y) > 0)
-	{	  
-	  t[0] = (0  - cenP.y)/dvec.y;
-	  t[1] = (ht - cenP.y)/dvec.y;	  
+	  
+	  t[2] = (0  - cenP.y)/dvec.y;
+	  t[3] = (ht - cenP.y)/dvec.y;
+	  
+	  t[4] = qMax(qMin(t[0],t[1]), qMin(t[2],t[3]));
+	  t[5] = qMin(qMax(t[0],t[1]), qMax(t[2],t[3]));
+	  
+	  float db;
+	  if (t[5] < 0 || t[4]>t[5])
+	    return false;
+	  else
+	    db = t[4];
+	  
+	  startP = cenP + db*dvec;
 	}
       else
-	return false;
-      
-      t[2] = qMin(t[0],t[1]);
-      t[3] = qMax(t[0],t[1]);
-      
-      float db;
-      if (t[3] < 0 || t[2]>t[3])
-	return false;
-      else
-	db = t[2];
-      
-      startP = cenP + db*dvec;      
+	{
+	  float t[4];
+	  if (qAbs(dvec.x) > 0)
+	    {
+	      t[0] = (0  - cenP.x)/dvec.x;
+	      t[1] = (wd - cenP.x)/dvec.x;
+	    }
+	  else if (qAbs(dvec.y) > 0)
+	    {	  
+	      t[0] = (0  - cenP.y)/dvec.y;
+	      t[1] = (ht - cenP.y)/dvec.y;	  
+	    }
+	  else
+	    return false;
+	  
+	  t[2] = qMin(t[0],t[1]);
+	  t[3] = qMax(t[0],t[1]);
+	  
+	  float db;
+	  if (t[3] < 0 || t[2]>t[3])
+	    return false;
+	  else
+	    db = t[2];
+	  
+	  startP = cenP + db*dvec;      
+	}
     }
-
   //---------------------------
 
 
-  float *depth = m_vr.depthBuffer();
-  if (depth == 0) // we don't have any depth buffer
-    return false;
-  
   Vec v = startP + dvec;
   while(1)
     {      

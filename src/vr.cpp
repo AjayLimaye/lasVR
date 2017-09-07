@@ -25,7 +25,7 @@ VR::VR() : QObject()
   m_touchActiveLeft = false;
   m_triggerActiveRight = false;
   m_triggerActiveLeft = false;
-  m_bothTriggersActive = false;
+  m_triggerActiveBoth = false;
   
   m_showLeft = true;
   m_showRight = true;
@@ -321,446 +321,368 @@ VR::updateInput()
   m_leftController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
   
   m_rightController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
-  
-  bool touchPressedLeft = false;
-  bool triggerPressedLeft = false;
-  
-  bool touchPressedRight = false;
-  bool triggerPressedRight = false;
 
-  bool touchTriggerPressedLeft = false;
-  bool touchTriggerPressedRight = false;
-
-  
-  vr::VRControllerState_t stateLeft;
   bool leftActive = m_hmd->GetControllerState(m_leftController,
-					      &stateLeft,
-					      sizeof(stateLeft));
+					      &m_stateLeft,
+					      sizeof(m_stateLeft));
 
-  vr::VRControllerState_t stateRight;
   bool rightActive = m_hmd->GetControllerState(m_rightController,
-					       &stateRight,
-					       sizeof(stateRight));
+					       &m_stateRight,
+					       sizeof(m_stateRight));
 
-  bool leftTriggerActive = isTriggered(stateLeft);
-  bool rightTriggerActive = isTriggered(stateRight);
+  bool leftTriggerActive = isTriggered(m_stateLeft);
+  bool rightTriggerActive = isTriggered(m_stateRight);
 
-  bool leftTouchActive = isTouched(stateLeft);
-  bool rightTouchActive = isTouched(stateRight);
+  bool leftTouchPressActive = isTouchPressed(m_stateLeft);
+  bool rightTouchPressActive = isTouchPressed(m_stateRight);
 
-  touchTriggerPressedLeft = leftTriggerActive && leftTouchActive;
-  touchTriggerPressedRight = rightTriggerActive && rightTouchActive;
 
-  //-----------------------------
-  if (leftTriggerActive && rightTriggerActive)
+// -----------------------
+// press events
+  if (!m_triggerActiveBoth)
     {
-      handleBothTriggersPressed(m_leftController, 
-				m_rightController);
-      return;
-    }
-  
-  if (!leftTriggerActive && !rightTriggerActive)
-    {
-      if (m_bothTriggersActive)
-	{
-	  m_bothTriggersActive = false;
+      if (leftTriggerActive && !m_triggerActiveLeft)
+	leftTriggerPressed();
 
-	  m_final_xform = m_model_xform * m_final_xform;
-	  m_model_xform.setToIdentity();
-
-	  // generate the drawlist each time changes are made
-	  m_genDrawList = true;
-
-	  return;
-	}
-
-      m_bothTriggersActive = false;
+      if (rightTriggerActive && !m_triggerActiveRight)
+	rightTriggerPressed();
     }
 
-  // true if one of them is still activ
-  // after other has been released which happens most of the times
-  if (m_bothTriggersActive)
-    return;
-  //-----------------------------
-  
-  //-----------------------------
-  if (leftActive)
-    handleControllerLeft(m_leftController, triggerPressedLeft, touchPressedLeft);
-  
-  if (m_triggerActiveLeft && !triggerPressedLeft)
-    {
-      m_triggerActiveLeft = false;
 
-      m_final_xform = m_model_xform * m_final_xform;
-      m_model_xform.setToIdentity();
+  if (leftTouchPressActive && !m_touchPressActiveLeft)
+    leftTouchPressed();
 
-      // generate the drawlist each time changes are made
-      m_genDrawList = true;
+  if (rightTouchPressActive && !m_touchPressActiveRight)
+    rightTouchPressed();
 
-    }
-  
-  if (m_touchActiveLeft && !touchPressedLeft)
-    {
-      if (m_touchX > m_startTouchX)
-	nextMenu();
-      else
-	previousMenu();
-      
-      m_touchActiveLeft = false;
-    }
-  //-----------------------------
-  
-
-  //-----------------------------
-  if (rightActive)
-    handleRight(m_rightController, triggerPressedRight, touchPressedRight);
-      
-  if (m_flightActive)
-    {
-      // generate the drawlist each time changes are made
-      if (!m_flyTimer.isActive())
-	{
-	  m_genDrawList = true;
-	  m_flyTimer.start(5000); // generate new draw list every 5 sec
-	}
-
-      if (!rightTouchActive && !rightTriggerActive)
-	{
-	  m_flightActive = false;
-
-	  m_final_xform = m_model_xform * m_final_xform;
-	  m_model_xform.setToIdentity();
-
-	  m_genDrawList = true;
-	  m_flyTimer.stop();
-	}
-    }
-
-  bool rightTriggered = false; // check whether trigger was released
-  if (m_triggerActiveRight && !triggerPressedRight)
-    {
-      m_triggerActiveRight = false;
-      rightTriggered = true; // trigger now released
-
-      m_final_xform = m_model_xform * m_final_xform;
-      m_model_xform.setToIdentity();
-
-      // generate the drawlist each time changes are made
-      m_genDrawList = true;
-
-    }
-  
-  if (m_touchActiveRight && !touchPressedRight)
-    {
-      m_touchActiveRight = false;
-
-      m_final_xform = m_model_xform * m_final_xform;
-      m_model_xform.setToIdentity();      
-      
-      // generate the drawlist each time changes are made
-      m_genDrawList = true;
-
-    }
-  //-----------------------------
-
-  bool gripPressedLeft = false;
-  bool gripPressedRight = false;
-
-  if (leftActive)
-    handleGripLeft(m_leftController, gripPressedLeft);
-
-  if (rightActive)
-    handleGripRight(m_rightController, gripPressedRight);
-
-  if (m_gripActiveLeft && !gripPressedLeft)
-    m_gripActiveLeft = false;
-
-  if (m_gripActiveRight && !gripPressedRight)
-    m_gripActiveRight = false;
+// -----------------------
 
 
-  //-----------------------------
-  // show and act on left map only if left trigger is not pressed
-  if (!m_triggerActiveLeft)
-    {
-      if (m_showMap)
-	checkTeleport(rightTriggered);
-      
-      checkOptions(rightTriggered);
-    }
-  //-----------------------------
-}
-
-void
-VR::handleBothTriggersPressed(vr::TrackedDeviceIndex_t leftController,
-			      vr::TrackedDeviceIndex_t rightController)
-{
-  QVector3D posL =  getPosition(m_trackedDevicePose[leftController].mDeviceToAbsoluteTracking);
-  QVector3D posR =  getPosition(m_trackedDevicePose[rightController].mDeviceToAbsoluteTracking);
-  if (m_bothTriggersActive)
-    {
-      m_model_xform.setToIdentity();
-
-      float newDist = posL.distanceToPoint(posR);
-
-      float sf = newDist/m_lrDist;
-
-      //--------------------------
-      // translation
-      if (sf > 0.9)
-	{
-	  QVector3D pos = (posL - m_prevPosL);	  
-	  m_model_xform.translate(pos);
-	}
-      //--------------------------
-
-      //--------------------------
-      // rotation
-      QVector3D cdirec = (posL - posR).normalized();      
-      float angle = qAcos(QVector3D::dotProduct(m_prevDirection, cdirec));
-      QVector3D axis = QVector3D::crossProduct(m_prevDirection, cdirec);
-      m_model_xform.translate(m_scaleCenter);
-      m_model_xform.rotate(qRadiansToDegrees(angle), axis.x(), axis.y(), axis.z());
-      m_model_xform.translate(-m_scaleCenter);
-      //--------------------------
-
-
-      //--------------------------
-      // scale
-      m_model_xform.translate(m_scaleCenter);
-      m_model_xform.scale(sf);
-      m_model_xform.translate(-m_scaleCenter);
-      //--------------------------
-
-      m_scaleFactor = m_prevScaleFactor * sf;
-      m_flightSpeed = m_prevFlightSpeed * sf;
-
-      genEyeMatrices();
-    }
+// -----------------------
+// move events
+  if (m_triggerActiveBoth)
+    bothTriggerMove();
   else
     {
-      m_bothTriggersActive = true;
-
-      m_lrDist = posL.distanceToPoint(posR);
-
-      m_prevPosL = posL;
-      m_prevPosR = posR;
-      m_prevDirection = (m_prevPosL - m_prevPosR).normalized();
-
-      QVector3D cenL = getPosition(leftController);
-      QVector3D cenR = getPosition(rightController);
-      m_scaleCenter = (cenL + cenR)*0.5;
-
-      m_prevScaleFactor = m_scaleFactor;
-      m_prevFlightSpeed = m_flightSpeed;
-    }
-}
-
-void
-VR::handleRightTrigger(vr::TrackedDeviceIndex_t i,
-		       bool &triggerPressedRight)
-{
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-  
-  if (!triggerPressedRight)
-    triggerPressedRight = (state.ulButtonPressed &
-			   vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger));
-  
-  // translation
-  if (triggerPressedRight)
-    {
+      if (m_triggerActiveLeft)
+	leftTriggerMove();
       if (m_triggerActiveRight)
-	{
-	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-	  pos = (pos - m_startTranslate);
-	  
-	  m_model_xform.setToIdentity();
-	  m_model_xform.translate(pos);
-	}
-      else
-	{
-	  m_triggerActiveRight = true;
-		  
-	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-	  m_startTranslate = pos;
-	}
-    }
-}
-
-void
-VR::handleFlight(vr::TrackedDeviceIndex_t i,
-		 bool &touchPressedRight)
-{
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-  
-  if (!touchPressedRight)
-    touchPressedRight = (state.ulButtonPressed &
-			vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
-
-
-  if (touchPressedRight)
-    {
-      if (m_flightActive)
-	{
-	  m_model_xform.setToIdentity();      
-
-	  QMatrix4x4 mat = m_matrixDevicePose[i];    
-	  QVector4D center = mat * QVector4D(0,0,0,1);
-	  QVector4D point = mat * QVector4D(0,0,1,1);
-	  QVector3D moveD = QVector3D(center-point);
-
-	  moveD.normalize();
-	  float throttle = qBound(0.01f, 0.2f, m_flightSpeed*m_speedDamper);
-	  QVector3D move = moveD*throttle;
-
-	  if (m_touchY < 0) // move backward
-	    move = -move;
-	  
-	  m_model_xform.translate(-move);
-
-	  //---------------------
-	  // scale up if needed
-	  float sf = m_teleportScale/m_scaleFactor;
-	  if (sf > 1.0)
-	    {
-	      sf = qPow(sf, 0.01f);
-
-	      QVector3D cenL;
-	      if (m_pinPt.x() >= 0)
-		cenL = m_final_xform.map(m_projectedPinPt);
-	      else 
-		cenL = getPosition(m_rightController);
-	      
-	      m_model_xform.translate(cenL);
-	      m_model_xform.scale(sf);
-	      m_model_xform.translate(-cenL);
-	      
-	      m_scaleFactor *= sf;
-	      m_flightSpeed *= sf;
-	    }
-	  //---------------------
-
-	  m_final_xform = m_model_xform * m_final_xform;
-
-	  genEyeMatrices();
-	}
-      else
-	{
-	  m_flightActive = true;
-		  
-	  m_touchX = state.rAxis[0].x;
-	  m_touchY = state.rAxis[0].y;
-
-	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-	  m_startTranslate = pos;
-
-	  m_flyTimer.start(5000); // generate new draw list every 5 sec
-	}
-    }
-}
-
-void
-VR::handleRight(vr::TrackedDeviceIndex_t i,
-		bool &triggerPressedRight,
-		bool &touchPressedRight)
-{
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-  
-  if (!triggerPressedRight)
-    triggerPressedRight = (state.ulButtonPressed &
-			   vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger));
-
-  if (!touchPressedRight)
-    touchPressedRight = (state.ulButtonPressed &
-			vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
-
-
-  if (touchPressedRight)
-    {
-      handleFlight(m_rightController, touchPressedRight);
-      return;
+	rightTriggerMove();
     }
 
-  if (triggerPressedRight)
+
+  if (!m_triggerActiveLeft) // check map/menu only if left trigger is not pressed
     {
-      handleRightTrigger(i, triggerPressedRight);
+      if (m_showMap)
+	checkTeleport(false);
       
+      checkOptions(false);
+    }
+
+
+  if (leftTouchPressActive && m_touchPressActiveLeft)
+    leftTouchPressMove();
+
+  if (rightTouchPressActive && m_touchPressActiveRight)
+    rightTouchPressMove();
+// -----------------------
+
+
+// -----------------------
+// release events
+  if (m_triggerActiveBoth)
+    {
+      if (!leftTriggerActive && !rightTriggerActive)
+	bothTriggerReleased();
+    }
+  else
+    {      
+      if (!leftTriggerActive && m_triggerActiveLeft)
+	leftTriggerReleased();
+
+      if (!rightTriggerActive && m_triggerActiveRight)
+	rightTriggerReleased();
+
+    }
+
+
+  if (!leftTouchPressActive && m_touchPressActiveLeft)
+    leftTouchPressReleased();
+
+  if (!rightTouchPressActive && m_touchPressActiveRight)
+    rightTouchPressReleased();
+
+// -----------------------
+
+}
+
+void
+VR::leftTriggerPressed()
+{
+  m_triggerActiveLeft = true;
+  if (m_triggerActiveRight)
+    {
+      m_triggerActiveLeft = false;
+      m_triggerActiveRight = false;
+      bothTriggerPressed();
+      return;
+    }
+		  
+  QVector3D pos =  getPosition(m_trackedDevicePose[m_leftController].mDeviceToAbsoluteTracking);
+  m_startTranslate = pos;
+}
+void
+VR::leftTriggerMove()
+{
+  QVector3D pos =  getPosition(m_trackedDevicePose[m_leftController].mDeviceToAbsoluteTracking);
+  pos = (pos - m_startTranslate);
+  
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(pos);
+}
+void
+VR::leftTriggerReleased()
+{
+  m_triggerActiveLeft = false;
+
+  m_final_xform = m_model_xform * m_final_xform;
+  m_model_xform.setToIdentity();
+  
+  // generate the drawlist each time changes are made
+  m_genDrawList = true;
+}
+
+void
+VR::leftTouchPressed()
+{
+  m_touchPressActiveLeft = true;
+
+  m_startTouchX = m_stateLeft.rAxis[0].x;
+  m_startTouchY = m_stateLeft.rAxis[0].y;
+}
+void
+VR::leftTouchPressMove()
+{
+  m_touchX = m_stateLeft.rAxis[0].x;
+  m_touchY = m_stateLeft.rAxis[0].y;
+}
+void
+VR::leftTouchPressReleased()
+{
+  m_touchPressActiveLeft = false;
+
+  if (m_touchX > 0.5)
+    nextMenu();
+  else if (m_touchX < -0.5)
+    previousMenu();
+}
+
+void
+VR::rightTriggerPressed()
+{
+  m_triggerActiveRight = true;
+  if (m_triggerActiveLeft)
+    {
+      m_triggerActiveLeft = false;
+      m_triggerActiveRight = false;
+      bothTriggerPressed();
       return;
     }
 
-//  if (triggerPressedRight && touchPressedRight)
-//    {
-//      if (m_touchTriggerActiveRight)
-//	{
-//	  m_model_xform.setToIdentity();      
-//
-//	  //float sf = state.rAxis[0].y - m_touchY;		  
-//
-//	  QMatrix4x4 mat = m_matrixDevicePose[i];    
-//	  QVector4D center = mat * QVector4D(0,0,0,1);
-//	  QVector4D point = mat * QVector4D(0,0,1,1);
-//	  QVector3D moveD = QVector3D(center-point);
-//
-//	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-//	  QVector3D sp = (pos-m_startTranslate);
-//	  float len = sp.length();
-//
-//	  sp.normalize();
-//	  moveD.normalize();
-//
-//	  len *= QVector3D::dotProduct(sp, moveD);
-//
-//	  QVector3D move = moveD*len*m_flightSpeed*m_speedDamper;
-//
-//	  
-//	  m_model_xform.translate(-move);
-//
-//
-//	  //--------------------------
-//	  // rotation
-//	  QQuaternion q = getQuaternion(m_matrixDevicePose[i]);
-//	  q.normalize();
-//	  q = QQuaternion::slerp(m_rotQuat, q, 0.5);
-//	  q = m_rotQuat.conjugate() * q;
-//
-//	  m_model_xform.translate(pos);
-//	  m_model_xform.rotate(q);
-//	  m_model_xform.translate(-pos);
-//	  //--------------------------
-//
-//	  m_final_xform = m_model_xform * m_final_xform;
-//
-//	  m_rotQuat = getQuaternion(m_matrixDevicePose[i]);
-//	  m_rotQuat.normalize();
-//	}
-//      else
-//	{
-//	  m_touchTriggerActiveRight = true;
-//		  
-//	  m_touchX = state.rAxis[0].x;
-//	  m_touchY = state.rAxis[0].y;
-//
-//
-//	  m_touchPoint = QVector2D(state.rAxis[0].x,
-//				   state.rAxis[0].y);
-//	  m_touchPoint.normalize();
-//
-//
-//	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-//	  m_startTranslate = pos;
-//
-//	  m_rotQuat = getQuaternion(m_matrixDevicePose[i]);
-//	  m_rotQuat.normalize();
-//
-//	  m_flyTimer.start(5000); // generate new draw list every 5 sec
-//	}
-//    }
+  m_startTranslate =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
+}
+void
+VR::rightTriggerMove()
+{
+  QVector3D pos =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
+  pos = (pos - m_startTranslate);
+  
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(pos);
+}
+void
+VR::rightTriggerReleased()
+{
+  m_triggerActiveRight = false;
+
+  m_final_xform = m_model_xform * m_final_xform;
+  m_model_xform.setToIdentity();
+
+  // generate the drawlist each time changes are made
+  m_genDrawList = true;
+
+  //----------------------
+  // trigger teleport only if not used to move the model
+  QVector3D pos =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
+  pos = (pos - m_startTranslate);
+  if (pos.length() < 0.1)
+    {
+      if (!m_triggerActiveLeft) // check map/menu only if left trigger is not pressed
+	{
+	  if (m_showMap)
+	    checkTeleport(true);
+	  
+	  checkOptions(true);
+	}
+    }
+}
+
+
+void
+VR::rightTouchPressed()
+{
+  m_touchPressActiveRight = true;
+
+  m_flightActive = true;
+  
+  m_touchX = m_stateRight.rAxis[0].x;
+  m_touchY = m_stateRight.rAxis[0].y;
+  
+  m_flyTimer.start(5000); // generate new draw list every 5 sec
+}
+void
+VR::rightTouchPressMove()
+{
+  m_model_xform.setToIdentity();      
+
+  QMatrix4x4 mat = m_matrixDevicePose[m_rightController];    
+  QVector4D center = mat * QVector4D(0,0,0,1);
+  QVector4D point = mat * QVector4D(0,0,1,1);
+  QVector3D moveD = QVector3D(center-point);
+
+  moveD.normalize();
+  float throttle = qBound(0.01f, 0.2f, m_flightSpeed*m_speedDamper);
+  QVector3D move = moveD*throttle;
+  
+  if (m_touchY < 0) // move backward
+    move = -move;
+  
+  m_model_xform.translate(-move);
+  
+  //---------------------
+  // scale up if needed
+  float sf = m_teleportScale/m_scaleFactor;
+  if (sf > 1.0)
+    {
+      sf = qPow(sf, 0.01f);
+      
+      QVector3D cen;
+      if (m_pinPt.x() >= 0)
+	cen = m_final_xform.map(m_projectedPinPt);
+      else 
+	cen = getPosition(m_rightController);
+      
+      m_model_xform.translate(cen);
+      m_model_xform.scale(sf);
+      m_model_xform.translate(-cen);
+      
+      m_scaleFactor *= sf;
+      m_flightSpeed *= sf;
+    }
+  //---------------------
+  
+  m_final_xform = m_model_xform * m_final_xform;
+  
+  genEyeMatrices();
+
+  
+  // generate the drawlist each time changes are made
+  if (!m_flyTimer.isActive())
+    {
+      m_genDrawList = true;
+      m_flyTimer.start(5000); // generate new draw list every 5 sec
+    }
+}
+void
+VR::rightTouchPressReleased()
+{
+  m_touchPressActiveRight = false;
+
+  m_flightActive = false;
+
+  m_model_xform.setToIdentity();
+  
+  m_genDrawList = true;
+  m_flyTimer.stop();
+}
+
+void
+VR::bothTriggerPressed()
+{
+  m_triggerActiveBoth = true;
+
+  QVector3D posL =  getPosition(m_trackedDevicePose[m_leftController].mDeviceToAbsoluteTracking);
+  QVector3D posR =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
+
+  m_lrDist = posL.distanceToPoint(posR);
+
+  m_prevPosL = posL;
+  m_prevPosR = posR;
+  m_prevDirection = (m_prevPosL - m_prevPosR).normalized();
+
+  QVector3D cenL = getPosition(m_leftController);
+  QVector3D cenR = getPosition(m_rightController);
+  m_scaleCenter = (cenL + cenR)*0.5;
+  
+  m_prevScaleFactor = m_scaleFactor;
+  m_prevFlightSpeed = m_flightSpeed;
+}
+
+void
+VR::bothTriggerMove()
+{
+  QVector3D posL =  getPosition(m_trackedDevicePose[m_leftController].mDeviceToAbsoluteTracking);
+  QVector3D posR =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
+
+  m_model_xform.setToIdentity();
+
+  float newDist = posL.distanceToPoint(posR);
+
+  float sf = newDist/m_lrDist;
+
+  //--------------------------
+  // translation
+  if (sf > 0.9)
+    {
+      QVector3D pos = (posL - m_prevPosL);	  
+      m_model_xform.translate(pos);
+    }
+  //--------------------------
+
+  //--------------------------
+  // rotation
+  QVector3D cdirec = (posL - posR).normalized();      
+  float angle = qAcos(QVector3D::dotProduct(m_prevDirection, cdirec));
+  QVector3D axis = QVector3D::crossProduct(m_prevDirection, cdirec);
+  m_model_xform.translate(m_scaleCenter);
+  m_model_xform.rotate(qRadiansToDegrees(angle), axis.x(), axis.y(), axis.z());
+  m_model_xform.translate(-m_scaleCenter);
+  //--------------------------
+
+
+  //--------------------------
+  // scale
+  m_model_xform.translate(m_scaleCenter);
+  m_model_xform.scale(sf);
+  m_model_xform.translate(-m_scaleCenter);
+  //--------------------------
+  
+  m_scaleFactor = m_prevScaleFactor * sf;
+  m_flightSpeed = m_prevFlightSpeed * sf;
+  
+  genEyeMatrices();
+}
+
+void
+VR::bothTriggerReleased()
+{
+  m_triggerActiveBoth = false;
+
+  m_final_xform = m_model_xform * m_final_xform;
+  m_model_xform.setToIdentity();
+
+  // generate the drawlist each time changes are made
+  m_genDrawList = true;
 }
 
 
@@ -778,104 +700,13 @@ VR::isTouched(vr::VRControllerState_t &state)
 	  vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
 }
 
-void
-VR::handleControllerLeft(vr::TrackedDeviceIndex_t i,
-			 bool &triggerPressedLeft,
-			 bool &touchPressedLeft)
+bool
+VR::isTouchPressed(vr::VRControllerState_t &state)
 {
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-
-  //------------------------
-  if (!triggerPressedLeft)
-    triggerPressedLeft = (state.ulButtonPressed &
-			  vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger));
-  
-  if (triggerPressedLeft)
-    {
-      if (m_triggerActiveLeft)
-	{
-	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-	  pos = (pos - m_startTranslate);
-	  
-	  m_model_xform.setToIdentity();
-	  m_model_xform.translate(pos);
-	}
-      else
-	{
-	  m_triggerActiveLeft = true;
-		  
-	  QVector3D pos =  getPosition(m_trackedDevicePose[i].mDeviceToAbsoluteTracking);
-	  m_startTranslate = pos;
-	}
-    }
-  //------------------------
-  
-  
-	  //------------------------
-  if (!touchPressedLeft)
-    touchPressedLeft = (state.ulButtonTouched &
-			vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
-
-  if (touchPressedLeft)
-    {
-      if (m_touchActiveLeft)
-	{
-	  //m_nextStep = 0;
-	  //if (state.rAxis[0].x > 0.5) m_nextStep = 1;
-	  //if (state.rAxis[0].x < 0.5) m_nextStep = -1;
-	  m_touchX = state.rAxis[0].x;
-	  m_touchY = state.rAxis[0].y;
-	}
-      else
-	{
-	  m_touchActiveLeft = true;
-
-	  m_startTouchX = state.rAxis[0].x;
-	  m_startTouchY = state.rAxis[0].y;
-	}
-    }
+  return (state.ulButtonPressed &
+	  vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad));
 }
 
-void
-VR::handleGripLeft(vr::TrackedDeviceIndex_t i,
-		   bool &gripPressedLeft)
-{
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-
-  if (!gripPressedLeft)
-    gripPressedLeft = (state.ulButtonPressed &
-		       vr::ButtonMaskFromId(vr::k_EButton_Grip));
-  
-  if (gripPressedLeft)
-    {
-      if (m_gripActiveLeft)
-	{
-	}
-      else
-	{
-	  m_gripActiveLeft = true;
-
-	  saveTeleportNode();
-	}
-    }  
-}
-
-void
-VR::handleGripRight(vr::TrackedDeviceIndex_t i,
-		    bool &gripPressedRight)
-{
-  vr::VRControllerState_t state;
-  if (! m_hmd->GetControllerState(i, &state, sizeof(state)))
-    return;
-
-  if (!gripPressedRight)
-    gripPressedRight = (state.ulButtonPressed &
-		       vr::ButtonMaskFromId(vr::k_EButton_Grip));
-}
 
 
 QMatrix4x4
@@ -1915,7 +1746,7 @@ void
 VR::renderMenu(vr::Hmd_Eye eye)
 {
   // do not draw menu if both or left trigger is pressed
-  if (m_bothTriggersActive || m_triggerActiveLeft)
+  if (m_triggerActiveBoth || m_triggerActiveLeft)
     return;
 
   QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
