@@ -43,6 +43,7 @@ class VR : public QObject
   bool pointingToMenu() { return m_leftMenu.pointingToMenu(); }
 
   void setShowMap(bool);
+  void setGravity(bool g) { m_gravity = g; }
   void setShowTimeseriesMenu(bool);
   void setGroundHeight(float gh) { m_groundHeight = gh; }
   void setTeleportScale(float gh) { m_teleportScale = gh; }
@@ -258,6 +259,7 @@ class VR : public QObject
   int m_pinPoints;
 
   bool m_showMap;
+  bool m_gravity;
   float m_groundHeight;
   float m_teleportScale;
 

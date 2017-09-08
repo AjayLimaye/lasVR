@@ -93,6 +93,7 @@ class Volume : public QObject
   bool m_newLoad;
 
   bool m_showMap;
+  bool m_gravity;
   bool m_showSphere;
   float m_groundHeight;
   bool m_pointType;

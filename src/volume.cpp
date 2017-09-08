@@ -116,6 +116,7 @@ Volume::loadDir(QString dirname)
   m_groundHeight = 0.16;
   m_teleportScale = 1.0;
   m_showMap = false;
+  m_gravity = false;
   m_showSphere = false;
   m_pointType = true;
   m_loadall = false;
@@ -139,6 +140,7 @@ Volume::loadDir(QString dirname)
 	{
 	  PointCloud *pointCloud = new PointCloud();
 	  pointCloud->setShowMap(m_showMap);
+	  pointCloud->setGravity(m_gravity);
 	  pointCloud->setShowSphere(m_showSphere);
 	  pointCloud->setGroundHeight(m_groundHeight);
 	  pointCloud->setTeleportScale(m_teleportScale);
@@ -596,6 +598,9 @@ Volume::loadTopJson(QString jsonfile)
 
       if (jsonInfo.contains("show_map"))
 	m_showMap = true;
+
+      if (jsonInfo.contains("gravity"))
+	m_gravity = true;
 
       if (jsonInfo.contains("point_as_sphere"))
 	{

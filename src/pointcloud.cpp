@@ -39,6 +39,7 @@ PointCloud::PointCloud()
   m_vData.clear();
 
   m_showMap = false;
+  m_gravity = false;
   m_groundHeight = 0.16;
   m_teleportScale = 1.0;
   m_showSphere = false;

@@ -551,7 +551,7 @@ VR::rightTouchPressMove()
   QVector3D moveD = QVector3D(center-point);
 
   moveD.normalize();
-  float throttle = qBound(0.01f, 0.2f, m_flightSpeed*m_speedDamper);
+  float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
   QVector3D move = moveD*throttle;
   
   if (m_touchY < 0) // move backward
@@ -564,7 +564,7 @@ VR::rightTouchPressMove()
   float sf = m_teleportScale/m_scaleFactor;
   if (sf > 1.0)
     {
-      sf = qPow(sf, 0.01f);
+      sf = qPow(sf, 0.005f);
       
       QVector3D cen;
       if (m_pinPt.x() >= 0)
@@ -582,7 +582,54 @@ VR::rightTouchPressMove()
   //---------------------
   
   m_final_xform = m_model_xform * m_final_xform;
-  
+
+  m_final_xformInverted = m_final_xform.inverted();
+      
+
+  //------------------  
+  // keep head above ground
+  if (m_depthBuffer)
+    {
+      int wd = screenWidth();
+      int ht = screenHeight();
+
+      QVector3D hpos = hmdPosition();
+      QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
+      int dx = hp.x();
+      int dy = hp.y();
+
+      if (dx > 0 && dx < wd-1 &&
+	  dy > 0 && dy < ht-1)
+	{
+	  float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+	  if (z > 0.0 && z < 1.0)
+	    {
+	      float sf = m_teleportScale/m_scaleFactor;
+	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
+	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
+
+	      if (m_gravity || // stick close to ground
+		  pos.z() > hpos.z()) // push it above the ground
+		{
+		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
+
+		  // move only vertically
+		  if (pos.z() > hpos.z())
+		    mup *= 0.1; // move quickly above ground
+		  else
+		    mup*=0.05; // come down slowly
+
+		  QVector3D move(0,mup,0);
+		  m_model_xform.setToIdentity();
+		  m_model_xform.translate(-move);
+		  m_final_xform = m_model_xform * m_final_xform;
+		}
+	    }
+	}
+    }
+  //------------------  
+
+
   genEyeMatrices();
 
   
@@ -1435,11 +1482,7 @@ VR::renderControllers(vr::Hmd_Eye eye)
   matDeviceToTracking = m_matrixDevicePose[m_rightController];
   mvp = currentViewProjection(eye) * matDeviceToTracking;
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  //glUniform1i(rcShaderParm[1], 0); // texture
   glUniform3f(rcShaderParm[2], 1,0.8,0.0); // mix color
-  //glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
-  //glUniform1f(rcShaderParm[4], 1); // opacity modulator
-  //glUniform1i(rcShaderParm[5], 2); // applytexture
   m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
 
 
@@ -1687,6 +1730,11 @@ VR::menuImageFromMapBuffer()
   m_leftMenu.setImage(img);
 	
   m_mapBuffer->release();
+
+  //-----------------------------------
+  // also update teleports if any
+  sendTeleportsToMenu();
+  //-----------------------------------
 }
 
 void
@@ -1901,27 +1949,14 @@ VR::buildTeleport()
   QVector3D telPosU = telPos + QVector3D(0,0,tht);
 
   QVector<float> vert;
-  QVector<uchar> col;
-  int npt = 0;
-
-  QVector3D color(255,255,255);
-
   vert << telPos.x();
   vert << telPos.y();
   vert << telPos.z();      
   vert << telPosU.x();
   vert << telPosU.y();
   vert << telPosU.z();      
-      
-  col << color.x();
-  col << color.y();
-  col << color.z();      
-  col << color.x();
-  col << color.y();
-  col << color.z();
-  
-  npt = vert.count()/3;
-
+        
+  int npt = 2;
 
   float vt[100];  
   memset(vt, 0, sizeof(float)*100);
@@ -2011,57 +2046,52 @@ VR::buildPinPoint()
     }
 
   
-  QVector3D color(255,255,255);
   QVector<float> vert;
-  QVector<uchar> col;
-
   vert << telPos.x();
   vert << telPos.y();
   vert << telPos.z();      
   vert << telPosU.x();
   vert << telPosU.y();
   vert << telPosU.z();      
+
+  int npt = 2;
   
-  col << color.x();
-  col << color.y();
-  col << color.z();      
-  col << color.x();
-  col << color.y();
-  col << color.z();
-
-
-  int npt = vert.count()/3;
-
-  float vt[1000];  
-  memset(vt, 0, sizeof(float)*1000);
+  float vt[100];  
+  memset(vt, 0, sizeof(float)*100);
   for(int v=0; v<npt; v++)
     {
       vt[8*v + 0] = vert[3*v+0];
       vt[8*v + 1] = vert[3*v+1];
       vt[8*v + 2] = vert[3*v+2];
-
-      float tc = (float)v/(float)(npt-1);
-      vt[8*v + 6] = 1-tc; // texture coordinates
-      vt[8*v + 7] = 1-tc;
     }
   
-  glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
-  glBufferSubData(GL_ARRAY_BUFFER,
-		  m_axesPoints*15+m_telPoints*sizeof(float)*8,
-		  sizeof(float)*npt*8,
-		  &vt[0]);
-
   if (!m_leftMenu.pointingToMenu() ||
       m_menuPanels[m_currPanel] != "00")
     {
       m_telPoints = 0;
       m_pinPoints = npt;
+
+      vt[6] = 0.5; // texture coordinates
+      vt[7] = 0.5;
+      vt[12]= 0.5;
+      vt[13]= 0.5;
     }
   else
     {
       m_telPoints = npt;
       m_pinPoints = 0;
+
+      vt[6] = 0.5; // texture coordinates
+      vt[7] = 0.5;
+      vt[12] = 0;
+      vt[13] = 0;
     }
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  m_axesPoints*15+m_telPoints*sizeof(float)*8,
+		  sizeof(float)*npt*8,
+		  &vt[0]);
 
   m_nboxPoints = m_axesPoints + m_telPoints + m_pinPoints;
 }
@@ -2144,7 +2174,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
 void
 VR::projectPinPoint()
 {
-  if (!m_depthBuffer) // no depth buffer found
+  if (m_depthBuffer == 0) // no depth buffer found
     return;
 
   QVector2D pp = pinPoint2D();

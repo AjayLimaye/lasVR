@@ -322,6 +322,7 @@ Viewer::start()
   if (m_vr.vrEnabled())
     {
       m_vr.setShowMap(m_pointClouds[0]->showMap());
+      m_vr.setGravity(m_pointClouds[0]->gravity());
       m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
       m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
       //  if (m_volume->timeseries())
@@ -1220,9 +1221,6 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
     m_vr.gotoNextStep();
 
   m_vboLoadedAll = true;
-
-  if (m_pointClouds[0]->showMap())
-    m_vr.sendTeleportsToMenu();
 }
 
 void

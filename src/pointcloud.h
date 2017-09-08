@@ -67,6 +67,9 @@ class PointCloud
   void setShowMap(bool sm) { m_showMap = sm; }
   bool showMap() { return m_showMap; }
 
+  void setGravity(bool sm) { m_gravity = sm; }
+  bool gravity() { return m_gravity; }
+
   void setGroundHeight(float gh) { m_groundHeight = gh; }
   float groundHeight() { return m_groundHeight; }
 
@@ -109,6 +112,7 @@ class PointCloud
   Vec m_coordMax;
 
   bool m_showMap;
+  bool m_gravity;
   float m_groundHeight;
   float m_teleportScale;
   bool m_showSphere;
