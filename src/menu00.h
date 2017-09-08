@@ -25,6 +25,8 @@ class Menu00 : public QObject
 
   void setPlay(bool p) { m_play = p; }
 
+  QVector3D pinPoint() { return m_pinPt; }
+
   bool isVisible() { return m_visible; }
   void setVisible(bool v)
   {
@@ -40,6 +42,7 @@ class Menu00 : public QObject
  private :
   bool m_visible;
   bool m_pointingToMenu;
+  QVector3D m_pinPt;
 
   GLuint m_glTexture;
   GLuint m_glVertBuffer;

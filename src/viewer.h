@@ -251,14 +251,6 @@ class Viewer : public QGLViewer
     bool linkClicked(QMouseEvent*);
 
     void generateFirstImage();
-
-    Vec menuCamProjectedCoord(Vec);
-
-    void sendCurrPosToMenu();
-    void sendTeleportsToMenu();
-    void projectPinPoint();
-
-    bool nextHit(QMatrix4x4, QMatrix4x4);
 };
 
 #endif

@@ -379,7 +379,8 @@ StaticFunctions::smoothstep(float min, float max, float v)
 bool
 StaticFunctions::intersectRayPlane(QVector3D v0, QVector3D vy,
 				   QVector3D vx, QVector3D pn,
-				   QVector3D rayO, QVector3D ray)
+				   QVector3D rayO, QVector3D ray,
+				   float &x, float &y)
 {
   float deno = QVector3D::dotProduct(ray, pn);
 
@@ -392,10 +393,10 @@ StaticFunctions::intersectRayPlane(QVector3D v0, QVector3D vy,
       QVector3D pt = rayO + t*ray;
       float lx = vx.length();
       float ly = vy.length();
-      float x = QVector3D::dotProduct(pt-v0, vx.normalized());
-      float y = QVector3D::dotProduct(pt-v0, vy.normalized());
-      if (x >= 0 && x <= lx &&
-	  y >= 0 && y <= ly)
+      x = QVector3D::dotProduct(pt-v0, vx.normalized())/lx;
+      y = QVector3D::dotProduct(pt-v0, vy.normalized())/ly;
+      if (x >= 0 && x <= 1 &&
+	  y >= 0 && y <= 1)
 	return true;
     } 
 

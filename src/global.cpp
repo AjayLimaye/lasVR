@@ -99,3 +99,23 @@ GLuint Global::homeSpriteTexture()
   return m_homeSpriteTexture;
 }
 
+Camera Global::m_menuCam = Camera();
+void Global::setMenuCam(Camera cam) { m_menuCam = cam; }
+Vec Global::menuCamProjectedCoordinatesOf(Vec p)
+{
+  return m_menuCam.projectedCoordinatesOf(p);
+}
+QVector3D Global::menuCamProjectedCoordinatesOf(QVector3D p)
+{
+  Vec pp = m_menuCam.projectedCoordinatesOf(Vec(p.x(),p.y(),p.z()));
+  return QVector3D(pp.x, pp.y, pp.z);
+}
+Vec Global::menuCamUnprojectedCoordinatesOf(Vec p)
+{
+  return m_menuCam.unprojectedCoordinatesOf(p);
+}
+QVector3D Global::menuCamUnprojectedCoordinatesOf(QVector3D p)
+{
+  Vec pp = m_menuCam.unprojectedCoordinatesOf(Vec(p.x(),p.y(),p.z()));
+  return QVector3D(pp.x, pp.y, pp.z);
+}

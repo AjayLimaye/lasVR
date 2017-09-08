@@ -369,6 +369,8 @@ Viewer::start()
       m_menuCam.setSceneBoundingBox(m_coordMin, m_coordMax);
       m_menuCam.setType(Camera::ORTHOGRAPHIC);
       m_menuCam.showEntireScene();
+
+      Global::setMenuCam(m_menuCam);
     }
 
   if (m_volume->validCamera())
@@ -939,11 +941,7 @@ Viewer::paintGL()
 
 
   if (m_pointClouds[0]->showMap())
-    {
-      sendCurrPosToMenu();
-      sendTeleportsToMenu();
-      projectPinPoint();
-    }
+    m_vr.sendCurrPosToMenu();
 
   //---------------------------
 
@@ -997,9 +995,6 @@ Viewer::paintGL()
     {
       generateFirstImage();
       m_firstImageDone++;
-      
-      if (m_vr.newTeleportFound())
-	sendTeleportsToMenu();
     }  
   //---------------------------
 
@@ -1225,6 +1220,9 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
     m_vr.gotoNextStep();
 
   m_vboLoadedAll = true;
+
+  if (m_pointClouds[0]->showMap())
+    m_vr.sendTeleportsToMenu();
 }
 
 void
@@ -2669,236 +2667,4 @@ Viewer::genDrawNodeListForVR()
   emit updateView();
 
   emit message("viewer - update view");
-}
-
-Vec
-Viewer::menuCamProjectedCoord(Vec pos)
-{
-  return (m_menuCam.projectedCoordinatesOf(pos));
-}
-
-void
-Viewer::sendCurrPosToMenu()
-{
-  Vec hpos(m_hmdPos.x(),m_hmdPos.y(),m_hmdPos.z());
-  hpos = m_menuCam.projectedCoordinatesOf(hpos);    
-  
-  QVector3D thdir = m_hmdPos + 10*m_hmdVD;
-  Vec hposD(thdir.x(),thdir.y(),thdir.z());
-  hposD = m_menuCam.projectedCoordinatesOf(hposD);    
-  
-  Vec hdr = hposD-hpos;
-  hdr.normalize();
-  hposD = hpos + 40*hdr;
-  
-  m_vr.setCurrPosOnMenuImage(hpos, hposD);  
-}
-
-void
-Viewer::sendTeleportsToMenu()
-{
-  QDir jsondir(m_dataDir);
-  QString jsonfile = jsondir.absoluteFilePath("teleport.json");
-
-  QJsonArray jsonTeleportData;
-
-  //------------------------------
-
-  if (jsondir.exists("teleport.json"))
-    {
-      QFile loadFile(jsonfile);
-      loadFile.open(QIODevice::ReadOnly);
-      
-      QByteArray data = loadFile.readAll();
-      
-      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
-      
-      jsonTeleportData = jsonDoc.array();
-
-      loadFile.close();
-    }
-
-  QList<QVector3D> teleports;
-
-  for(int i=0; i<jsonTeleportData.count(); i++)
-    {
-      QJsonObject jsonTeleportNode = jsonTeleportData[i].toObject();
-      QJsonObject jsonInfo = jsonTeleportNode["teleport"].toObject();
-
-      {
-	QString str = jsonInfo["pos"].toString();
-	QStringList xyz = str.split(" ", QString::SkipEmptyParts);
-	Vec vpos(xyz[0].toFloat(),
-		 xyz[1].toFloat(),
-		 xyz[2].toFloat());
-	vpos = m_menuCam.projectedCoordinatesOf(vpos);
-	teleports << QVector3D(vpos.x, vpos.y, vpos.z);
-      }
-    }
-
-  m_vr.sendTeleportsToMenu(teleports);
-}
-
-void
-Viewer::projectPinPoint()
-{
-  float *depth = m_vr.depthBuffer();
-  if (!depth) // no depth buffer found
-    return;
-
-  QVector2D pp = m_vr.pinPoint2D();
-
-  if (pp.x() >= 0)
-    {
-      int wd = m_vr.screenWidth();
-      int ht = m_vr.screenHeight();
-
-      float px = pp.x();
-      float py = pp.y();
-
-      int x = (1-px)*(wd-1);
-      int y = py*(ht-1);
-
-      int dx = (1-px)*(wd-1);
-      int dy = (1-py)*(ht-1);
-      float z = depth[dy*wd + dx];
-
-      Vec ppt;
-      if (z > 0.0 && z < 1.0)
-	{
-	  ppt = Vec(x, y, z);
-	  ppt = m_menuCam.unprojectedCoordinatesOf(ppt);	  
-	  m_vr.setProjectedPinPoint(QVector3D(ppt.x, ppt.y, ppt.z));
-	  return;
-	}
-//      else
-//	ppt = Vec(x,y,0.5);      
-    }
-
-  // if we are not pointing into the map then
-  // may be we are looking directly on the terrain
-  if (!nextHit(m_vr.matrixDevicePoseRight(),
-	      m_vr.final_xformInverted()))
-    m_vr.setPinPoint2D(QVector2D(-1, -1));
-    
-}
-
-bool
-Viewer::nextHit(QMatrix4x4 matR,
-		QMatrix4x4 finalxformInverted)
-{
-  float *depth = m_vr.depthBuffer();
-  if (depth == 0) // we don't have any depth buffer
-    return false;
-  
-
-  QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  QVector3D pinPoint = QVector3D(matR * QVector4D(0,0,-0.1,1));
-
-  QVector3D cenV = finalxformInverted.map(centerR);
-  QVector3D pinV = finalxformInverted.map(pinPoint);
-  
-  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
-  Vec pinW = Vec(pinV.x(), pinV.y(), pinV.z());
-
-  Vec cenP = m_menuCam.projectedCoordinatesOf(cenW);
-  Vec pinP = m_menuCam.projectedCoordinatesOf(pinW);
-
-  // walk along the vector in depth buffer to find a hit
-  Vec dvec = (pinP-cenP).unit();
-
-  int wd = m_vr.screenWidth();
-  int ht = m_vr.screenHeight();
-
-  Vec startP = cenP;
-
-  //---------------------------
-  if (startP.x < 0 ||
-      startP.x >= wd ||
-      startP.y < 0 ||
-      startP.y >= ht)
-    {
-      // if we are not on the map then get to the edge
-      // before start of search
-      // find ray box intersection
-      // screen box is (0,0) and (wd,ht)
-      if (qAbs(dvec.x) > 0 &&
-	  qAbs(dvec.y) > 0)
-	{
-	  float t[6];
-	  t[0] = (0  - cenP.x)/dvec.x;
-	  t[1] = (wd - cenP.x)/dvec.x;
-	  
-	  t[2] = (0  - cenP.y)/dvec.y;
-	  t[3] = (ht - cenP.y)/dvec.y;
-	  
-	  t[4] = qMax(qMin(t[0],t[1]), qMin(t[2],t[3]));
-	  t[5] = qMin(qMax(t[0],t[1]), qMax(t[2],t[3]));
-	  
-	  float db;
-	  if (t[5] < 0 || t[4]>t[5])
-	    return false;
-	  else
-	    db = t[4];
-	  
-	  startP = cenP + db*dvec;
-	}
-      else
-	{
-	  float t[4];
-	  if (qAbs(dvec.x) > 0)
-	    {
-	      t[0] = (0  - cenP.x)/dvec.x;
-	      t[1] = (wd - cenP.x)/dvec.x;
-	    }
-	  else if (qAbs(dvec.y) > 0)
-	    {	  
-	      t[0] = (0  - cenP.y)/dvec.y;
-	      t[1] = (ht - cenP.y)/dvec.y;	  
-	    }
-	  else
-	    return false;
-	  
-	  t[2] = qMin(t[0],t[1]);
-	  t[3] = qMax(t[0],t[1]);
-	  
-	  float db;
-	  if (t[3] < 0 || t[2]>t[3])
-	    return false;
-	  else
-	    db = t[2];
-	  
-	  startP = cenP + db*dvec;      
-	}
-    }
-  //---------------------------
-
-
-  Vec v = startP + dvec;
-  while(1)
-    {
-      int dx = v.x;
-      int dy = v.y;
-      if (dx < 0 || dx > wd-1 ||
-	  dy < 0 || dy > ht-1)
-	return false;
-      
-      float z = depth[(ht-1-dy)*wd + dx];
-
-      if (z > 0.0 &&
-	  z < 1.0 &&
-	  z <= v.z)
-	{
-	  Vec hitP = m_menuCam.unprojectedCoordinatesOf(v);
-
-	  m_vr.setProjectedPinPoint(QVector3D(hitP.x, hitP.y, hitP.z));
-
-	  m_vr.setPinPoint2D(QVector2D(v.x/wd, v.y/ht));
-	  return true;
-	}
-
-      v += dvec;
-    }
-
-  return false;
 }

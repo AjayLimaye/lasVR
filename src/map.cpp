@@ -26,6 +26,8 @@ Map::Map() : QObject()
   m_mapScale = 0.3;
 
   m_visible = true;
+
+  m_pointingToMenu = false;  
 }
 
 Map::~Map()
@@ -542,7 +544,7 @@ Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
   //-----------------------------
   // rotate map based on view direction
   // only if any teleport is not touched
-  if (ptt < 0 && m_pinPt.x() < -2)
+//  if (ptt < 0 && m_pinPt.x() < -2)
     {
       float rx = m_currPos.x()/m_texWd;
       float ry = m_currPos.y()/m_texHt;
@@ -597,9 +599,9 @@ Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
   m_teleportTouched = tp;
 
 
-  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleftRot, vftRot, vrtRot,
-							  oupL.normalized(),
-							  centerR, frontR.normalized());
+//  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleftRot, vftRot, vrtRot,
+//							  oupL.normalized(),
+//							  centerR, frontR.normalized());
 
 
   return tp;
@@ -636,7 +638,7 @@ Map::projectPin(QMatrix4x4 matL, QMatrix4x4 matR)
   //-----------------------------
   // rotate map based on view direction
   // only if any teleport is not touched
-  if (m_teleportTouched < 0 && m_pinPt.x() < -2)
+//  if (m_teleportTouched < 0 && m_pinPt.x() < -2)
     {
       float rx = m_currPos.x()/m_texWd;
       float ry = m_currPos.y()/m_texHt;
@@ -667,27 +669,47 @@ Map::projectPin(QMatrix4x4 matL, QMatrix4x4 matR)
 
 
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  QVector3D frontR;
-  frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;    
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;    
 
-  QVector3D pinPoint = centerR + frontR;
-
-  // project pinPoint onto map plane
-  QVector3D pp = pinPoint-vleftRot;
-  float rw = QVector3D::dotProduct(pp, vftRot.normalized());
-  float rh = QVector3D::dotProduct(pp, vrtRot.normalized());
-  float rz = QVector3D::dotProduct(pp, oupL.normalized());
-
-  if (qAbs(rz) > 0.04 ||  // not closer enough to the map
-      rw < 0 || rw > vftRot.length() || // not within the map bounds
-      rh < 0 || rh > vrtRot.length())
+  //-------------------
+  float rw, rh;
+  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleftRot, vftRot, vrtRot,
+							oupL.normalized(),
+							centerR, frontR.normalized(),
+							rh, rw);
+  if (!m_pointingToMenu)
     return QVector3D(-1000,-1000,-1000);
 
-  rh/=vrtRot.length();
-  rw/=vftRot.length();
+//  QVector3D pinPoint = centerR + frontR;
+//  QVector3D pp = pinPoint-vleftRot;
+//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
+//  if (qAbs(rz) > 0.04)  // not closer enough to the map
+//    return QVector3D(-1000,-1000,-1000);
 
   m_pinPt2D = QVector2D(rw, rh);
-
   return (vleftRot + rh*vrtRot + rw*vftRot);
+
+  //-------------------
+
+//  QVector3D pinPoint = centerR + frontR;
+//
+//
+//  // project pinPoint onto map plane
+//  QVector3D pp = pinPoint-vleftRot;
+//  QVector3D rw = QVector3D::dotProduct(pp, vftRot.normalized());
+//  QVector3D rh = QVector3D::dotProduct(pp, vrtRot.normalized());
+//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
+//
+//  if (qAbs(rz) > 0.04 ||  // not closer enough to the map
+//      rw < 0 || rw > vftRot.length() || // not within the map bounds
+//      rh < 0 || rh > vrtRot.length())
+//    return QVector3D(-1000,-1000,-1000);
+//
+//  rh/=vrtRot.length();
+//  rw/=vftRot.length();
+//
+//  m_pinPt2D = QVector2D(rw, rh);
+//
+//  return (vleftRot + rh*vrtRot + rw*vftRot);
 }
 

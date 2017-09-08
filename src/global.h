@@ -21,11 +21,18 @@ class Global
   static GLuint homeSpriteTexture();
   static void removeHomeSpriteTexture();
 
+  static void setMenuCam(Camera);
+  static Vec menuCamProjectedCoordinatesOf(Vec);
+  static Vec menuCamUnprojectedCoordinatesOf(Vec);
+  static QVector3D menuCamProjectedCoordinatesOf(QVector3D);
+  static QVector3D menuCamUnprojectedCoordinatesOf(QVector3D);
+
  private :
   static GLuint m_flagSpriteTexture;
   static GLuint m_infoSpriteTexture;
   static GLuint m_homeSpriteTexture;
 
+  static Camera m_menuCam;
 };
 
 #endif

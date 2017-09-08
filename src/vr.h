@@ -40,12 +40,14 @@ class VR : public QObject
 
   void setDataDir(QString);
 
+  bool pointingToMenu() { return m_leftMenu.pointingToMenu(); }
+
   void setShowMap(bool);
   void setShowTimeseriesMenu(bool);
   void setGroundHeight(float gh) { m_groundHeight = gh; }
   void setTeleportScale(float gh) { m_teleportScale = gh; }
   void setCurrPosOnMenuImage(Vec, Vec);
-  void sendTeleportsToMenu(QList<QVector3D>);
+  void sendTeleportsToMenu();
   QVector2D pinPoint2D();
   void setPinPoint2D(QVector2D v) { m_pinPt = v; }
   void setProjectedPinPoint(QVector3D p) { m_projectedPinPt = p; }
@@ -131,6 +133,8 @@ class VR : public QObject
 
   bool edges() { return m_edges; }
   bool softShadows() { return m_softShadows; }
+
+  void sendCurrPosToMenu();
 
  public slots:
   void resetModel();
@@ -375,6 +379,9 @@ class VR : public QObject
     m_genDrawList = true;
     m_nextStep = -1;
   }
+
+  void projectPinPoint();
+  bool nextHit();
 };
 
 

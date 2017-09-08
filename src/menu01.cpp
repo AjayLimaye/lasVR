@@ -371,6 +371,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 int
 Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 {
+  m_pinPt = QVector3D(-1000,-1000,-1000);
   m_pointingToMenu = false;
   m_selected = -1;
 
@@ -405,23 +406,28 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   QVector3D pinPoint = centerR + frontR;
 
-
+  float rw, rh;
   m_pointingToMenu = StaticFunctions::intersectRayPlane(vleft, -vft, vrt,
 							oupL.normalized(),
-							centerR, frontR.normalized());
+							centerR, frontR.normalized(),
+							rh, rw);
 
+  if (!m_pointingToMenu)
+    return -1;
 
-  // project pinPoint onto map plane
-  QVector3D pp = pinPoint-vleft;
-  float rw = QVector3D::dotProduct(pp, -vft.normalized());
-  float rh = QVector3D::dotProduct(pp, vrt.normalized());
-  float rz = QVector3D::dotProduct(pp, oupL.normalized());
+//  // project pinPoint onto map plane
+//  QVector3D pp = pinPoint-vleft;
+//  float rw = QVector3D::dotProduct(pp, -vft.normalized());
+//  float rh = QVector3D::dotProduct(pp, vrt.normalized());
+//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
+//
+//  if (qAbs(rz) > 0.04)  // not closer enough to the map
+//    return m_selected;
+//  
+//  rh/=vrt.length();
+//  rw/=vft.length();
 
-  if (qAbs(rz) > 0.04)  // not closer enough to the map
-    return m_selected;
-  
-  rh/=vrt.length();
-  rw/=vft.length();
+  m_pinPt = vleft + rh*vrt - rw*vft;
 
   int tp = -1;
   for(int t=0; t<m_optionsGeom.count(); t++)
@@ -433,7 +439,9 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
       if (cx < rh && cx+cwd > rh &&
 	  cy < rw && cy+cht > rw)
-	tp = t;
+	{
+	  tp = t;
+	}
     }
 
   m_selected = tp;

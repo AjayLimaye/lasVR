@@ -40,6 +40,8 @@ class VrMenu : public QObject
 
   void setPlay(bool);
 
+  QVector3D pinPoint();
+
   void setCurrentMenu(QString);
 
   QStringList menuList() { return m_menus.keys(); }

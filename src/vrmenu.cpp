@@ -128,3 +128,18 @@ VrMenu::pointingToMenu()
 
   return pm;
 }
+
+QVector3D
+VrMenu::pinPoint()
+{
+  if (((Map*)(m_menus["00"]))->pointingToMenu())
+    return ((Map*)(m_menus["00"]))->pinPoint();
+
+  if (((Menu00*)(m_menus["01"]))->pointingToMenu())
+    return ((Menu00*)(m_menus["01"]))->pinPoint();
+
+  if (((Menu01*)(m_menus["02"]))->pointingToMenu())
+    return ((Menu01*)(m_menus["02"]))->pinPoint();
+
+  return QVector3D(-1000,-1000,-1000);
+}

@@ -914,6 +914,7 @@ VR::preDraw()
   buildAxes();
   if (m_showMap)
     {
+      projectPinPoint();
       buildTeleport();
       buildPinPoint();
     }
@@ -1491,104 +1492,6 @@ VR::genEyeMatrices()
 }
 
 void
-VR::loadTeleports()
-{
-  m_teleports.clear();
-
-  QDir jsondir(m_dataDir);
-  QString jsonfile = jsondir.absoluteFilePath("teleport.json");
-
-  QJsonArray jsonTeleportData;
-
-  //------------------------------
-
-  if (jsondir.exists("teleport.json"))
-    {
-      QFile loadFile(jsonfile);
-      loadFile.open(QIODevice::ReadOnly);
-      
-      QByteArray data = loadFile.readAll();
-      
-      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
-      
-      jsonTeleportData = jsonDoc.array();
-
-      loadFile.close();
-    }
-
-  for(int i=0; i<jsonTeleportData.count(); i++)
-    {
-      QJsonObject jsonTeleportNode = jsonTeleportData[i].toObject();
-      QJsonObject jsonInfo = jsonTeleportNode["teleport"].toObject();
-
-      {
-	QString str = jsonInfo["pos"].toString();
-	QStringList xyz = str.split(" ", QString::SkipEmptyParts);
-	m_teleports << QVector3D(xyz[0].toFloat(),
-				 xyz[1].toFloat(),
-				 xyz[2].toFloat());
-      }
-    }
-}
-
-void
-VR::saveTeleportNode()
-{
-  QDir jsondir(m_dataDir);
-  QString jsonfile = jsondir.absoluteFilePath("teleport.json");
-
-  QJsonArray jsonTeleportData;
-  QJsonObject jsonTeleportNode;
-
-  //------------------------------
-
-  if (jsondir.exists("teleport.json"))
-    {
-      QFile loadFile(jsonfile);
-      loadFile.open(QIODevice::ReadOnly);
-      
-      QByteArray data = loadFile.readAll();
-      
-      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
-      
-      jsonTeleportData = jsonDoc.array();
-
-      loadFile.close();
-    }
-
-  //------------------------------
-
-  float mat[16];
-  m_final_xform.copyDataTo(mat);
-  QString matStr;
-  for(int i=0; i<16; i++)
-    matStr += QString("%1 ").arg(mat[i]);
-  
-  QJsonObject jsonInfo;
-  jsonInfo["matrix"] = matStr;
-
-  QVector3D hmdPos = hmdPosition();
-
-  jsonInfo["pos"] = QString("%1 %2 %3").arg(hmdPos.x()).arg(hmdPos.y()).arg(hmdPos.z());
-
-  jsonInfo["scale"] = QString("%1 %2").arg(m_scaleFactor).arg(m_flightSpeed);
-
-  jsonTeleportNode["teleport"] = jsonInfo ;
-
-  jsonTeleportData << jsonTeleportNode;
-
-  //------------------------------
-
-  QJsonDocument saveDoc(jsonTeleportData);  
-  QFile saveFile(jsonfile);
-  saveFile.open(QIODevice::WriteOnly);
-  saveFile.write(saveDoc.toJson());
-  saveFile.close();
-  
-  m_newTeleportFound = true;
-}
-
-void
 VR::teleport()
 {
   QDir jsondir(m_dataDir);
@@ -1795,15 +1698,123 @@ VR::setCurrPosOnMenuImage(Vec cp, Vec cd)
 }
 
 void
-VR::sendTeleportsToMenu(QList<QVector3D> tp)
+VR::loadTeleports()
+{
+  m_teleports.clear();
+
+  QDir jsondir(m_dataDir);
+  QString jsonfile = jsondir.absoluteFilePath("teleport.json");
+
+  QJsonArray jsonTeleportData;
+
+  //------------------------------
+
+  if (jsondir.exists("teleport.json"))
+    {
+      QFile loadFile(jsonfile);
+      loadFile.open(QIODevice::ReadOnly);
+      
+      QByteArray data = loadFile.readAll();
+      
+      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
+      
+      jsonTeleportData = jsonDoc.array();
+
+      loadFile.close();
+    }
+
+  for(int i=0; i<jsonTeleportData.count(); i++)
+    {
+      QJsonObject jsonTeleportNode = jsonTeleportData[i].toObject();
+      QJsonObject jsonInfo = jsonTeleportNode["teleport"].toObject();
+
+      {
+	QString str = jsonInfo["pos"].toString();
+	QStringList xyz = str.split(" ", QString::SkipEmptyParts);
+	m_teleports << QVector3D(xyz[0].toFloat(),
+				 xyz[1].toFloat(),
+				 xyz[2].toFloat());
+      }
+    }
+}
+
+void
+VR::saveTeleportNode()
+{
+  QDir jsondir(m_dataDir);
+  QString jsonfile = jsondir.absoluteFilePath("teleport.json");
+
+  QJsonArray jsonTeleportData;
+  QJsonObject jsonTeleportNode;
+
+  //------------------------------
+
+  if (jsondir.exists("teleport.json"))
+    {
+      QFile loadFile(jsonfile);
+      loadFile.open(QIODevice::ReadOnly);
+      
+      QByteArray data = loadFile.readAll();
+      
+      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
+      
+      jsonTeleportData = jsonDoc.array();
+
+      loadFile.close();
+    }
+
+  //------------------------------
+
+  float mat[16];
+  m_final_xform.copyDataTo(mat);
+  QString matStr;
+  for(int i=0; i<16; i++)
+    matStr += QString("%1 ").arg(mat[i]);
+  
+  QJsonObject jsonInfo;
+  jsonInfo["matrix"] = matStr;
+
+  QVector3D hmdPos = hmdPosition();
+
+  jsonInfo["pos"] = QString("%1 %2 %3").arg(hmdPos.x()).arg(hmdPos.y()).arg(hmdPos.z());
+
+  jsonInfo["scale"] = QString("%1 %2").arg(m_scaleFactor).arg(m_flightSpeed);
+
+  jsonTeleportNode["teleport"] = jsonInfo ;
+
+  jsonTeleportData << jsonTeleportNode;
+
+  //------------------------------
+
+  QJsonDocument saveDoc(jsonTeleportData);  
+  QFile saveFile(jsonfile);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson());
+  saveFile.close();
+  
+  m_newTeleportFound = true;
+
+  //---------------------
+  sendTeleportsToMenu();
+  //---------------------
+}
+
+void
+VR::sendTeleportsToMenu()
 {
   if (!m_showMap)
     return;
-  
-  m_newTeleportFound = false;
-  m_leftMenu.setTeleports(tp);
 
   loadTeleports();
+
+  QList<QVector3D> teleports;
+
+  for(int i=0; i<m_teleports.count(); i++)
+    teleports << Global::menuCamProjectedCoordinatesOf(m_teleports[i]);
+
+  m_leftMenu.setTeleports(teleports);
+
+  m_newTeleportFound = false;
 }
 
 void
@@ -1944,34 +1955,61 @@ VR::pinPoint2D()
 void
 VR::buildPinPoint()
 {
+  m_pinPoints = 0;
+
   // don't draw pin point if -
   // flying,
   // pin point out of range,
   // teleport detected,
   // point to menu
+//  if (m_flightActive ||
+//      m_pinPt.x() < 0 ||
+//      m_currTeleportNumber >= 0 ||
+//      (m_leftMenu.pointingToMenu() &&
+//       m_menuPanels[m_currPanel] != "00") )
+//    {
+//      m_pinPoints = 0;
+//      return;
+//    }
+
   if (m_flightActive ||
-      m_pinPt.x() < 0 ||
-      m_currTeleportNumber >= 0 ||
-      (m_leftMenu.pointingToMenu() &&
-       m_menuPanels[m_currPanel] != "00") )
-    {
-      m_pinPoints = 0;
-      return;
-    }
+      m_currTeleportNumber >= 0)
+    return;
   
+
   float tht = 0.25/m_coordScale;
   QVector3D telPos = m_projectedPinPt;
   QVector3D telPosU = telPos + QVector3D(0,0,tht);
 
-  if (!m_leftMenu.pointingToMenu())
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  QVector3D cenR = QVector3D(matR * QVector4D(0,0,0,1));
+  QVector3D cenW = m_final_xformInverted.map(cenR);
+
+  if (m_leftMenu.pointingToMenu())
     {
-      QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-      QVector3D cenR = QVector3D(matR * QVector4D(0,0,0,1));
-      QVector3D cenW = m_final_xformInverted.map(cenR);
-      
+      if (m_menuPanels[m_currPanel] != "00")
+	{
+	  QVector3D pp = m_leftMenu.pinPoint();
+	  
+	  if (pp.x() < 0)
+	    return;
+
+	  QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
+	  QVector3D ppW = m_final_xformInverted.map(pp);
+	  
+	  telPos = cenW;
+	  telPosU = ppW;
+	}
+    }
+  else
+    {
+      if (m_pinPt.x() < 0)
+	return;
+
       telPosU = telPos;
       telPos = cenW;
     }
+
   
   QVector3D color(255,255,255);
   QVector<float> vert;
@@ -2013,7 +2051,8 @@ VR::buildPinPoint()
 		  sizeof(float)*npt*8,
 		  &vt[0]);
 
-  if (!m_leftMenu.pointingToMenu())
+  if (!m_leftMenu.pointingToMenu() ||
+      m_menuPanels[m_currPanel] != "00")
     {
       m_telPoints = 0;
       m_pinPoints = npt;
@@ -2099,4 +2138,189 @@ VR::renderTeleport(vr::Hmd_Eye eye)
   glUseProgram(0);
 
   glEnable(GL_BLEND);
+}
+
+
+void
+VR::projectPinPoint()
+{
+  if (!m_depthBuffer) // no depth buffer found
+    return;
+
+  QVector2D pp = pinPoint2D();
+
+  if (pp.x() >= 0)
+    {
+      int wd = screenWidth();
+      int ht = screenHeight();
+
+      float px = pp.x();
+      float py = pp.y();
+
+      int x = (1-px)*(wd-1);
+      int y = py*(ht-1);
+
+      int dx = (1-px)*(wd-1);
+      int dy = (1-py)*(ht-1);
+      float z = m_depthBuffer[dy*wd + dx];
+
+      Vec ppt;
+      if (z > 0.0 && z < 1.0)
+	{
+	  ppt = Vec(x, y, z);
+	  ppt = Global::menuCamUnprojectedCoordinatesOf(ppt);	  
+	  setProjectedPinPoint(QVector3D(ppt.x, ppt.y, ppt.z));
+	  return;
+	}
+      else
+	setPinPoint2D(QVector2D(-1, -1));
+    }
+
+  // if we are not pointing into the map then
+  // may be we are looking directly on the terrain
+  if (!nextHit())
+    setPinPoint2D(QVector2D(-1, -1));
+    
+}
+
+bool
+VR::nextHit()
+{
+  if (m_depthBuffer == 0) // we don't have any depth buffer
+    return false;
+
+  // don't find hit point if we are pointing to a menu
+  if (pointingToMenu())
+    return false;
+  
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+
+  QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  QVector3D pinPoint = QVector3D(matR * QVector4D(0,0,-0.1,1));
+
+  QVector3D cenV = m_final_xformInverted.map(centerR);
+  QVector3D pinV = m_final_xformInverted.map(pinPoint);
+  
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+  Vec pinW = Vec(pinV.x(), pinV.y(), pinV.z());
+
+  Vec cenP = Global::menuCamProjectedCoordinatesOf(cenW);
+  Vec pinP = Global::menuCamProjectedCoordinatesOf(pinW);
+
+  // walk along the vector in depth buffer to find a hit
+  Vec dvec = (pinP-cenP).unit();
+
+  int wd = screenWidth();
+  int ht = screenHeight();
+
+  Vec startP = cenP;
+
+  //---------------------------
+  if (startP.x < 0 ||
+      startP.x >= wd ||
+      startP.y < 0 ||
+      startP.y >= ht)
+    {
+      // if we are not on the map then get to the edge
+      // before start of search
+      // find ray box intersection
+      // screen box is (0,0) and (wd,ht)
+      if (qAbs(dvec.x) > 0 &&
+	  qAbs(dvec.y) > 0)
+	{
+	  float t[6];
+	  t[0] = (0  - cenP.x)/dvec.x;
+	  t[1] = (wd - cenP.x)/dvec.x;
+	  
+	  t[2] = (0  - cenP.y)/dvec.y;
+	  t[3] = (ht - cenP.y)/dvec.y;
+	  
+	  t[4] = qMax(qMin(t[0],t[1]), qMin(t[2],t[3]));
+	  t[5] = qMin(qMax(t[0],t[1]), qMax(t[2],t[3]));
+	  
+	  float db;
+	  if (t[5] < 0 || t[4]>t[5])
+	    return false;
+	  else
+	    db = t[4];
+	  
+	  startP = cenP + db*dvec;
+	}
+      else
+	{
+	  float t[4];
+	  if (qAbs(dvec.x) > 0)
+	    {
+	      t[0] = (0  - cenP.x)/dvec.x;
+	      t[1] = (wd - cenP.x)/dvec.x;
+	    }
+	  else if (qAbs(dvec.y) > 0)
+	    {	  
+	      t[0] = (0  - cenP.y)/dvec.y;
+	      t[1] = (ht - cenP.y)/dvec.y;	  
+	    }
+	  else
+	    return false;
+	  
+	  t[2] = qMin(t[0],t[1]);
+	  t[3] = qMax(t[0],t[1]);
+	  
+	  float db;
+	  if (t[3] < 0 || t[2]>t[3])
+	    return false;
+	  else
+	    db = t[2];
+	  
+	  startP = cenP + db*dvec;      
+	}
+    }
+  //---------------------------
+
+
+  Vec v = startP + dvec;
+  while(1)
+    {
+      int dx = v.x;
+      int dy = v.y;
+      if (dx < 0 || dx > wd-1 ||
+	  dy < 0 || dy > ht-1)
+	return false;
+      
+      float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+
+      if (z > 0.0 &&
+	  z < 1.0 &&
+	  z <= v.z)
+	{
+	  Vec hitP = Global::menuCamUnprojectedCoordinatesOf(v);
+
+	  setProjectedPinPoint(QVector3D(hitP.x, hitP.y, hitP.z));
+
+	  setPinPoint2D(QVector2D(v.x/wd, v.y/ht));
+	  return true;
+	}
+
+      v += dvec;
+    }
+
+  return false;
+}
+
+void
+VR::sendCurrPosToMenu()
+{
+  QVector3D hmdPos = hmdPosition();
+
+  Vec hpos(hmdPos.x(),hmdPos.y(),hmdPos.z());
+  hpos = Global::menuCamProjectedCoordinatesOf(hpos);    
+  
+  QVector3D thdir = hmdPos - 10*viewDir();
+  Vec hposD(thdir.x(),thdir.y(),thdir.z());
+  hposD = Global::menuCamProjectedCoordinatesOf(hposD);    
+  
+  Vec hdr = hposD-hpos;
+  hdr.normalize();
+  hposD = hpos + 40*hdr;
+  
+  setCurrPosOnMenuImage(hpos, hposD);  
 }

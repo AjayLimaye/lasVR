@@ -21,6 +21,8 @@ class Menu01 : public QObject
 
   void draw(QMatrix4x4, QMatrix4x4, bool);
 
+  QVector3D pinPoint() { return m_pinPt; }
+
   int checkOptions(QMatrix4x4, QMatrix4x4, bool);
 
   bool isVisible() { return m_visible; }
@@ -43,6 +45,7 @@ class Menu01 : public QObject
  private :
   bool m_visible;
   bool m_pointingToMenu;
+  QVector3D m_pinPt;
 
   QImage m_image;
 

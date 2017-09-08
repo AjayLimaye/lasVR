@@ -51,7 +51,8 @@ class StaticFunctions
 
   static bool intersectRayPlane(QVector3D, QVector3D,
 				QVector3D, QVector3D,
-				QVector3D, QVector3D);
+				QVector3D, QVector3D,
+				float&, float&);
 };
 
 #endif
