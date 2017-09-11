@@ -2,6 +2,7 @@
 #define VR_H
 
 #include "vrmenu.h"
+#include "cubemap.h"
 
 #include <QFile>
 #include <QMatrix4x4>
@@ -18,6 +19,7 @@
 #include <openvr.h>
 
 #include "cglrendermodel.h"
+
 
 class VR : public QObject
 {
@@ -268,6 +270,9 @@ class VR : public QObject
   int m_currPanel;
 
 
+  CubeMap m_skybox;
+
+
   bool m_edges;
   bool m_softShadows;
 
@@ -384,6 +389,8 @@ class VR : public QObject
 
   void projectPinPoint();
   bool nextHit();
+
+  void renderSkyBox(vr::Hmd_Eye);
 };
 
 

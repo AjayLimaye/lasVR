@@ -47,7 +47,8 @@ HEADERS += vrmain.h \
 	vrmenu.h \
 	map.h \
 	menu00.h \
-	menu01.h
+	menu01.h \
+	cubemap.h
 
 
 SOURCES += main.cpp \
@@ -72,4 +73,5 @@ SOURCES += main.cpp \
 	vrmenu.cpp \
 	map.cpp \
 	menu00.cpp \
-	menu01.cpp
+	menu01.cpp \
+	cubemap.cpp

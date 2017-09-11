@@ -28,9 +28,16 @@ class ShaderFactory
   static GLuint rcShader();
   static GLint* rcShaderParm();
 
+  static void createCubeMapShader();
+  static GLuint cubemapShader();
+  static GLint* cubemapShaderParm();
+
  private :
   static GLuint m_rcShader;
   static GLint m_rcShaderParm[10];
+
+  static GLuint m_cubemapShader;
+  static GLint m_cubemapShaderParm[10];
 };
 
 #endif

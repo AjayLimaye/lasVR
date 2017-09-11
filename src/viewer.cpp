@@ -529,8 +529,8 @@ Viewer::createShaders()
     {
       m_shadowShader = glCreateProgramObjectARB();
       if (! ShaderFactory::loadShadersFromFile(m_shadowShader,
-					       "shaders/shadow.vert",
-					       "shaders/shadow.frag"))
+					       "assets/shaders/shadow.vert",
+					       "assets/shaders/shadow.frag"))
 	{
 	  m_npoints = 0;
 	  return;
@@ -553,8 +553,8 @@ Viewer::createShaders()
     {
       m_smoothShader = glCreateProgramObjectARB();
       if (! ShaderFactory::loadShadersFromFile(m_smoothShader,
-					       "shaders/smooth.vert",
-					       "shaders/smooth.frag"))
+					       "assets/shaders/smooth.vert",
+					       "assets/shaders/smooth.frag"))
 	{
 	  m_npoints = 0;
 	  return;
@@ -592,8 +592,8 @@ Viewer::createShaders()
   m_depthShader = glCreateProgramObjectARB();
 
   if (! ShaderFactory::loadShadersFromFile(m_depthShader,
-					   "shaders/drawpoints.vert",
-					   "shaders/drawpoints.frag"))
+					   "assets/shaders/drawpoints.vert",
+					   "assets/shaders/drawpoints.frag"))
     {
       QMessageBox::information(0, "", "..");
       m_npoints = 0;

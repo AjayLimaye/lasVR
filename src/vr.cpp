@@ -245,6 +245,24 @@ VR::initVR()
   setupRenderModels();
 
   buildAxesVB();
+
+
+// loads a cubemap texture from 6 individual texture faces
+// order:
+// +X (right)
+// -X (left)
+// +Y (top)
+// -Y (bottom)
+// +Z (front) 
+// -Z (back)
+  QStringList clist;
+  clist << "assets/images/right.jpg";
+  clist << "assets/images/left.jpg";
+  clist << "assets/images/top.jpg";
+  clist << "assets/images/bottom.jpg";
+  clist << "assets/images/back.jpg";
+  clist << "assets/images/front.jpg";
+  m_skybox.loadCubemap(clist);
 }
 
 void
@@ -1000,6 +1018,8 @@ VR::bindRightBuffer()
 void
 VR::postDrawLeftBuffer()
 {
+  renderSkyBox(vr::Eye_Left);
+  
   if (m_showMap)
     renderTeleport(vr::Eye_Left);
 
@@ -1020,6 +1040,8 @@ VR::postDrawLeftBuffer()
 void
 VR::postDrawRightBuffer()
 {
+  renderSkyBox(vr::Eye_Right);
+  
   if (m_showMap)
     renderTeleport(vr::Eye_Right);
   
@@ -1303,8 +1325,8 @@ VR::createShaders()
   //------------------------
   m_pshader = glCreateProgram();
   if (!ShaderFactory::loadShadersFromFile(m_pshader,
-					  "shaders/punlit.vert",
-					  "shaders/punlit.frag"))
+					  "assets/shaders/punlit.vert",
+					  "assets/shaders/punlit.frag"))
     {
       QMessageBox::information(0, "", "Cannot load shaders");
     }
@@ -1319,6 +1341,8 @@ VR::createShaders()
 
 
   ShaderFactory::createTextureShader();
+
+  ShaderFactory::createCubeMapShader();
 }
 
 
@@ -2373,4 +2397,13 @@ VR::sendCurrPosToMenu()
   hposD = hpos + 40*hdr;
   
   setCurrPosOnMenuImage(hpos, hposD);  
+}
+
+void
+VR::renderSkyBox(vr::Hmd_Eye eye)
+{
+  QVector3D hpos = hmdPosition();
+  QMatrix4x4 mvp = viewProjection(eye);
+  
+  m_skybox.draw(mvp, hpos);
 }

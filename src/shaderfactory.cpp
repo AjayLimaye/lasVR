@@ -753,8 +753,8 @@ ShaderFactory::createTextureShader()
 {
   m_rcShader = glCreateProgram();
   if (!ShaderFactory::loadShadersFromFile(m_rcShader,
-					  "shaders/controllershader.vert",
-					  "shaders/controllershader.frag"))
+					  "assets/shaders/controllershader.vert",
+					  "assets/shaders/controllershader.frag"))
     {
       QMessageBox::information(0, "", "Cannot load controller shaders");
     }
@@ -766,4 +766,27 @@ ShaderFactory::createTextureShader()
   m_rcShaderParm[4] = glGetUniformLocation(m_rcShader, "opmod");
   m_rcShaderParm[5] = glGetUniformLocation(m_rcShader, "applytexture");
   m_rcShaderParm[6] = glGetUniformLocation(m_rcShader, "ptsz");
+}
+
+
+GLuint ShaderFactory::m_cubemapShader = 0;
+GLuint ShaderFactory::cubemapShader() { return m_cubemapShader; }
+
+GLint ShaderFactory::m_cubemapShaderParm[10];
+GLint* ShaderFactory::cubemapShaderParm() { return &m_cubemapShaderParm[0]; }
+
+void
+ShaderFactory::createCubeMapShader()
+{
+  m_cubemapShader = glCreateProgram();
+  if (!ShaderFactory::loadShadersFromFile(m_cubemapShader,
+					  "assets/shaders/cubemap.vert",
+					  "assets/shaders/cubemap.frag"))
+    {
+      QMessageBox::information(0, "", "Cannot load cubemap shaders");
+    }
+
+  m_cubemapShaderParm[0] = glGetUniformLocation(m_cubemapShader, "MVP");
+  m_cubemapShaderParm[1] = glGetUniformLocation(m_cubemapShader, "hmdPos");
+  m_cubemapShaderParm[2] = glGetUniformLocation(m_cubemapShader, "skybox");
 }
