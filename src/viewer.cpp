@@ -791,6 +791,9 @@ Viewer::mousePressEvent(QMouseEvent *event)
 { 
   if (m_vr.vrEnabled())
     return;
+
+  if (m_pointClouds.count() == 0)
+    return;
   
   m_fastDraw = true;
 
@@ -847,6 +850,9 @@ Viewer::mousePressEvent(QMouseEvent *event)
 void
 Viewer::mouseReleaseEvent(QMouseEvent *event)
 {
+  if (m_pointClouds.count() == 0)
+    return;
+
   if (m_vr.vrEnabled())
     {
       genDrawNodeListForVR();
@@ -866,6 +872,10 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
 {
   if (m_vr.vrEnabled())
     return;
+
+  if (m_pointClouds.count() == 0)
+    return;
+
 
   QGLViewer::mouseMoveEvent(event);
 
@@ -894,7 +904,8 @@ Viewer::paintGL()
 {
   glClearColor(0,0,0,0);
 
-  if (!m_vr.vrEnabled())
+  if (!m_vr.vrEnabled() ||
+      m_pointClouds.count() == 0)
     {
       // Clears screen, set model view matrix...
       preDraw();

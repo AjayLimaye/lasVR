@@ -1638,12 +1638,32 @@ VR::updateScale(int scl)
   if (scl < 0)
     sf = 0.67;
   
-  //QVector3D hpos = m_final_xform.map(hmdPosition());
-  QVector3D cenL = getPosition(m_leftController);
 
-  m_model_xform.translate(cenL);
+  // pivot point for scaling is the leftcontroller position
+  QVector3D cen = getPosition(m_leftController);
+
+  QVector3D hpos = hmdPosition();
+  QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);    
+  int dx = hp.x();
+  int dy = hp.y();
+  int wd = screenWidth();
+  int ht = screenHeight();
+  if (dx > 0 && dx < wd-1 &&
+      dy > 0 && dy < ht-1)
+    {
+      float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+      if (z > 0.0 && z < 1.0)
+	{
+	  // pivot point for scaling is the ground
+	  cen = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
+	  cen = m_final_xform.map(cen);
+	}
+    }
+  
+
+  m_model_xform.translate(cen);
   m_model_xform.scale(sf);
-  m_model_xform.translate(-cenL);
+  m_model_xform.translate(-cen);
 
   m_scaleFactor *= sf;
   m_flightSpeed *= sf;
