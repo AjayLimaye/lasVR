@@ -5,7 +5,7 @@ DEPENDPATH += .
 QT += opengl widgets core gui xml
 
 CONFIG += release
-DESTDIR = bin
+DESTDIR = ..\bin
 
 RESOURCES = las.qrc
 

@@ -31,7 +31,7 @@ GLHiddenWidget::GLHiddenWidget(QGLFormat format,
   // emit vboLoaded every time m_pointBlockSize points are uploaded to gpu
   m_pointsDrawn = 0;
   m_pointBlockSize = 50000;
-  m_minNodePixelSize = 50;
+  m_minNodePixelSize = 100;
 
   m_prevNodes.clear();
   m_newNodes.clear();

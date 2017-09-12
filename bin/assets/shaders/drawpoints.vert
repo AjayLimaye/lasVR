@@ -154,7 +154,8 @@ void main()
        if (maxPointSize > 5) // means this is not for depth calculation
 	 {
 	   vec3 e2p = normalize(pointPos-eyepos);
-	   vec4 posR =  MVP * vec4(pointPos+0.1*e2p*worldSize,1);
+	   //vec4 posR =  MVP * vec4(pointPos+0.5*e2p*worldSize,1);
+	   vec4 posR =  MVP * vec4(pointPos+e2p*r,1);
 	   zdepthR = ((gl_DepthRange.diff * posR.z/posR.w) +
 		      gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	   zdepthR = zdepth-zdepthR;

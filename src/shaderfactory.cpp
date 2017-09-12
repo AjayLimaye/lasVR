@@ -788,5 +788,6 @@ ShaderFactory::createCubeMapShader()
 
   m_cubemapShaderParm[0] = glGetUniformLocation(m_cubemapShader, "MVP");
   m_cubemapShaderParm[1] = glGetUniformLocation(m_cubemapShader, "hmdPos");
-  m_cubemapShaderParm[2] = glGetUniformLocation(m_cubemapShader, "skybox");
+  m_cubemapShaderParm[2] = glGetUniformLocation(m_cubemapShader, "scale");
+  m_cubemapShaderParm[3] = glGetUniformLocation(m_cubemapShader, "skybox");
 }

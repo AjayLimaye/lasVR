@@ -205,7 +205,7 @@ Map::genVertData()
     {
       QFont font = QFont("Helvetica", 48);
       QColor color(200, 220, 250); 
-      QImage tmpTex = StaticFunctions::renderText("MENU",
+      QImage tmpTex = StaticFunctions::renderText("MAP",
 						  font,
 						  Qt::black, color);      
       m_texWd = tmpTex.width();
@@ -680,36 +680,8 @@ Map::projectPin(QMatrix4x4 matL, QMatrix4x4 matR)
   if (!m_pointingToMenu)
     return QVector3D(-1000,-1000,-1000);
 
-//  QVector3D pinPoint = centerR + frontR;
-//  QVector3D pp = pinPoint-vleftRot;
-//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
-//  if (qAbs(rz) > 0.04)  // not closer enough to the map
-//    return QVector3D(-1000,-1000,-1000);
-
   m_pinPt2D = QVector2D(rw, rh);
   return (vleftRot + rh*vrtRot + rw*vftRot);
 
-  //-------------------
-
-//  QVector3D pinPoint = centerR + frontR;
-//
-//
-//  // project pinPoint onto map plane
-//  QVector3D pp = pinPoint-vleftRot;
-//  QVector3D rw = QVector3D::dotProduct(pp, vftRot.normalized());
-//  QVector3D rh = QVector3D::dotProduct(pp, vrtRot.normalized());
-//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
-//
-//  if (qAbs(rz) > 0.04 ||  // not closer enough to the map
-//      rw < 0 || rw > vftRot.length() || // not within the map bounds
-//      rh < 0 || rh > vrtRot.length())
-//    return QVector3D(-1000,-1000,-1000);
-//
-//  rh/=vrtRot.length();
-//  rw/=vftRot.length();
-//
-//  m_pinPt2D = QVector2D(rw, rh);
-//
-//  return (vleftRot + rh*vrtRot + rw*vftRot);
 }
 

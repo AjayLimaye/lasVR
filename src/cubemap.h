@@ -17,7 +17,7 @@ class CubeMap : public QObject
 
   void loadCubemap(QStringList);
 
-  void draw(QMatrix4x4, QVector3D);
+  void draw(QMatrix4x4, QVector3D, float);
 
   void setVisible(bool b) { m_visible = b; }
   bool isVisible() { return m_visible; }

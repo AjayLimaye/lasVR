@@ -122,7 +122,7 @@ CubeMap::genVertData()
 }
 
 void
-CubeMap::draw(QMatrix4x4 mvp, QVector3D hmdPos)
+CubeMap::draw(QMatrix4x4 mvp, QVector3D hmdPos, float scale)
 {
   if (!m_visible)
     return;
@@ -138,7 +138,8 @@ CubeMap::draw(QMatrix4x4 mvp, QVector3D hmdPos)
   GLint *cubemapShaderParm = ShaderFactory::cubemapShaderParm();
   glUniformMatrix4fv(cubemapShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform3f(cubemapShaderParm[1], hmdPos.x(), hmdPos.y(), hmdPos.z());  
-  glUniform1i(cubemapShaderParm[2], 4); // texture
+  glUniform1f(cubemapShaderParm[2], scale); // scale
+  glUniform1i(cubemapShaderParm[3], 4); // texture
  
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_CUBE_MAP, m_glTexture);

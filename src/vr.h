@@ -51,9 +51,6 @@ class VR : public QObject
   void setTeleportScale(float gh) { m_teleportScale = gh; }
   void setCurrPosOnMenuImage(Vec, Vec);
   void sendTeleportsToMenu();
-  QVector2D pinPoint2D();
-  void setPinPoint2D(QVector2D v) { m_pinPt = v; }
-  void setProjectedPinPoint(QVector3D p) { m_projectedPinPt = p; }
 
   float* depthBuffer() { return m_depthBuffer; }
 
@@ -278,7 +275,7 @@ class VR : public QObject
 
 
   void buildAxes();
-  void buildTeleport();
+  bool buildTeleport();
   void renderAxes(vr::Hmd_Eye);
   void createShaders();
   void buildAxesVB();

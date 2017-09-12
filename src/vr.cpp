@@ -977,11 +977,13 @@ VR::preDraw()
   updatePoses();
   updateInput();
   buildAxes();
+
   if (m_showMap)
     {
       projectPinPoint();
-      buildTeleport();
-      buildPinPoint();
+
+      if (!buildTeleport())
+	buildPinPoint();
     }
 }
 
@@ -1020,14 +1022,14 @@ VR::postDrawLeftBuffer()
 {
   renderSkyBox(vr::Eye_Left);
   
-  if (m_showMap)
-    renderTeleport(vr::Eye_Left);
-
   renderControllers(vr::Eye_Left);
 
   renderAxes(vr::Eye_Left);
 
   renderMenu(vr::Eye_Left);
+
+  if (m_showMap)
+    renderTeleport(vr::Eye_Left);
 
   m_leftBuffer->release();
 
@@ -1042,15 +1044,15 @@ VR::postDrawRightBuffer()
 {
   renderSkyBox(vr::Eye_Right);
   
-  if (m_showMap)
-    renderTeleport(vr::Eye_Right);
-  
   renderControllers(vr::Eye_Right);
 
   renderAxes(vr::Eye_Right);
 
   renderMenu(vr::Eye_Right);
 
+  if (m_showMap)
+    renderTeleport(vr::Eye_Right);
+  
   m_rightBuffer->release();
 
   QRect sourceRect(0, 0, m_eyeWidth, m_eyeHeight);
@@ -1269,7 +1271,7 @@ VR::quatToMat(QQuaternion q)
 void
 VR::renderAxes(vr::Hmd_Eye eye)
 {  
-  if (m_pinPoints > 0 || !m_showMap)
+  if (m_pinPoints > 0)
     return;
   
   QMatrix4x4 mvp = currentViewProjection(eye);
@@ -1979,17 +1981,33 @@ VR::setTimeStep(QString stpStr)
 }
 
 
-void
+bool
 VR::buildTeleport()
 {
-  if (m_currTeleportNumber < 0)
+  if (!m_leftMenu.pointingToMenu() ||
+      m_menuPanels[m_currPanel] != "00") // not pointing to map menu
     {
-      m_telPoints = 0;
-      return;
+      if (m_currTeleportNumber < 0)
+	{
+	  m_telPoints = 0;
+	  return false;
+	}
     }
 
+
   float tht = 0.25/m_coordScale;
-  QVector3D telPos = m_teleports[m_currTeleportNumber] - QVector3D(0,0,1);
+  QVector3D telPos; 
+  if (m_leftMenu.pointingToMenu() &&
+      m_menuPanels[m_currPanel] == "00") // pointing to map menu
+    {
+      if (m_pinPt.x() < 0)
+	return false;
+
+      telPos = m_projectedPinPt;
+    }
+  else
+    telPos = m_teleports[m_currTeleportNumber] - QVector3D(0,0,1);
+
   QVector3D telPosU = telPos + QVector3D(0,0,tht);
 
   QVector<float> vert;
@@ -2010,8 +2028,8 @@ VR::buildTeleport()
       vt[8*v + 1] = vert[3*v+1];
       vt[8*v + 2] = vert[3*v+2];
 
-      vt[8*v + 6] = 1-v; // texture coordinates
-      vt[8*v + 7] = 1-v;
+      vt[8*v + 6] = 0.5*(1-v); // texture coordinates
+      vt[8*v + 7] = 0.5*(1-v);
     }
   
   glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
@@ -2022,13 +2040,8 @@ VR::buildTeleport()
 
   m_telPoints = npt;
   m_nboxPoints = m_axesPoints + m_telPoints;
-}
 
-QVector2D
-VR::pinPoint2D()
-{
-  m_pinPt = m_leftMenu.pinPoint2D();
-  return m_pinPt;
+  return true;
 }
 
 void
@@ -2036,20 +2049,6 @@ VR::buildPinPoint()
 {
   m_pinPoints = 0;
 
-  // don't draw pin point if -
-  // flying,
-  // pin point out of range,
-  // teleport detected,
-  // point to menu
-//  if (m_flightActive ||
-//      m_pinPt.x() < 0 ||
-//      m_currTeleportNumber >= 0 ||
-//      (m_leftMenu.pointingToMenu() &&
-//       m_menuPanels[m_currPanel] != "00") )
-//    {
-//      m_pinPoints = 0;
-//      return;
-//    }
 
   if (m_flightActive ||
       m_currTeleportNumber >= 0)
@@ -2066,7 +2065,7 @@ VR::buildPinPoint()
 
   if (m_leftMenu.pointingToMenu())
     {
-      if (m_menuPanels[m_currPanel] != "00")
+      if (m_menuPanels[m_currPanel] != "00") // not pointing to map menu
 	{
 	  QVector3D pp = m_leftMenu.pinPoint();
 	  
@@ -2115,8 +2114,8 @@ VR::buildPinPoint()
       m_telPoints = 0;
       m_pinPoints = npt;
 
-      vt[6] = 0.5; // texture coordinates
-      vt[7] = 0.5;
+      vt[6] = 0.8; // texture coordinates
+      vt[7] = 0.8;
       vt[12]= 0.5;
       vt[13]= 0.5;
     }
@@ -2125,10 +2124,10 @@ VR::buildPinPoint()
       m_telPoints = npt;
       m_pinPoints = 0;
 
-      vt[6] = 0.5; // texture coordinates
-      vt[7] = 0.5;
-      vt[12] = 0;
-      vt[13] = 0;
+      vt[6] = 1.0; // texture coordinates
+      vt[7] = 1.0;
+      vt[12] = 0.5;
+      vt[13] = 0.5;
     }
 
   glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
@@ -2149,7 +2148,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
   QMatrix4x4 mvp = viewProjection(eye);
     
   glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_ONE, GL_ONE);
 
   glUseProgram(ShaderFactory::rcShader());
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
@@ -2211,7 +2210,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
 
   glUseProgram(0);
 
-  glEnable(GL_BLEND);
+  glDisable(GL_BLEND);
 }
 
 
@@ -2221,39 +2220,41 @@ VR::projectPinPoint()
   if (m_depthBuffer == 0) // no depth buffer found
     return;
 
-  QVector2D pp = pinPoint2D();
-
-  if (pp.x() >= 0)
+  if (m_leftMenu.pointingToMenu() &&
+      m_menuPanels[m_currPanel] == "00")
     {
-      int wd = screenWidth();
-      int ht = screenHeight();
+      m_pinPt = m_leftMenu.pinPoint2D();
 
-      float px = pp.x();
-      float py = pp.y();
-
-      int x = (1-px)*(wd-1);
-      int y = py*(ht-1);
-
-      int dx = (1-px)*(wd-1);
-      int dy = (1-py)*(ht-1);
-      float z = m_depthBuffer[dy*wd + dx];
-
-      Vec ppt;
-      if (z > 0.0 && z < 1.0)
+      if (m_pinPt.x() >= 0)
 	{
-	  ppt = Vec(x, y, z);
-	  ppt = Global::menuCamUnprojectedCoordinatesOf(ppt);	  
-	  setProjectedPinPoint(QVector3D(ppt.x, ppt.y, ppt.z));
-	  return;
+	  int wd = screenWidth();
+	  int ht = screenHeight();
+	  
+	  float px = m_pinPt.x();
+	  float py = m_pinPt.y();
+	  
+	  int x = (1-px)*(wd-1);
+	  int y = py*(ht-1);
+	  
+	  int dx = (1-px)*(wd-1);
+	  int dy = (1-py)*(ht-1);
+	  float z = m_depthBuffer[dy*wd + dx];
+	  
+	  Vec ppt;
+	  if (z > 0.0 && z < 1.0)
+	    {
+	      ppt = Vec(x, y, z);
+	      ppt = Global::menuCamUnprojectedCoordinatesOf(ppt);	  
+	      m_projectedPinPt = QVector3D(ppt.x, ppt.y, ppt.z);
+	      return;
+	    }
 	}
-      else
-	setPinPoint2D(QVector2D(-1, -1));
     }
 
   // if we are not pointing into the map then
   // may be we are looking directly on the terrain
   if (!nextHit())
-    setPinPoint2D(QVector2D(-1, -1));
+    m_pinPt = QVector2D(-1, -1);
     
 }
 
@@ -2368,9 +2369,9 @@ VR::nextHit()
 	{
 	  Vec hitP = Global::menuCamUnprojectedCoordinatesOf(v);
 
-	  setProjectedPinPoint(QVector3D(hitP.x, hitP.y, hitP.z));
+	  m_projectedPinPt = QVector3D(hitP.x, hitP.y, hitP.z);
 
-	  setPinPoint2D(QVector2D(v.x/wd, v.y/ht));
+	  m_pinPt = QVector2D(v.x/wd, v.y/ht);
 	  return true;
 	}
 
@@ -2405,5 +2406,5 @@ VR::renderSkyBox(vr::Hmd_Eye eye)
   QVector3D hpos = hmdPosition();
   QMatrix4x4 mvp = viewProjection(eye);
   
-  m_skybox.draw(mvp, hpos);
+  m_skybox.draw(mvp, hpos, 2.0/m_coordScale);
 }
