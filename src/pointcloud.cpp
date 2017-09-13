@@ -40,6 +40,8 @@ PointCloud::PointCloud()
 
   m_showMap = false;
   m_gravity = false;
+  m_skybox = false;
+  m_playButton = true;
   m_groundHeight = 0.16;
   m_teleportScale = 1.0;
   m_showSphere = false;

@@ -117,6 +117,8 @@ Volume::loadDir(QString dirname)
   m_teleportScale = 1.0;
   m_showMap = false;
   m_gravity = false;
+  m_skybox = false;
+  m_playbutton = true;
   m_showSphere = false;
   m_pointType = true;
   m_loadall = false;
@@ -141,6 +143,8 @@ Volume::loadDir(QString dirname)
 	  PointCloud *pointCloud = new PointCloud();
 	  pointCloud->setShowMap(m_showMap);
 	  pointCloud->setGravity(m_gravity);
+	  pointCloud->setSkybox(m_skybox);
+	  pointCloud->setPlayButton(m_playbutton);
 	  pointCloud->setShowSphere(m_showSphere);
 	  pointCloud->setGroundHeight(m_groundHeight);
 	  pointCloud->setTeleportScale(m_teleportScale);
@@ -591,16 +595,22 @@ Volume::loadTopJson(QString jsonfile)
       QJsonObject jsonInfo = jsonMod["top"].toObject();
       
       if (jsonInfo.contains("timeseries"))
-	m_timeseries = true;
+	m_timeseries = jsonInfo["timeseries"].toBool();
 
       if (jsonInfo.contains("ignore_scaling"))
-	m_ignoreScaling = true;
+	m_ignoreScaling = jsonInfo["ignore_scaling"].toBool();
 
       if (jsonInfo.contains("show_map"))
-	m_showMap = true;
+	m_showMap = jsonInfo["show_map"].toBool();
 
       if (jsonInfo.contains("gravity"))
-	m_gravity = true;
+	m_gravity = jsonInfo["gravity"].toBool();
+
+      if (jsonInfo.contains("skybox"))
+	m_skybox = jsonInfo["skybox"].toBool();
+
+      if (jsonInfo.contains("play_button"))
+	m_playbutton = jsonInfo["play_button"].toBool();
 
       if (jsonInfo.contains("point_as_sphere"))
 	{
@@ -610,6 +620,12 @@ Volume::loadTopJson(QString jsonfile)
 
       if (jsonInfo.contains("loadall"))
 	m_loadall = true;
+
+      if (jsonInfo.contains("ground_height"))
+	m_groundHeight = jsonInfo["ground_height"].toDouble();
+
+      if (jsonInfo.contains("teleport_scale"))
+	m_teleportScale = jsonInfo["teleport_scale"].toDouble();
 
       if (jsonInfo.contains("point_type"))
 	{
@@ -621,10 +637,5 @@ Volume::loadTopJson(QString jsonfile)
 	    m_pointType = true;
 	}
 
-      if (jsonInfo.contains("ground_height"))
-	m_groundHeight = jsonInfo["ground_height"].toDouble();
-
-      if (jsonInfo.contains("teleport_scale"))
-	m_teleportScale = jsonInfo["teleport_scale"].toDouble();
     }
 }

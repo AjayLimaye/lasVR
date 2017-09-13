@@ -46,6 +46,8 @@ class VR : public QObject
 
   void setShowMap(bool);
   void setGravity(bool g) { m_gravity = g; }
+  void setSkybox(bool sm) { m_showSkybox = sm; }
+  void setPlayButton(bool sm) { m_leftMenu.setPlayButton(sm); }
   void setShowTimeseriesMenu(bool);
   void setGroundHeight(float gh) { m_groundHeight = gh; }
   void setTeleportScale(float gh) { m_teleportScale = gh; }
@@ -59,6 +61,12 @@ class VR : public QObject
 
   void resetNextStep() { m_nextStep = 0; }
   int nextStep() { return m_nextStep; }
+  void takeNextStep()
+  {
+    m_genDrawList = true;
+    m_nextStep = 1;
+  }
+
   void setTimeStep(QString);
 
 
@@ -117,11 +125,6 @@ class VR : public QObject
   bool newTeleportFound() { return m_newTeleportFound; }
 
   bool play() { return m_play; }
-  void gotoNextStep()
-  {
-    m_genDrawList = true;
-    m_nextStep = 1;
-  }
 
 
   void bindMapBuffer();
@@ -142,6 +145,10 @@ class VR : public QObject
   void updateScale(int);  
   void updateSoftShadows(bool);
   void updateEdges(bool);
+  void gotoFirstStep();
+  void gotoPreviousStep();
+  void gotoNextStep();
+  void playPressed(bool);
 
  private :
   vr::IVRSystem *m_hmd;
@@ -259,6 +266,7 @@ class VR : public QObject
 
   bool m_showMap;
   bool m_gravity;
+  bool m_showSkybox;
   float m_groundHeight;
   float m_teleportScale;
 
@@ -369,20 +377,6 @@ class VR : public QObject
   bool showLeft() { return m_showLeft; }
 
   QMatrix4x4 initXform(float, float, float, float);
-
-  void gotoFirstStep()
-  {
-    // set a very high next step so that
-    // it is reset to 0 in the viewer
-    m_genDrawList = true;
-    m_nextStep = 1000000;
-  }
-
-  void gotoPreviousStep()
-  {
-    m_genDrawList = true;
-    m_nextStep = -1;
-  }
 
   void projectPinPoint();
   bool nextHit();

@@ -70,6 +70,12 @@ class PointCloud
   void setGravity(bool sm) { m_gravity = sm; }
   bool gravity() { return m_gravity; }
 
+  void setSkybox(bool sm) { m_skybox = sm; }
+  bool skybox() { return m_skybox; }
+
+  void setPlayButton(bool sm) { m_playButton = sm; }
+  bool playButton() { return m_playButton; }
+
   void setGroundHeight(float gh) { m_groundHeight = gh; }
   float groundHeight() { return m_groundHeight; }
 
@@ -113,6 +119,8 @@ class PointCloud
 
   bool m_showMap;
   bool m_gravity;
+  bool m_skybox;
+  bool m_playButton;
   float m_groundHeight;
   float m_teleportScale;
   bool m_showSphere;

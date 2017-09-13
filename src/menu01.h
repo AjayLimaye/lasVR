@@ -35,30 +35,46 @@ class Menu01 : public QObject
 
   bool pointingToMenu() { return m_pointingToMenu; }
 
+  void setPlayMenu(bool b) { m_playMenu = b; }
+  void setPlayButton(bool b) { m_playButton = b; }
+  void setPlay(bool b) { m_play = b; }
+
+  void setTimeStep(QString);
+
  signals :
   void resetModel();
   void updatePointSize(int);
   void updateScale(int);
   void updateSoftShadows(bool);
   void updateEdges(bool);
+  void gotoFirstStep();
+  void gotoPreviousStep();
+  void gotoNextStep();
+  void playPressed(bool);
 
  private :
   bool m_visible;
   bool m_pointingToMenu;
   QVector3D m_pinPt;
 
+  int m_texHt, m_texWd;
+  QList<QRect> m_menuDim;
   QImage m_image;
+
+  GLuint m_stepTexture;
 
   GLuint m_glTexture;
   GLuint m_glVertBuffer;
   GLuint m_glIndexBuffer;
   GLuint m_glVertArray;
-  int m_texHt, m_texWd;
   float *m_vertData;
 
   int m_selected;
   bool m_softShadows;
   bool m_edges;
+  bool m_play;
+  bool m_playMenu;
+  bool m_playButton;
 
   QList<QString> m_menuList;
   QList<QRect> m_relGeom;

@@ -73,16 +73,65 @@ VR::VR() : QObject()
 	  this, SLOT(updateEdges(bool)));
   connect(&m_leftMenu, SIGNAL(updateSoftShadows(bool)),
 	  this, SLOT(updateSoftShadows(bool)));
+
+  connect(&m_leftMenu, SIGNAL(gotoFirstStep()),
+	  this, SLOT(gotoFirstStep()));
+  connect(&m_leftMenu, SIGNAL(gotoPreviousStep()),
+	  this, SLOT(gotoPreviousStep()));
+  connect(&m_leftMenu, SIGNAL(gotoNextStep()),
+	  this, SLOT(gotoNextStep()));
+  connect(&m_leftMenu, SIGNAL(playPressed(bool)),
+	  this, SLOT(playPressed(bool)));
 }
 
 void
 VR::updatePointSize(int sz)
 {
-  m_pointSize = qMax(0.5f, m_pointSize + sz*0.1f);
+  if (m_showMap)
+    m_pointSize = qMax(0.5f, m_pointSize + sz*0.1f);
+  else
+    m_pointSize = qMax(0.5f, m_pointSize + sz);
 }
 
 void VR::updateEdges(bool b) { m_edges = b; }
 void VR::updateSoftShadows(bool b) { m_softShadows = b; }
+
+void
+VR::gotoFirstStep()
+{
+  // set a very high next step so that
+  // it is reset to 0 in the viewer
+  m_genDrawList = true;
+  m_nextStep = 1000000;
+  m_play = false;
+  m_leftMenu.setPlay(false);
+}
+void
+VR::gotoPreviousStep()
+{
+  m_genDrawList = true;
+  m_nextStep = -1;
+  m_play = false;
+  m_leftMenu.setPlay(false);
+}
+void
+VR::gotoNextStep()
+{
+  m_genDrawList = true;
+  m_nextStep = 1;
+  m_play = false;
+  m_leftMenu.setPlay(false);
+}
+void
+VR::playPressed(bool b)
+{
+  m_play = b;
+  if (m_play)
+    {
+      m_genDrawList = true;
+      m_nextStep = 1;
+    }
+}
 
 void
 VR::setDataDir(QString d)
@@ -606,7 +655,7 @@ VR::rightTouchPressMove()
 
   //------------------  
   // keep head above ground
-  if (m_depthBuffer)
+  if (m_showMap && m_depthBuffer)
     {
       int wd = screenWidth();
       int ht = screenHeight();
@@ -985,6 +1034,7 @@ VR::preDraw()
       if (!buildTeleport())
 	buildPinPoint();
     }
+  
 }
 
 void
@@ -1241,6 +1291,9 @@ VR::buildAxes()
 
   m_axesPoints = npt;
   m_nboxPoints = npt;
+
+  m_pinPoints = 0;
+  m_telPoints = 0;
 }
 
 QMatrix4x4
@@ -1668,24 +1721,26 @@ VR::updateScale(int scl)
   // pivot point for scaling is the leftcontroller position
   QVector3D cen = getPosition(m_leftController);
 
-  QVector3D hpos = hmdPosition();
-  QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);    
-  int dx = hp.x();
-  int dy = hp.y();
-  int wd = screenWidth();
-  int ht = screenHeight();
-  if (dx > 0 && dx < wd-1 &&
-      dy > 0 && dy < ht-1)
+  if (m_showMap)
     {
-      float z = m_depthBuffer[(ht-1-dy)*wd + dx];
-      if (z > 0.0 && z < 1.0)
+      QVector3D hpos = hmdPosition();
+      QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);    
+      int dx = hp.x();
+      int dy = hp.y();
+      int wd = screenWidth();
+      int ht = screenHeight();
+      if (dx > 0 && dx < wd-1 &&
+	  dy > 0 && dy < ht-1)
 	{
-	  // pivot point for scaling is the ground
-	  cen = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
-	  cen = m_final_xform.map(cen);
+	  float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+	  if (z > 0.0 && z < 1.0)
+	    {
+	      // pivot point for scaling is the ground
+	      cen = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
+	      cen = m_final_xform.map(cen);
+	    }
 	}
     }
-  
 
   m_model_xform.translate(cen);
   m_model_xform.scale(sf);
@@ -1715,12 +1770,11 @@ VR::setShowMap(bool sm)
 
 void
 VR::setShowTimeseriesMenu(bool sm)
-{
-  if (!sm)
-    m_menuPanels.removeOne("01");
-  
+{  
   m_currPanel = 0;
   m_leftMenu.setCurrentMenu(m_menuPanels[m_currPanel]);
+
+  m_leftMenu.setPlayMenu(sm);
 }
 
 void
@@ -1914,6 +1968,9 @@ VR::sendTeleportsToMenu()
 void
 VR::checkTeleport(bool triggered)
 {
+  if (!m_showMap)
+    return;
+
   QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
 
@@ -1940,38 +1997,7 @@ VR::checkOptions(bool triggered)
 {
   QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-
-  int option = m_leftMenu.checkOptions(matL, matR, triggered);
-
-  if (option < 0 || !triggered)
-    return;
-  
-  if (option == 0)
-    {
-      m_play = !m_play;
-      m_leftMenu.setPlay(m_play);
-      
-      if (m_play)
-	gotoNextStep();
-    }
-  else if (option == 1)
-    {
-      m_play = false;
-      m_leftMenu.setPlay(m_play);
-      gotoPreviousStep();
-    }
-  else if (option == 2)
-    {
-      m_play = false;
-      m_leftMenu.setPlay(m_play);
-      gotoNextStep();
-    }
-  else if (option == 3)
-    {
-      m_play = false;
-      m_leftMenu.setPlay(m_play);
-      gotoFirstStep();
-    }
+  m_leftMenu.checkOptions(matL, matR, triggered);
 }
 
 void
@@ -2217,7 +2243,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
 void
 VR::projectPinPoint()
 {
-  if (m_depthBuffer == 0) // no depth buffer found
+  if (!m_showMap || m_depthBuffer == 0) // no depth buffer found
     return;
 
   if (m_leftMenu.pointingToMenu() &&
@@ -2261,7 +2287,7 @@ VR::projectPinPoint()
 bool
 VR::nextHit()
 {
-  if (m_depthBuffer == 0) // we don't have any depth buffer
+  if (!m_showMap || m_depthBuffer == 0) // we don't have any depth buffer
     return false;
 
   // don't find hit point if we are pointing to a menu
@@ -2384,6 +2410,9 @@ VR::nextHit()
 void
 VR::sendCurrPosToMenu()
 {
+  if (!m_showMap)
+    return;
+
   QVector3D hmdPos = hmdPosition();
 
   Vec hpos(hmdPos.x(),hmdPos.y(),hmdPos.z());
@@ -2403,6 +2432,9 @@ VR::sendCurrPosToMenu()
 void
 VR::renderSkyBox(vr::Hmd_Eye eye)
 {
+  if (!m_showSkybox)
+    return;
+
   QVector3D hpos = hmdPosition();
   QMatrix4x4 mvp = viewProjection(eye);
   

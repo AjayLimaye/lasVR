@@ -323,6 +323,8 @@ Viewer::start()
     {
       m_vr.setShowMap(m_pointClouds[0]->showMap());
       m_vr.setGravity(m_pointClouds[0]->gravity());
+      m_vr.setSkybox(m_pointClouds[0]->skybox());
+      m_vr.setPlayButton(m_pointClouds[0]->playButton());
       m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
       m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
       //  if (m_volume->timeseries())
@@ -931,7 +933,7 @@ Viewer::paintGL()
 	  if (m_currTime < 0) m_currTime = m_maxTime;	  
 	  m_vr.resetNextStep();
 
-	  m_vr.setTimeStep(QString("Step %1").arg(m_currTime));
+	  m_vr.setTimeStep(QString("%1").arg(m_currTime));
 
 	  if (m_pointClouds[0]->showMap())
 	    m_firstImageDone = 0;
@@ -1229,7 +1231,7 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
     }
 
   if (m_vr.play())
-    m_vr.gotoNextStep();
+    m_vr.takeNextStep();
 
   m_vboLoadedAll = true;
 }

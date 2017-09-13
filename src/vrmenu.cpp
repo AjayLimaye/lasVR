@@ -4,21 +4,29 @@
 VrMenu::VrMenu() : QObject()
 {
   m_menus["00"] = new Map();
-  m_menus["01"] = new Menu00();
-  m_menus["02"] = new Menu01();
+  m_menus["01"] = new Menu01();
 
   m_currMenu = "none";
 
-  connect(m_menus["02"], SIGNAL(resetModel()),
+  connect(m_menus["01"], SIGNAL(resetModel()),
 	  this, SIGNAL(resetModel()));
-  connect(m_menus["02"], SIGNAL(updatePointSize(int)),
+  connect(m_menus["01"], SIGNAL(updatePointSize(int)),
 	  this, SIGNAL(updatePointSize(int)));
-  connect(m_menus["02"], SIGNAL(updateScale(int)),
+  connect(m_menus["01"], SIGNAL(updateScale(int)),
 	  this, SIGNAL(updateScale(int)));
-  connect(m_menus["02"], SIGNAL(updateSoftShadows(bool)),
+  connect(m_menus["01"], SIGNAL(updateSoftShadows(bool)),
 	  this, SIGNAL(updateSoftShadows(bool)));
-  connect(m_menus["02"], SIGNAL(updateEdges(bool)),
+  connect(m_menus["01"], SIGNAL(updateEdges(bool)),
 	  this, SIGNAL(updateEdges(bool)));
+
+  connect(m_menus["01"], SIGNAL(gotoFirstStep()),
+	  this, SIGNAL(gotoFirstStep()));
+  connect(m_menus["01"], SIGNAL(gotoPreviousStep()),
+	  this, SIGNAL(gotoPreviousStep()));
+  connect(m_menus["01"], SIGNAL(gotoNextStep()),
+	  this, SIGNAL(gotoNextStep()));
+  connect(m_menus["01"], SIGNAL(playPressed(bool)),
+	  this, SIGNAL(playPressed(bool)));
 }
 
 VrMenu::~VrMenu()
@@ -26,9 +34,20 @@ VrMenu::~VrMenu()
 }
 
 void
+VrMenu::setPlayMenu(bool b)
+{
+  ((Menu01*)(m_menus["01"]))->setPlayMenu(b);
+}
+void
+VrMenu::setPlayButton(bool b)
+{
+  ((Menu01*)(m_menus["01"]))->setPlayButton(b);
+}
+
+void
 VrMenu::setTimeStep(QString stpStr)
 {
-  ((Menu00*)(m_menus["01"]))->setTimeStep(stpStr);
+  ((Menu01*)(m_menus["01"]))->setTimeStep(stpStr);
 }
 
 QVector2D
@@ -64,9 +83,8 @@ VrMenu::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 {
   if (m_currMenu == "00")
     ((Map*)(m_menus[m_currMenu]))->draw(mvp, matL);
+
   if (m_currMenu == "01")
-    ((Menu00*)(m_menus[m_currMenu]))->draw(mvp, matL);
-  if (m_currMenu == "02")
     ((Menu01*)(m_menus[m_currMenu]))->draw(mvp, matL, triggerPressed);
 }
 
@@ -82,11 +100,7 @@ VrMenu::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
 int
 VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 {
-//  if (((Menu00*)(m_menus["01"]))->isVisible())
   if (m_currMenu == "01")
-    return ((Menu00*)(m_menus[m_currMenu]))->checkOptions(matL, matR);
-
-  if (m_currMenu == "02")
     ((Menu01*)(m_menus[m_currMenu]))->checkOptions(matL, matR, triggered);
   
   return -1;
@@ -95,7 +109,7 @@ VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 void
 VrMenu::setPlay(bool p)
 {
-  ((Menu00*)(m_menus["01"]))->setPlay(p);
+  ((Menu01*)(m_menus["01"]))->setPlay(p);
 }
 
 void
@@ -104,17 +118,13 @@ VrMenu::setCurrentMenu(QString m)
   m_currMenu = m;
 
   ((Map*)(m_menus["00"]))->setVisible(false);
-  ((Menu00*)(m_menus["01"]))->setVisible(false);
-  ((Menu01*)(m_menus["02"]))->setVisible(false);
+  ((Menu01*)(m_menus["01"]))->setVisible(false);
 
   if (m_currMenu == "00")
     ((Map*)(m_menus["00"]))->setVisible(true);
 
   if (m_currMenu == "01")
-    ((Menu00*)(m_menus["01"]))->setVisible(true);
-
-  if (m_currMenu == "02")
-    ((Menu01*)(m_menus["02"]))->setVisible(true);
+    ((Menu01*)(m_menus["01"]))->setVisible(true);
 }
 
 bool
@@ -123,8 +133,7 @@ VrMenu::pointingToMenu()
   bool pm = false;
   
   pm = pm || ((Map*)(m_menus["00"]))->pointingToMenu();
-  pm = pm || ((Menu00*)(m_menus["01"]))->pointingToMenu();
-  pm = pm || ((Menu01*)(m_menus["02"]))->pointingToMenu();
+  pm = pm || ((Menu01*)(m_menus["01"]))->pointingToMenu();
 
   return pm;
 }
@@ -135,11 +144,8 @@ VrMenu::pinPoint()
   if (((Map*)(m_menus["00"]))->pointingToMenu())
     return ((Map*)(m_menus["00"]))->pinPoint();
 
-  if (((Menu00*)(m_menus["01"]))->pointingToMenu())
-    return ((Menu00*)(m_menus["01"]))->pinPoint();
-
-  if (((Menu01*)(m_menus["02"]))->pointingToMenu())
-    return ((Menu01*)(m_menus["02"]))->pinPoint();
+  if (((Menu01*)(m_menus["01"]))->pointingToMenu())
+    return ((Menu01*)(m_menus["01"]))->pinPoint();
 
   return QVector3D(-1000,-1000,-1000);
 }

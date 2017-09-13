@@ -10,6 +10,7 @@
 
 Menu01::Menu01() : QObject()
 {
+  m_stepTexture = 0;
   m_glTexture = 0;
   m_glVertBuffer = 0;
   m_glIndexBuffer = 0;
@@ -19,12 +20,7 @@ Menu01::Menu01() : QObject()
   m_mapScale = 0.1;
 
   m_menuList.clear();
-
-//  m_menuList << "Reset";
-//  m_menuList << "-";
-//  m_menuList << "+";
-//  m_menuList << "-";
-//  m_menuList << "+";
+  m_menuDim.clear();
 
   m_relGeom.clear();
   m_optionsGeom.clear();
@@ -36,6 +32,9 @@ Menu01::Menu01() : QObject()
 
   m_softShadows = true;
   m_edges = true;
+  m_play = false;
+  m_playMenu = false;
+  m_playButton = false;
 }
 
 Menu01::~Menu01()
@@ -53,8 +52,54 @@ Menu01::~Menu01()
 }
 
 void
+Menu01::setTimeStep(QString stpStr)
+{
+  QFont font = QFont("Helvetica", 48);
+  QColor color(250, 230, 210); 
+  QImage img = StaticFunctions::renderText(stpStr,
+					   font,
+					   Qt::transparent, color, false);
+
+  int twd = img.width();
+  int tht = img.height();
+
+  int szh = qMax(twd, tht);
+  int szw = 1.333*szh;
+  QImage bimg = QImage(szw, szh, QImage::Format_ARGB32);
+  bimg.fill(Qt::transparent);
+  QPainter p(&bimg);
+  p.drawImage((szw-twd)/2, (szh-tht)/2, img.mirrored(false, true));
+
+
+  if (!m_stepTexture)
+    glGenTextures(1, &m_stepTexture);
+
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, m_stepTexture);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D,
+	       0,
+	       4,
+	       szw,
+	       szh,
+	       0,
+	       GL_RGBA,
+	       GL_UNSIGNED_BYTE,
+	       bimg.bits());
+  
+  glDisable(GL_TEXTURE_2D);
+}
+
+void
 Menu01::genVertData()
 {
+  if (m_playMenu && !m_stepTexture)
+    setTimeStep("0");
+  
+
   m_vertData = new float[32];
   memset(m_vertData, 0, sizeof(float)*32);
 
@@ -117,52 +162,7 @@ Menu01::genVertData()
   glBindVertexArray( 0 );
     
 
-//  QFont font = QFont("Helvetica", 48);
-//  QColor color(200, 220, 250); 
-//
-//  int wd = 0;
-//  QList<QImage> img;
-//  for (int i=0; i<m_menuList.count(); i++)
-//    {
-//      QImage textimg = StaticFunctions::renderText(m_menuList[i],
-//						   font,
-//						   Qt::black, QColor(200, 220, 250));
-//      wd = qMax(wd, textimg.width());
-//      img << textimg;
-//    }
-//  
-//  m_relGeom.clear();
-//  int ht = 0;
-//  for (int i=0; i<img.count(); i++)
-//    {
-//      m_relGeom << QRect(0, ht, img[i].width(), img[i].height());	  
-//      ht = ht + img[i].height();
-//    }
-//  
-//  m_texWd = wd;
-//  m_texHt = ht;
-//  
-//  m_image = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
-//  m_image.fill(Qt::transparent);
-//  QPainter p(&m_image);
-//  for (int i=0; i<img.count(); i++)
-//    {
-//      QRect geom = m_relGeom[i];
-//      p.drawImage(geom.x(), geom.y(), img[i].rgbSwapped());
-//    }
-//  
-//  m_optionsGeom.clear();
-//  m_optionsGeom << QRectF(0,    0.1,  1,   0.4);
-//
-//  m_optionsGeom << QRectF(0.05, 0.55, 0.4, 0.4);
-//  m_optionsGeom << QRectF(0.5,  0.55, 0.4, 0.4);
-//
-//  m_optionsGeom << QRectF(0.05, 1.0,  0.4, 0.4);
-//  m_optionsGeom << QRectF(0.5,  1.0,  0.4, 0.4);
-
-
-
-  QImage menuImg(":/images/menu01.png");
+  QImage menuImg(":/images/menu00.png");
   m_texWd = menuImg.width();
   m_texHt = menuImg.height();
   
@@ -196,6 +196,13 @@ Menu01::genVertData()
   m_relGeom << QRect(400, 300, 100, 100); // soft shadows
   m_relGeom << QRect(400, 400, 100, 90); // edges
 
+  m_relGeom << QRect(25,  510, 75, 80); // play-reset
+  m_relGeom << QRect(100, 510, 90, 80); // step back
+  m_relGeom << QRect(190, 510, 90, 80); // step forward
+  m_relGeom << QRect(280, 510, 90, 80); // play/pause
+
+  m_relGeom << QRect(380, 505, 120, 90); // step number
+
 
   m_optionsGeom.clear();
   for (int i=0; i<m_relGeom.count(); i++)
@@ -211,6 +218,9 @@ Menu01::genVertData()
 			      cht/(float)m_texHt);
     }
 
+
+  m_menuDim << QRect(0, 0, m_texWd, 500); // default menu
+  m_menuDim << QRect(0, 500, m_texWd, 100); // play menu
 }
 
 void
@@ -261,6 +271,16 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 
 
   QVector3D vfront = 2*front;
+
+  float rt = (float)m_menuDim[1].height()/(float)m_texHt;
+  QVector3D vfrontActual = vfront + rt*vfront;
+
+  if (m_playMenu) // show play menu
+    {
+      // increase height of menu image to accommodate play menu
+      vfront = vfrontActual;
+    }
+
   QVector3D vright = 2*right;
   QVector3D vleft = center - right - 0.1*front;
 
@@ -279,7 +299,33 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
       m_vertData[8*i+4] = 0;
       m_vertData[8*i+5] = 0;
     }
+
   float texC[] = {0,1, 0,0, 1,0, 1,1};
+  if (!m_playMenu) // don't show play menu
+    {
+      float rt = (float)m_menuDim[1].height()/(float)m_texHt;
+      float tws = 0;
+      float twe = 1;
+      float ths = rt;
+      float the = 1;
+      texC[0] = tws;      texC[1] = the;
+      texC[2] = tws;      texC[3] = ths;
+      texC[4] = twe;      texC[5] = ths;
+      texC[6] = twe;      texC[7] = the;
+    }
+  else
+    {
+      texC[0] = 0;
+      texC[1] = 1;
+      texC[2] = 0;
+      texC[3] = 0;
+      texC[4] = 1;
+      texC[5] = 0;
+      texC[6] = 1;
+      texC[7] = 1;
+    }
+
+
   m_vertData[6] =  texC[0];  m_vertData[7] =  texC[1];
   m_vertData[14] = texC[2];  m_vertData[15] = texC[3];
   m_vertData[22] = texC[4];  m_vertData[23] = texC[5];
@@ -293,12 +339,19 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
     
 
-  for(int og=0; og<m_optionsGeom.count(); og++)
+  //for(int og=0; og<m_optionsGeom.count(); og++)
+  int ogend = m_optionsGeom.count();
+  if (!m_playMenu)
+    ogend = 7;
+
+  for(int og=0; og<ogend; og++)
     {
       bool ok = false;
       ok = (m_selected == og);
       ok |= (og == 5 && m_softShadows);
       ok |= (og == 6 && m_edges);
+      ok |= (og >= 10);
+
       if (ok)
 	{
 	  float cx = m_optionsGeom[og].x();
@@ -306,11 +359,48 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	  float cwd = m_optionsGeom[og].width();
 	  float cht = m_optionsGeom[og].height();
 	  
+	  if (og < 10)
+	    {
+	      if (og == m_selected)
+		{
+		  if (triggerPressed)
+		    glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2);
+		  else
+		    glUniform3f(rcShaderParm[2], 0.5, 0.7, 1);
+		}
+	      else
+		glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5);
+	    }
+	  else if (og == 10)
+	    {
+	      if (!m_playButton) // hide play button
+		glUniform3f(rcShaderParm[2], 0.01, 0.01, 0.01);
+	      else
+		{
+		  if (m_selected == 10)
+		    {
+		      if (triggerPressed)
+			glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2);
+		      else
+			glUniform3f(rcShaderParm[2], 0.5, 0.7, 1);
+		    }
+		  else if (m_play)
+		    glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5);
+		  else
+		    glUniform3f(rcShaderParm[2], 0, 0, 0);
+		}
+	    }
+	  else if (og == 11) // show step number
+	    {
+	      glBindTexture(GL_TEXTURE_2D, m_stepTexture);
+	      glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+	    }
+
 	  QVector3D v[4];  
-	  v[0] = vleft + cx*vright - cy*vfront + 0.01*up; // slightly raised
-	  v[1] = v[0] - cht*vfront;
+	  v[0] = vleft + cx*vright - cy*vfrontActual + 0.01*up; // slightly raised
+	  v[1] = v[0] - cht*vfrontActual;
 	  v[2] = v[1] + cwd*vright;
-	  v[3] = v[2] + cht*vfront;
+	  v[3] = v[2] + cht*vfrontActual;
 	  
 	  for(int i=0; i<4; i++)
 	    {
@@ -327,11 +417,14 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	  float tx1 = 1;
 	  float ty1 = 1;
 	  
-	  tx0 = m_relGeom[og].x()/(float)m_texWd;
-	  tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
-	  
-	  ty0 = m_relGeom[og].y()/(float)m_texHt;
-	  ty1 = ty0 + m_relGeom[og].height()/(float)m_texHt;
+	  if (og < 11)
+	    {
+	      tx0 = m_relGeom[og].x()/(float)m_texWd;
+	      tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
+	      
+	      ty0 = m_relGeom[og].y()/(float)m_texHt;
+	      ty1 = ty0 + m_relGeom[og].height()/(float)m_texHt;
+	    }
 	  
 	  float texC[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
 	  
@@ -345,17 +438,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 			  sizeof(float)*8*4,
 			  &m_vertData[0]);
 	  
-	  if (og == m_selected)
-	    {
-	      if (triggerPressed)
-		glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2); // mix color
-	      else
-		glUniform3f(rcShaderParm[2], 0.5, 0.7, 1); // mix color
-	    }
-	  else
-	    glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5); // mix color
-
-	  
+	      
 	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 	}
     }
@@ -397,6 +480,15 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   QVector3D vft = 2*frontL;
   QVector3D vrt = 2*rightL;
+
+  float rt = (float)m_menuDim[1].height()/(float)m_texHt;
+  QVector3D vftActual = vft + rt*vft;
+  if (m_playMenu) // show play menu
+    {
+      // increase height of menu image to accommodate play menu
+      vft = vftActual;
+    }
+
   QVector3D vleft = centerL - rightL - 0.1*frontL;
 
 
@@ -407,7 +499,7 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
   QVector3D pinPoint = centerR + frontR;
 
   float rw, rh;
-  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleft, -vft, vrt,
+  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleft, -vftActual, vrt,
 							oupL.normalized(),
 							centerR, frontR.normalized(),
 							rh, rw);
@@ -415,22 +507,18 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
   if (!m_pointingToMenu)
     return -1;
 
-//  // project pinPoint onto map plane
-//  QVector3D pp = pinPoint-vleft;
-//  float rw = QVector3D::dotProduct(pp, -vft.normalized());
-//  float rh = QVector3D::dotProduct(pp, vrt.normalized());
-//  float rz = QVector3D::dotProduct(pp, oupL.normalized());
-//
-//  if (qAbs(rz) > 0.04)  // not closer enough to the map
-//    return m_selected;
-//  
-//  rh/=vrt.length();
-//  rw/=vft.length();
 
   m_pinPt = vleft + rh*vrt - rw*vft;
 
   int tp = -1;
-  for(int t=0; t<m_optionsGeom.count(); t++)
+
+  int ogend = 7;
+
+  // play menu : last is step number
+  if (m_playMenu)
+    ogend = 11;
+
+  for(int t=0; t<ogend; t++)
     {
       float cx = m_optionsGeom[t].x();
       float cy = m_optionsGeom[t].y();
@@ -446,6 +534,11 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   m_selected = tp;
 
+  //--------------------
+  if (!m_playButton && m_selected == 10)
+    m_selected = -1;
+  //--------------------
+  
   if (triggered)
     {
       if (m_selected == 0) emit resetModel();
@@ -462,6 +555,14 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 	{
 	  m_edges = !m_edges;
 	  emit updateEdges(m_edges);
+	}
+      else if (m_selected == 7) emit gotoFirstStep();
+      else if (m_selected == 8) emit gotoPreviousStep();
+      else if (m_selected == 9) emit gotoNextStep();
+      else if (m_selected == 10 && m_playButton)
+	{
+	  m_play = !m_play;
+	  emit playPressed(m_play);
 	}
     }
 
