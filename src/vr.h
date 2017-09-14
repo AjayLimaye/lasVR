@@ -180,10 +180,7 @@ class VR : public QObject
   QOpenGLFramebufferObject *m_rightBuffer;
   QOpenGLFramebufferObject *m_resolveBuffer;
   
-  
-  bool m_gripClickedLeft;
-  bool m_gripClickedRight;
-  
+    
   bool m_triggerActiveRight;
   bool m_triggerActiveLeft;
   bool m_triggerActiveBoth;
@@ -194,11 +191,12 @@ class VR : public QObject
   bool m_touchActiveRight;
   bool m_touchActiveLeft;
 
+  bool m_gripActiveRight;
+  bool m_gripActiveLeft;
+
   bool m_flightActive;
 //  bool m_touchTriggerActiveLeft;
   
-  bool m_gripActiveRight;
-  bool m_gripActiveLeft;
   
   QTimer m_flyTimer;
 
@@ -324,6 +322,7 @@ class VR : public QObject
   bool isTriggered(vr::VRControllerState_t&);
   bool isTouched(vr::VRControllerState_t&);
   bool isTouchPressed(vr::VRControllerState_t&);
+  bool isGripped(vr::VRControllerState_t&);
 
   void leftTriggerPressed();
   void leftTriggerMove();
@@ -345,6 +344,13 @@ class VR : public QObject
   void rightTouchPressMove();
   void rightTouchPressReleased();
 
+  void leftGripPressed();
+  void leftGripMove();
+  void leftGripReleased();
+
+  void rightGripPressed();
+  void rightGripMove();
+  void rightGripReleased();
   
   QMatrix4x4 quatToMat(QQuaternion); 
 

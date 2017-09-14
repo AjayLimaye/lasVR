@@ -21,6 +21,8 @@ VR::VR() : QObject()
   m_rightBuffer = 0;
   m_mapBuffer = 0;
 
+  m_gripActiveRight = false;
+  m_gripActiveLeft = false;
   m_touchActiveRight = false;
   m_touchActiveLeft = false;
   m_triggerActiveRight = false;
@@ -403,6 +405,9 @@ VR::updateInput()
   bool leftTouchPressActive = isTouchPressed(m_stateLeft);
   bool rightTouchPressActive = isTouchPressed(m_stateRight);
 
+  bool leftGripActive = isGripped(m_stateLeft);
+  bool rightGripActive = isGripped(m_stateRight);
+
 
 // -----------------------
 // press events
@@ -416,11 +421,20 @@ VR::updateInput()
     }
 
 
+  // touch
   if (leftTouchPressActive && !m_touchPressActiveLeft)
     leftTouchPressed();
 
   if (rightTouchPressActive && !m_touchPressActiveRight)
     rightTouchPressed();
+
+
+  // grip
+  if (leftGripActive && !m_gripActiveLeft)
+    leftGripPressed();
+
+  if (rightGripActive && !m_gripActiveRight)
+    rightGripPressed();
 
 // -----------------------
 
@@ -446,12 +460,21 @@ VR::updateInput()
       checkOptions(false);
     }
 
-
+  //touch
   if (leftTouchPressActive && m_touchPressActiveLeft)
     leftTouchPressMove();
 
   if (rightTouchPressActive && m_touchPressActiveRight)
     rightTouchPressMove();
+
+
+  // grip
+  if (leftGripActive && m_gripActiveLeft)
+    leftGripMove();
+
+  if (rightGripActive && m_gripActiveRight)
+    rightGripMove();
+
 // -----------------------
 
 
@@ -473,14 +496,86 @@ VR::updateInput()
     }
 
 
+  // touch
   if (!leftTouchPressActive && m_touchPressActiveLeft)
     leftTouchPressReleased();
 
   if (!rightTouchPressActive && m_touchPressActiveRight)
     rightTouchPressReleased();
 
+
+  // grip
+  if (!leftGripActive && m_gripActiveLeft)
+    leftGripReleased();
+
+  if (!rightGripActive && m_gripActiveRight)
+    rightGripReleased();
+
 // -----------------------
 
+}
+
+void
+VR::leftGripPressed()
+{
+  m_gripActiveLeft = true;
+
+  // save teleport when both grips pressed
+  if (m_gripActiveRight)
+    saveTeleportNode();
+}
+void
+VR::leftGripMove()
+{
+  QVector3D cen = vrHmdPosition();
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(cen);
+  m_model_xform.rotate(1.0, 0, 1, 0); // rotate 1 degree
+  m_model_xform.translate(-cen);
+  m_final_xform = m_model_xform * m_final_xform;
+}
+
+void
+VR::leftGripReleased()
+{
+  m_gripActiveLeft = false;
+
+  m_final_xform = m_model_xform * m_final_xform;
+  m_model_xform.setToIdentity();
+  
+//  // generate the drawlist each time changes are made
+//  m_genDrawList = true;
+}
+
+void
+VR::rightGripPressed()
+{
+  m_gripActiveRight = true;
+
+  // save teleport when both grips pressed
+  if (m_gripActiveLeft)
+    saveTeleportNode();
+}
+void
+VR::rightGripMove()
+{
+  QVector3D cen = vrHmdPosition();
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(cen);
+  m_model_xform.rotate(-1.0, 0, 1, 0); // rotate 1 degree
+  m_model_xform.translate(-cen);
+  m_final_xform = m_model_xform * m_final_xform;
+}
+void
+VR::rightGripReleased()
+{
+  m_gripActiveRight = false;
+
+  m_final_xform = m_model_xform * m_final_xform;
+  m_model_xform.setToIdentity();
+  
+//  // generate the drawlist each time changes are made
+//  m_genDrawList = true;
 }
 
 void
@@ -625,14 +720,29 @@ VR::rightTouchPressMove()
     move = -move;
   
   m_model_xform.translate(-move);
-  
-  //---------------------
-  // scale up if needed
-  float sf = m_teleportScale/m_scaleFactor;
-  if (sf > 1.0)
+
+  bool changeScale = false;
+  float sf = 1.0;
+  if (moveD.y() > 0.8) // moving up
     {
-      sf = qPow(sf, 0.005f);
-      
+      // scale down while going up in the sky
+      sf = 0.99;
+      changeScale = true;
+    }
+  else if (moveD.y() < -0.1) // moving down
+    {
+      // scale up while going down to ground
+      // but only if below threshold 
+      sf = m_teleportScale/m_scaleFactor;
+      if (sf > 1.0)
+	{
+	  sf = qPow(sf, 0.01f);
+	  changeScale = true;
+	}
+    }
+
+  if (changeScale)
+    {
       QVector3D cen;
       if (m_pinPt.x() >= 0)
 	cen = m_final_xform.map(m_projectedPinPt);
@@ -646,7 +756,7 @@ VR::rightTouchPressMove()
       m_scaleFactor *= sf;
       m_flightSpeed *= sf;
     }
-  //---------------------
+
   
   m_final_xform = m_model_xform * m_final_xform;
 
@@ -805,6 +915,13 @@ VR::isTriggered(vr::VRControllerState_t &state)
 {
   return (state.ulButtonPressed &
 	  vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger));
+}
+
+bool
+VR::isGripped(vr::VRControllerState_t &state)
+{
+  return (state.ulButtonPressed &
+	  vr::ButtonMaskFromId(vr::k_EButton_Grip));
 }
 
 bool

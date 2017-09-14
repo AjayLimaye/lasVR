@@ -365,9 +365,9 @@ Map::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
     memset(vd, 0, 1000*sizeof(float));
 
     int ofn = 0;
-    vd[8*ofn+0] = vcpCP.x() + 0.05*up.x();
-    vd[8*ofn+1] = vcpCP.y() + 0.05*up.y();
-    vd[8*ofn+2] = vcpCP.z() + 0.05*up.z();    
+    vd[8*ofn+0] = vcpCP.x() + 0.5*up.x();
+    vd[8*ofn+1] = vcpCP.y() + 0.5*up.y();
+    vd[8*ofn+2] = vcpCP.z() + 0.5*up.z();    
     ofn++;
 
     vd[8*ofn+0] = vcpp0.x() + 0.05*up.x();
@@ -589,7 +589,7 @@ Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
       QVector3D vcp = vleftRot + ry*vrtRot + rx*vftRot;
       
       float dtl = vcp.distanceToLine(pinPoint, frontR);
-      if (dtl < 0.02 && ndist > dtl)
+      if (dtl < 0.05 && ndist > dtl)
 	{	      
 	  tp = t;
 	  ndist = dtl;
@@ -597,12 +597,6 @@ Map::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
     }
 
   m_teleportTouched = tp;
-
-
-//  m_pointingToMenu = StaticFunctions::intersectRayPlane(vleftRot, vftRot, vrtRot,
-//							  oupL.normalized(),
-//							  centerR, frontR.normalized());
-
 
   return tp;
 }
