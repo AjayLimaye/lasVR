@@ -35,6 +35,8 @@ class VR : public QObject
   void initVR();
   bool vrEnabled() { return (m_hmd > 0); }
 
+  void setHeadSetType(int hs) { m_headSetType = hs; }
+
   int screenWidth() { return m_eyeWidth; }
   int screenHeight() { return m_eyeHeight; }
 
@@ -173,6 +175,7 @@ class VR : public QObject
   QMatrix4x4 m_final_xformInverted;
   QMatrix4x4 m_scaleMat;
   
+  int m_headSetType;
   uint32_t m_eyeWidth, m_eyeHeight;
   
   QOpenGLFramebufferObject *m_mapBuffer;
@@ -340,9 +343,17 @@ class VR : public QObject
   void leftTouchPressMove();
   void leftTouchPressReleased();
 
+  void leftTouched();
+  void leftTouchMove();
+  void leftTouchReleased();
+
   void rightTouchPressed();
   void rightTouchPressMove();
   void rightTouchPressReleased();
+
+  void rightTouched();
+  void rightTouchMove();
+  void rightTouchReleased();
 
   void leftGripPressed();
   void leftGripMove();

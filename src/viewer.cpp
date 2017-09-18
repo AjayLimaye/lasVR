@@ -9,6 +9,7 @@
 #include <QGLViewer/manipulatedCameraFrame.h>
 using namespace qglviewer;
 
+#include <QApplication>
 #include <QFileDialog>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -119,15 +120,21 @@ Viewer::updateFramerate()
 void
 Viewer::reset()
 {
+  qint64 million = 1000000; 
+  m_pointBudget = 5*million;
+
+  m_headSetType = 0; // None
+
+  QString assetDir = qApp->applicationDirPath() + QDir::separator() + "assets";
+  QString jsonfile = QDir(assetDir).absoluteFilePath("top.json");
+  loadTopJson(jsonfile);
+
   m_firstImageDone = 0;
   m_vboLoadedAll = false;
   m_fastDraw = false;
 
   m_pointType = true; // adaptive
   m_pointSize = 2;
-
-  qint64 million = 1000000; 
-  m_pointBudget = 10*million;
 
   m_pointsDrawn = 0;
   m_minNodePixelSize = 100;
@@ -1557,8 +1564,6 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
   glUniform1i(m_shadowParm[1], 0); // colors
   glUniform1i(m_shadowParm[2], 1); // depthTex1
 
-  //glUniform1i(m_shadowParm[3], m_showEdges); // showedges
-  //glUniform1i(m_shadowParm[4], m_softShadows); // softShadows
   glUniform1i(m_shadowParm[3], m_vr.edges()); // showedges
   glUniform1i(m_shadowParm[4], m_vr.softShadows()); // softShadows
 
@@ -2678,4 +2683,37 @@ Viewer::genDrawNodeListForVR()
   emit updateView();
 
   emit message("viewer - update view");
+}
+
+void
+Viewer::loadTopJson(QString jsonfile)
+{
+  QFile loadFile(jsonfile);
+  loadFile.open(QIODevice::ReadOnly);
+
+  QByteArray data = loadFile.readAll();
+
+  if (data.count() == 0) // empty file
+    return;
+
+  QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
+
+  QJsonObject jsonMod = jsonDoc.object();
+
+  qint64 million = 1000000; 
+  if (jsonMod.contains("top"))
+    {
+      QJsonObject jsonInfo = jsonMod["top"].toObject();
+      
+      if (jsonInfo.contains("point_budget"))
+	m_pointBudget = million * jsonInfo["point_budget"].toInt();
+
+      if (jsonInfo.contains("headset"))
+	{
+	  QString hs = jsonInfo["headset"].toString();
+	  if (hs == "vive") m_headSetType = 1;
+	  if (hs == "oculus") m_headSetType = 2;
+	}
+
+    }
 }

@@ -165,6 +165,8 @@ class Viewer : public QGLViewer
 
     int m_minNodePixelSize;
 
+    int m_headSetType;
+
     Vec m_fruCnr[8];
     GLdouble m_planeCoefficients[6][4];
 
@@ -251,6 +253,8 @@ class Viewer : public QGLViewer
     bool linkClicked(QMouseEvent*);
 
     void generateFirstImage();
+
+    void loadTopJson(QString);
 };
 
 #endif
