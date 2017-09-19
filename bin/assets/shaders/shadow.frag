@@ -118,19 +118,28 @@ void main()
    {
     float response = 0.0;
     float tele = 0.0;
-    float dty1 = pow(1.0-dtex.z, 0.5);
-    float shadow = 1.0*dty1;  
+    //float dty1 = pow(dtex.z, 0.5);
+    float dty1 = dtex.z*dtex.z;
+    float shadow = 0.5*dty1;
     depth = log2(depth);
     for(int i=0; i<8; i++)
     {
       vec2 pos = spos + vec2(cx[i],cy[i]);
+
       float od = depth - log2(texture2DRect(depthTex, pos).x);
       response += max(0.0, od-0.05);
+
+      //vec4 p = texture2DRect(depthTex, pos);
+      //float od = dtex.z - (p.z-0.1*p.y);
+      //response += max(0.0, od);
+
       tele ++;
     } 
     response /= tele;
-    shadow = exp(-response*300*shadow);
-
+    shadow = exp(-response*10*shadow);
     color.rgb = mix(color.rgb*shadow, color.rgb, smoothstep(nearD2, farD2, dtex.x));
+
+    //float shadow = exp(-response*300);
+    //color.rgb = mix(color.rgb*shadow, color.rgb, smoothstep(nearD2, farD2, dtex.x));
    }
 }

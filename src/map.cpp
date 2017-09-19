@@ -365,9 +365,9 @@ Map::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
     memset(vd, 0, 1000*sizeof(float));
 
     int ofn = 0;
-    vd[8*ofn+0] = vcpCP.x() + 0.5*up.x();
-    vd[8*ofn+1] = vcpCP.y() + 0.5*up.y();
-    vd[8*ofn+2] = vcpCP.z() + 0.5*up.z();    
+    vd[8*ofn+0] = vcpCP.x() + 0.2*up.x();
+    vd[8*ofn+1] = vcpCP.y() + 0.2*up.y();
+    vd[8*ofn+2] = vcpCP.z() + 0.2*up.z();    
     ofn++;
 
     vd[8*ofn+0] = vcpp0.x() + 0.05*up.x();
@@ -441,7 +441,7 @@ Map::draw(QMatrix4x4 mvp, QMatrix4x4 matL)
 		    sizeof(float)*npts*8,
 		    &vd[0]);
 
-    glLineWidth(1.0);
+    glLineWidth(3.0);
     glUniform3f(rcShaderParm[2], 1, 1, 1); // mix color
 
     glUniform1i(rcShaderParm[5], 1); // lines

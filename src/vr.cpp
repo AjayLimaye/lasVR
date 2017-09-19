@@ -552,10 +552,6 @@ void
 VR::leftGripPressed()
 {
   m_gripActiveLeft = true;
-
-  // save teleport when both grips pressed
-  if (m_gripActiveRight)
-    saveTeleportNode();
 }
 void
 VR::leftGripMove()
@@ -586,10 +582,6 @@ void
 VR::rightGripPressed()
 {
   m_gripActiveRight = true;
-
-  // save teleport when both grips pressed
-  if (m_gripActiveLeft)
-    saveTeleportNode();
 }
 void
 VR::rightGripMove()
@@ -911,6 +903,10 @@ VR::leftTouchPressed()
 
   m_startTouchX = m_stateLeft.rAxis[0].x;
   m_startTouchY = m_stateLeft.rAxis[0].y;
+
+  // save teleport when both touchpads pressed
+  if (m_touchPressActiveRight)
+    saveTeleportNode();
 }
 void
 VR::leftTouchPressMove()
@@ -943,6 +939,10 @@ VR::rightTouchPressed()
   m_touchY = m_stateRight.rAxis[0].y;
   
   m_flyTimer.start(5000); // generate new draw list every 5 sec
+
+  // save teleport when both touchpads pressed
+  if (m_touchPressActiveLeft)
+    saveTeleportNode();
 }
 void
 VR::rightTouchPressMove()
