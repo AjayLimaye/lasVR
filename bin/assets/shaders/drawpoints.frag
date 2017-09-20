@@ -19,6 +19,9 @@ uniform bool shadows;
 
 void main()
 {
+  if (length(fragmentColor) <= 0)
+    discard;
+
 //  float dc = length(2.0 * gl_PointCoord - 1.0);
 //  if (dc > 1.0) discard;
 

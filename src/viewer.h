@@ -149,7 +149,7 @@ class Viewer : public QGLViewer
     QList<Vec> m_colorGrad;
 
     GLhandleARB m_depthShader;
-    GLint m_depthParm[20];
+    GLint m_depthParm[50];
 
     GLhandleARB m_blurShader;
     GLint m_blurParm[20];

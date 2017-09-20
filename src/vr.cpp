@@ -748,6 +748,12 @@ VR::rightTouched()
 void
 VR::rightTouchMove()
 {
+  if (m_touchPressActiveRight)
+    {
+      rightTouchReleased();
+      return;
+    }
+  
   m_touchX = m_stateRight.rAxis[0].x;
   m_touchY = m_stateRight.rAxis[0].y;
 
@@ -933,131 +939,149 @@ VR::rightTouchPressed()
 {
   m_touchPressActiveRight = true;
 
-  m_flightActive = true;
+//  m_flightActive = true;
   
   m_touchX = m_stateRight.rAxis[0].x;
   m_touchY = m_stateRight.rAxis[0].y;
   
-  m_flyTimer.start(5000); // generate new draw list every 5 sec
+//  m_flyTimer.start(5000); // generate new draw list every 5 sec
 
   // save teleport when both touchpads pressed
   if (m_touchPressActiveLeft)
     saveTeleportNode();
+
+
+  //---------------------------
+  if (m_pinPt.x() >= 0)
+    {
+      m_deadRadius = 1;
+      m_deadPoint = m_projectedPinPt;
+    }
+  //---------------------------
+
 }
 void
 VR::rightTouchPressMove()
 {
-  m_model_xform.setToIdentity();      
-
-  QMatrix4x4 mat = m_matrixDevicePose[m_rightController];    
-  QVector4D center = mat * QVector4D(0,0,0,1);
-  QVector4D point = mat * QVector4D(0,0,1,1);
-  QVector3D moveD = QVector3D(center-point);
-
-  moveD.normalize();
-  float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
-  QVector3D move = moveD*throttle;
-  
-  if (m_touchY < 0) // move backward
-    move = -move;
-  
-  m_model_xform.translate(-move);
-
-  bool changeScale = false;
-  float sf = 1.0;
-  if (moveD.y() > 0.8) // moving up
+  //---------------------------
+  if (m_pinPt.x() >= 0)
     {
-      // scale down while going up in the sky
-      sf = 0.99;
-      changeScale = true;
+      m_deadRadius = 0.5;
+      m_deadPoint = m_projectedPinPt;
     }
-  else if (moveD.y() < -0.4) // moving down
-    {
-      // scale up while going down to ground
-      // but only if below threshold 
-      sf = m_teleportScale/m_scaleFactor;
-      if (sf > 1.0)
-	{
-	  sf = qPow(sf, 0.01f);
-	  changeScale = true;
-	}
-    }
+  //---------------------------
 
-  if (changeScale)
-    {
-      QVector3D cen;
-      if (m_pinPt.x() >= 0)
-	cen = m_final_xform.map(m_projectedPinPt);
-      else 
-	cen = getPosition(m_rightController);
-      
-      m_model_xform.translate(cen);
-      m_model_xform.scale(sf);
-      m_model_xform.translate(-cen);
-      
-      m_scaleFactor *= sf;
-      m_flightSpeed *= sf;
-    }
-
-  
-  m_final_xform = m_model_xform * m_final_xform;
-
-  m_final_xformInverted = m_final_xform.inverted();
-      
-
-  //------------------  
-  // keep head above ground
-  if (m_showMap && m_depthBuffer)
-    {
-      int wd = screenWidth();
-      int ht = screenHeight();
-
-      QVector3D hpos = hmdPosition();
-      QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
-      int dx = hp.x();
-      int dy = hp.y();
-
-      if (dx > 0 && dx < wd-1 &&
-	  dy > 0 && dy < ht-1)
-	{
-	  float z = m_depthBuffer[(ht-1-dy)*wd + dx];
-	  if (z > 0.0 && z < 1.0)
-	    {
-	      float sf = m_teleportScale/m_scaleFactor;
-	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
-	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
-
-	      if (m_gravity || // stick close to ground
-		  pos.z() > hpos.z()) // push it above the ground
-		{
-		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
-
-		  // move only vertically
-		  if (pos.z() > hpos.z())
-		    mup *= 0.1; // move quickly above ground
-		  else
-		    mup*=0.05; // come down slowly
-
-		  QVector3D move(0,mup,0);
-		  m_model_xform.setToIdentity();
-		  m_model_xform.translate(-move);
-		  m_final_xform = m_model_xform * m_final_xform;
-		}
-	    }
-	}
-    }
-  //------------------  
-
-
-  genEyeMatrices();
-
-  
-  // generate the drawlist each time changes are made
-  if (!m_flyTimer.isActive())
-    {
-      m_genDrawList = true;
-      m_flyTimer.start(5000); // generate new draw list every 5 sec
-    }
+//  m_model_xform.setToIdentity(); 
+//
+//  QMatrix4x4 mat = m_matrixDevicePose[m_rightController];    
+//  QVector4D center = mat * QVector4D(0,0,0,1);
+//  QVector4D point = mat * QVector4D(0,0,1,1);
+//  QVector3D moveD = QVector3D(center-point);
+//
+//  moveD.normalize();
+//  float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
+//  QVector3D move = moveD*throttle;
+//  
+//  if (m_touchY < 0) // move backward
+//    move = -move;
+//  
+//  m_model_xform.translate(-move);
+//
+//  bool changeScale = false;
+//  float sf = 1.0;
+//  if (moveD.y() > 0.8) // moving up
+//    {
+//      // scale down while going up in the sky
+//      sf = 0.99;
+//      changeScale = true;
+//    }
+//  else if (moveD.y() < -0.4) // moving down
+//    {
+//      // scale up while going down to ground
+//      // but only if below threshold 
+//      sf = m_teleportScale/m_scaleFactor;
+//      if (sf > 1.0)
+//	{
+//	  sf = qPow(sf, 0.01f);
+//	  changeScale = true;
+//	}
+//    }
+//
+//  if (changeScale)
+//    {
+//      QVector3D cen;
+//      if (m_pinPt.x() >= 0)
+//	cen = m_final_xform.map(m_projectedPinPt);
+//      else 
+//	cen = getPosition(m_rightController);
+//      
+//      m_model_xform.translate(cen);
+//      m_model_xform.scale(sf);
+//      m_model_xform.translate(-cen);
+//      
+//      m_scaleFactor *= sf;
+//      m_flightSpeed *= sf;
+//    }
+//
+//  
+//  m_final_xform = m_model_xform * m_final_xform;
+//
+//  m_final_xformInverted = m_final_xform.inverted();
+//      
+//
+//  //------------------  
+//  // keep head above ground
+//  if (m_showMap && m_depthBuffer)
+//    {
+//      int wd = screenWidth();
+//      int ht = screenHeight();
+//
+//      QVector3D hpos = hmdPosition();
+//      QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
+//      int dx = hp.x();
+//      int dy = hp.y();
+//
+//      if (dx > 0 && dx < wd-1 &&
+//	  dy > 0 && dy < ht-1)
+//	{
+//	  float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+//	  if (z > 0.0 && z < 1.0)
+//	    {
+//	      float sf = m_teleportScale/m_scaleFactor;
+//	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
+//	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
+//
+//	      if (m_gravity || // stick close to ground
+//		  pos.z() > hpos.z()) // push it above the ground
+//		{
+//		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
+//
+//		  // move only vertically
+//		  if (pos.z() > hpos.z())
+//		    mup *= 0.1; // move quickly above ground
+//		  else
+//		    mup*=0.05; // come down slowly
+//
+//		  QVector3D move(0,mup,0);
+//		  m_model_xform.setToIdentity();
+//		  m_model_xform.translate(-move);
+//		  m_final_xform = m_model_xform * m_final_xform;
+//		}
+//	    }
+//	}
+//    }
+//  //------------------  
+//
+//
+//  genEyeMatrices();
+//
+//  
+//  // generate the drawlist each time changes are made
+//  if (!m_flyTimer.isActive())
+//    {
+//      m_genDrawList = true;
+//      m_flyTimer.start(5000); // generate new draw list every 5 sec
+//    }
 }
 void
 VR::rightTouchPressReleased()
@@ -1391,6 +1415,8 @@ VR::getQuaternion(vr::HmdMatrix34_t mat)
 void
 VR::preDraw()
 {
+  m_deadRadius = -1;
+
   updatePoses();
   updateInput();
   buildAxes();

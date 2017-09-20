@@ -18,6 +18,7 @@ Label::Label()
   m_treeInfo.clear();
 
   m_vertData = 0;
+  m_boxData = 0;
   m_texWd = m_texHt = 0;
 }
 
@@ -158,7 +159,9 @@ Label::drawLabel(QVector3D cpos,
 		 QVector3D rDir,
 		 QMatrix4x4 mvp,
 		 QMatrix4x4 matR,
-		 QMatrix4x4 finalxform)
+		 QMatrix4x4 finalxform,
+		 float deadRadius,
+		 QVector3D deadPoint)
 {
   if (!m_vertData)
     {
@@ -174,7 +177,7 @@ Label::drawLabel(QVector3D cpos,
       glGenBuffers( 1, &m_glVertBuffer );
       glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer );
       glBufferData( GL_ARRAY_BUFFER,
-		    sizeof(float)*8*4,
+		    sizeof(float)*8*30,
 		    NULL,
 		    GL_STATIC_DRAW );
       
@@ -204,22 +207,57 @@ Label::drawLabel(QVector3D cpos,
 			     (char *)NULL + sizeof(float)*6 );
       
 
-
-      uchar indexData[6];
-      indexData[0] = 0;
-      indexData[1] = 1;
-      indexData[2] = 2;
-      indexData[3] = 0;
-      indexData[4] = 2;
-      indexData[5] = 3;
       // Create and populate the index buffer
-      glGenBuffers( 1, &m_glIndexBuffer );
-      glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer );
-      glBufferData( GL_ELEMENT_ARRAY_BUFFER,
-		    sizeof(uchar) * 2 * 3,
-		    &indexData[0],
-		    GL_STATIC_DRAW );
-      
+      glGenBuffers(1, &m_glIndexBuffer);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
+
+      if (m_treeInfo.count() > 0) // draw box
+	{
+	  if (!m_boxData)
+	    createBox();
+
+	  glBindVertexArray(m_glVertArray);
+	  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
+	  glBufferSubData(GL_ARRAY_BUFFER,
+			  0,
+			  sizeof(float)*8*24,
+			  &m_boxData[0]);
+
+	  uchar indexData[36];
+//	  for(int i=0; i<24; i++)
+//	    indexData[i] = i;
+
+	  for(int i=0; i<6; i++)
+	    {
+	      indexData[6*i+0] = 4*i+0;
+	      indexData[6*i+1] = 4*i+1;
+	      indexData[6*i+2] = 4*i+2;
+	      indexData[6*i+3] = 4*i+0;
+	      indexData[6*i+4] = 4*i+2;
+	      indexData[6*i+5] = 4*i+3;
+	    }
+
+	  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		       sizeof(uchar)*36,
+		       &indexData[0],
+		       GL_STATIC_DRAW);
+	}
+      else
+	{
+	  uchar indexData[6];
+	  indexData[0] = 0;
+	  indexData[1] = 1;
+	  indexData[2] = 2;
+	  indexData[3] = 0;
+	  indexData[4] = 2;
+	  indexData[5] = 3;
+
+	  glBufferData( GL_ELEMENT_ARRAY_BUFFER,
+			sizeof(uchar) * 2 * 3,
+			&indexData[0],
+			GL_STATIC_DRAW );
+	}
+
       glBindVertexArray( 0 );
 
 
@@ -254,6 +292,7 @@ Label::drawLabel(QVector3D cpos,
 	  
 	  glDisable(GL_TEXTURE_2D);
 	}
+
     }
   
 
@@ -266,14 +305,24 @@ Label::drawLabel(QVector3D cpos,
       frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
       QVector3D pinPoint = centerR + frontR;
       QVector3D fxvp = finalxform.map(vp);
+
       if (fxvp.distanceToLine(pinPoint, frontR) > 0.02)
 	{
-	  showTreeInfoPosition(mvp);
+	  Vec vp2d(vp.x(), vp.y(), 0);
+	  Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
+	  
+	  if (deadRadius <= 0 ||
+	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
+	    showTreeInfoPosition(mvp);
+	  else
+	    drawBox(mvp, vDir);
+
 	  return;
 	}
     }
   else if ((cpos-vp).length() > m_proximity)
     return;
+
 
   glDepthMask(GL_FALSE); // disable writing to depth buffer
   glDisable(GL_DEPTH_TEST);
@@ -436,7 +485,7 @@ Label::checkLink(Camera *cam, QPoint pos)
 void
 Label::showTreeInfoPosition(QMatrix4x4 mvp)
 {
-  glDepthMask(GL_FALSE); // enable writing to depth buffer
+  glDepthMask(GL_FALSE); // disable writing to depth buffer
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -509,4 +558,165 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
 
   glDisable(GL_BLEND);
   glDepthMask(GL_TRUE); // enable writing to depth buffer
+}
+
+void
+Label::createBox()
+{
+  Vec bmin, bmax;
+  bmin = Vec(-m_treeInfo[1]/4, -m_treeInfo[1]/4, 0);
+  bmax = Vec(m_treeInfo[1]/4, m_treeInfo[1]/4, m_treeInfo[0]);
+
+  bmin *= 0.01;
+  bmax *= 0.01;
+
+  bmin += m_position;
+  bmax += m_position;
+ 
+  if (!m_boxData)
+    m_boxData = new float[24*8];
+
+  QList<Vec> box; 
+  box << Vec(bmin.x, bmin.y, bmin.z);
+  box << Vec(bmax.x, bmin.y, bmin.z);
+  box << Vec(bmax.x, bmax.y, bmin.z);
+  box << Vec(bmin.x, bmax.y, bmin.z);
+
+  box << Vec(bmin.x, bmin.y, bmax.z);
+  box << Vec(bmax.x, bmin.y, bmax.z);
+  box << Vec(bmax.x, bmax.y, bmax.z);
+  box << Vec(bmin.x, bmax.y, bmax.z);
+
+  box << Vec(bmin.x, bmax.y, bmin.z);
+  box << Vec(bmax.x, bmax.y, bmin.z);
+  box << Vec(bmax.x, bmax.y, bmax.z);
+  box << Vec(bmin.x, bmax.y, bmax.z);
+
+  box << Vec(bmin.x, bmin.y, bmin.z);
+  box << Vec(bmax.x, bmin.y, bmin.z);
+  box << Vec(bmax.x, bmin.y, bmax.z);
+  box << Vec(bmin.x, bmin.y, bmax.z);  
+
+  box << Vec(bmin.x, bmin.y, bmin.z);
+  box << Vec(bmin.x, bmax.y, bmin.z);
+  box << Vec(bmin.x, bmax.y, bmax.z);
+  box << Vec(bmin.x, bmin.y, bmax.z);  
+
+  box << Vec(bmax.x, bmin.y, bmin.z);
+  box << Vec(bmax.x, bmax.y, bmin.z);
+  box << Vec(bmax.x, bmax.y, bmax.z);
+  box << Vec(bmax.x, bmin.y, bmax.z);  
+
+  QList<Vec> boxN; 
+  boxN << Vec(0,0,-1);
+  boxN << Vec(0,0,-1);
+  boxN << Vec(0,0,-1);
+  boxN << Vec(0,0,-1);
+
+  boxN << Vec(0,0,1);
+  boxN << Vec(0,0,1);
+  boxN << Vec(0,0,1);
+  boxN << Vec(0,0,1);
+
+  boxN << Vec(0,1,0);
+  boxN << Vec(0,1,0);
+  boxN << Vec(0,1,0);
+  boxN << Vec(0,1,0);
+
+  boxN << Vec(0,-1,0);
+  boxN << Vec(0,-1,0);
+  boxN << Vec(0,-1,0);
+  boxN << Vec(0,-1,0);
+
+  boxN << Vec(-1,0,0);
+  boxN << Vec(-1,0,0);
+  boxN << Vec(-1,0,0);
+  boxN << Vec(-1,0,0);
+
+  boxN << Vec(1,0,0);
+  boxN << Vec(1,0,0);
+  boxN << Vec(1,0,0);
+  boxN << Vec(1,0,0);
+  
+  float texC[] = {1,0, 0,0, 0,1, 1,1};
+  for(int i=0; i<24; i++)
+    {
+      m_boxData[8*i+0] = box[i].x;
+      m_boxData[8*i+1] = box[i].y;
+      m_boxData[8*i+2] = box[i].z;
+      m_boxData[8*i+3] = boxN[i].x;
+      m_boxData[8*i+4] = boxN[i].y;
+      m_boxData[8*i+5] = boxN[i].z;
+      m_boxData[8*i+6] = texC[2*(i%4)+0];
+      m_boxData[8*i+7] = texC[2*(i%4)+1];
+    }
+}
+
+void
+Label::drawBox(QMatrix4x4 mvp, QVector3D vDir)
+{
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
+  glEnable(GL_TEXTURE_2D);
+
+
+  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  0,
+		  sizeof(float)*8*24,
+		  &m_boxData[0]);
+
+  glEnable(GL_TEXTURE_2D);
+
+
+  glBindVertexArray(m_glVertArray);
+  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
+
+  // Identify the components in the vertex buffer
+  glEnableVertexAttribArray( 0 );
+  glVertexAttribPointer( 0, //attribute 0
+			 3, // size
+			 GL_FLOAT, // type
+			 GL_FALSE, // normalized
+			 sizeof(float)*8, // stride
+			 (void *)0 ); // starting offset
+  
+  glEnableVertexAttribArray( 1 );
+  glVertexAttribPointer( 1,
+			 3,
+			 GL_FLOAT,
+			 GL_FALSE,
+			 sizeof(float)*8,
+			 (char *)NULL + sizeof(float)*3 );
+  
+  glEnableVertexAttribArray( 2 );
+  glVertexAttribPointer( 2,
+			 2,
+			 GL_FLOAT,
+			 GL_FALSE, 
+			 sizeof(float)*8,
+			 (char *)NULL + sizeof(float)*6 );
+
+  glColor3f(0.5, 0.6, 1.0);
+
+  glUseProgram(ShaderFactory::rcShader());
+  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
+  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
+  glUniform1i(rcShaderParm[1], 4); // texture
+  glUniform3f(rcShaderParm[2], 0.3, 0.4, 0.5); // mix color
+  glUniform3f(rcShaderParm[3], vDir.x(), vDir.y(), vDir.z()); // view direction
+  glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
+  glUniform1i(rcShaderParm[5], 5); // lines/quads/poly/tri
+  glUniform1f(rcShaderParm[6], 10); // pointsize
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
+  //glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, 0);  
+  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);  
+
+  glBindVertexArray(0);
+
+  glUseProgram( 0 );
+
+  glDisable(GL_TEXTURE_2D);
+
 }

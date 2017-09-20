@@ -1016,7 +1016,7 @@ PointCloud::loadLabelsCSV(QString csvfile)
 	  x = words[2].toFloat() * 0.01;
 	  y = words[3].toFloat() * 0.01;
 	  z = words[7].toFloat() * 0.01;
-	  z -= 0.2; // reduce height in order to match the trees
+	  z -= 0.3; // reduce height in order to match the trees
 
 	  treeHeight = words[5].toFloat();
 	  treeArea = words[6].toFloat();
@@ -1062,14 +1062,17 @@ PointCloud::drawLabels(QVector3D cpos,
 		       QVector3D rDir,
 		       QMatrix4x4 mat,
 		       QMatrix4x4 matR,
-		 QMatrix4x4 finalxform)
+		       QMatrix4x4 finalxform,
+		       float deadRadius,
+		       QVector3D deadPoint)
 {
   // do not draw labels if this point cloud is not visible
   if (!m_visible)
     return;
 
   for(int i=0; i<m_labels.count(); i++)
-    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir, mat, matR, finalxform);
+    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir, mat, matR, finalxform,
+			   deadRadius, deadPoint);
 }
 
 

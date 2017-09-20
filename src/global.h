@@ -21,6 +21,9 @@ class Global
   static GLuint homeSpriteTexture();
   static void removeHomeSpriteTexture();
 
+  static GLuint boxSpriteTexture();
+  static void removeBoxSpriteTexture();
+
   static void setMenuCam(Camera);
   static Vec menuCamProjectedCoordinatesOf(Vec);
   static Vec menuCamUnprojectedCoordinatesOf(Vec);
@@ -31,6 +34,7 @@ class Global
   static GLuint m_flagSpriteTexture;
   static GLuint m_infoSpriteTexture;
   static GLuint m_homeSpriteTexture;
+  static GLuint m_boxSpriteTexture;
 
   static Camera m_menuCam;
 };

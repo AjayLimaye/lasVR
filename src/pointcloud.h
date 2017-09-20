@@ -58,7 +58,8 @@ class PointCloud
   void drawLabels(Camera*);
   void drawLabels(QVector3D,
 		  QVector3D, QVector3D, QVector3D,
-		  QMatrix4x4, QMatrix4x4, QMatrix4x4);
+		  QMatrix4x4, QMatrix4x4, QMatrix4x4,
+		  float, QVector3D);
 
   QString checkLink(Camera*, QPoint);
 

@@ -34,6 +34,8 @@ uniform float zFar;
 uniform float minPointSize;
 uniform float maxPointSize;
 
+uniform float deadRadius;
+uniform vec3 deadPoint;
 
 //-----------------------
 float numberOfOnes(float number, float index)
@@ -112,11 +114,28 @@ void main()
 
    pointPos = vertexPosition.xyz;
 
+   //----------------------------------
+   //--------------------------------
+   //--------------------------------
+   float dpvp = length(deadPoint.xy-vertexPosition.xy);
+   bool killPoint = ((deadRadius > 0.0) &&
+		     (dpvp < deadRadius)); 
+   if (killPoint) // setting w to 0 will make it disappear
+     {
+       float dfrc = smoothstep(deadRadius*0.9, deadRadius, dpvp);
+       pointPos.z *= (0.95 + 0.05*dfrc); // bring z down by half the value
+       //fragmentColor = vec3(0,0,0);
+     }
+   //--------------------------------
+   //--------------------------------
+   //----------------------------------
+
    gl_Position =  MVP * vec4(pointPos,1);
 
    zdepth = ((gl_DepthRange.diff * gl_Position.z/gl_Position.w) +
               gl_DepthRange.near + gl_DepthRange.far) / 2.0;
    zdepthR = 0;
+
 
    // -----------------------------------
    // logarithmic depth buffer

@@ -3,6 +3,7 @@
   <file>images/flag.png</file>
   <file>images/info.png</file>
   <file>images/home.png</file>
+  <file>images/box.png</file>
   <file>images/menu00.png</file>
 </qresource>
 </RCC>

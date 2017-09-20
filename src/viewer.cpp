@@ -636,6 +636,9 @@ Viewer::createShaders()
 
   m_depthParm[16] = glGetUniformLocation(m_depthShader, "minPointSize");
   m_depthParm[17] = glGetUniformLocation(m_depthShader, "maxPointSize");
+
+  m_depthParm[18] = glGetUniformLocation(m_depthShader, "deadRadius");
+  m_depthParm[19] = glGetUniformLocation(m_depthShader, "deadPoint");
   //--------------------------
 }
 
@@ -1335,6 +1338,9 @@ Viewer::generateFirstImage()
   glUniform1f(m_depthParm[16], 1); // min point size
   glUniform1f(m_depthParm[17], 15); // max point size
 
+  glUniform1f(m_depthParm[18], -1); // deadRadius
+  glUniform3f(m_depthParm[19], -1000, -1000, -1000); // deadPoint
+
   drawVAO();
   
   
@@ -1462,6 +1468,10 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
 
   glUniform1f(m_depthParm[16], 2); // max point size
   glUniform1f(m_depthParm[17], 20); // max point size
+
+  glUniform1f(m_depthParm[18], m_vr.deadRadius());
+  QVector3D deadPt = m_vr.deadPoint();
+  glUniform3f(m_depthParm[19], deadPt.x(), deadPt.y(), deadPt.z());
 
   drawVAO();
 
@@ -1690,6 +1700,10 @@ Viewer::drawPoints(vr::Hmd_Eye eye)
   glUniform1f(m_depthParm[16], 2); // max point size
   glUniform1f(m_depthParm[17], 20); // max point size
 
+  glUniform1f(m_depthParm[18], m_vr.deadRadius());
+  QVector3D deadPt = m_vr.deadPoint();
+  glUniform3f(m_depthParm[19], deadPt.x(), deadPt.y(), deadPt.z());
+
   drawVAO();
   
   
@@ -1816,6 +1830,9 @@ Viewer::drawPointsWithReload()
   glUniform1f(m_depthParm[16], 2); // max point size
   glUniform1f(m_depthParm[17], 20); // max point size
 
+  glUniform1f(m_depthParm[18], -1); // deadRadius
+  glUniform3f(m_depthParm[19], -1000, -1000, -1000); // deadPoint
+
   drawVAO();
 
   glActiveTexture(GL_TEXTURE2);
@@ -1927,7 +1944,9 @@ Viewer::drawLabels()
 				     hrv,
 				     mvp,
 				     mvp,
-				     mvp);
+				     mvp,
+				     -1,
+				     QVector3D(-1,-1,-1));
     }
 
 //  glDisable(GL_DEPTH_TEST);
@@ -1961,7 +1980,9 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 				     m_hmdUP,
 				     m_hmdRV,
 				     mvp, matR,
-				     finalxform);
+				     finalxform,
+				     m_vr.deadRadius(),
+				     m_vr.deadPoint());      
     }
 }
 

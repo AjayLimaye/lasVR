@@ -141,6 +141,10 @@ class VR : public QObject
 
   void sendCurrPosToMenu();
 
+
+  float deadRadius() { return m_deadRadius; }
+  QVector3D deadPoint() { return m_deadPoint; }
+
  public slots:
   void resetModel();
   void updatePointSize(int);
@@ -281,6 +285,10 @@ class VR : public QObject
 
   bool m_edges;
   bool m_softShadows;
+
+
+  float m_deadRadius;
+  QVector3D m_deadPoint;
 
 
   void buildAxes();

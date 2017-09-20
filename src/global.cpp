@@ -99,6 +99,39 @@ GLuint Global::homeSpriteTexture()
   return m_homeSpriteTexture;
 }
 
+GLuint Global::m_boxSpriteTexture = 0;
+void Global::removeBoxSpriteTexture()
+{
+  if (m_boxSpriteTexture)
+    glDeleteTextures( 1, &m_boxSpriteTexture );
+  m_boxSpriteTexture = 0;
+}
+GLuint Global::boxSpriteTexture()
+{
+  if (m_boxSpriteTexture)
+    return m_boxSpriteTexture;
+
+  glGenTextures( 1, &m_boxSpriteTexture );
+
+  QImage box(":/images/box.png");
+  int texsize = box.height();
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, m_boxSpriteTexture);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	       texsize, texsize, 0,
+	       GL_BGRA, GL_UNSIGNED_BYTE,
+	       box.bits());
+  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  return m_boxSpriteTexture;
+}
+
 Camera Global::m_menuCam = Camera();
 void Global::setMenuCam(Camera cam) { m_menuCam = cam; }
 Vec Global::menuCamProjectedCoordinatesOf(Vec p)
