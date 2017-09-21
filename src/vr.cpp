@@ -949,22 +949,13 @@ VR::rightTouchPressed()
   // save teleport when both touchpads pressed
   if (m_touchPressActiveLeft)
     saveTeleportNode();
-
-
-  //---------------------------
-  if (m_pinPt.x() >= 0)
-    {
-      m_deadRadius = 1;
-      m_deadPoint = m_projectedPinPt;
-    }
-  //---------------------------
-
 }
 void
 VR::rightTouchPressMove()
 {
   //---------------------------
-  if (m_pinPt.x() >= 0)
+  // point cloud distortion to show underlying data
+  if (m_showMap && m_pinPt.x() >= 0)
     {
       m_deadRadius = 0.5;
       m_deadPoint = m_projectedPinPt;
@@ -2229,6 +2220,8 @@ VR::menuImageFromMapBuffer()
   // also update teleports if any
   sendTeleportsToMenu();
   //-----------------------------------
+
+  Global::setDepthBuffer(m_depthBuffer);
 }
 
 void

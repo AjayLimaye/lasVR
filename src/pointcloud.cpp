@@ -1004,6 +1004,12 @@ PointCloud::loadLabelsCSV(QString csvfile)
   QString line;
   line = stream.readLine(); // ignore first line
 
+//  // colour coded treePointCount
+//  float tpcMin, tpcMax;
+//  tpcMin = 1000000000;
+//  tpcMax = -1;
+
+  QList<Vec> tInfo;
   do
     {
       line = stream.readLine(); // ignore first line
@@ -1026,23 +1032,48 @@ PointCloud::loadLabelsCSV(QString csvfile)
 	  g = words[10].toFloat()/255.0f;
 	  b = words[11].toFloat()/255.0f;
 
-
 	  QList<float> treeInfo;
 	  treeInfo << treeHeight;
 	  treeInfo << treeArea;
 	  treeInfo << treePointCount;
 
-	  Label *lbl = new Label();
-	  lbl->setPosition(Vec(x,y,z));
-	  lbl->setProximity(10*m_scale);
-	  lbl->setColor(Vec(r,g,b));
-	  lbl->setFontSize(20);
-	  lbl->setTreeInfo(treeInfo);
-	  
-	  m_labels << lbl;
+//	  tpcMin = qMin(tpcMin, treePointCount);
+//	  tpcMax = qMax(tpcMax, treePointCount);
+
+	  tInfo << Vec(x,y,z);
+	  tInfo << Vec(r,g,b);
+	  tInfo << Vec(treeHeight, treeArea, treePointCount);
+
+//	  Label *lbl = new Label();
+//	  lbl->setPosition(Vec(x,y,z));
+//	  lbl->setProximity(10*m_scale);
+//	  lbl->setColor(Vec(r,g,b));
+//	  lbl->setFontSize(20);
+//	  lbl->setTreeInfo(treeInfo);
+//	  
+//	  m_labels << lbl;
 	  
 	}    
     } while (!line.isNull());
+
+  for(int i=0; i<tInfo.count()/3; i++)
+    {
+      Vec xyz = tInfo[3*i+0];
+      Vec rgb = tInfo[3*i+1];
+      QList<float> treeInfo;
+      treeInfo << tInfo[3*i+2].x;
+      treeInfo << tInfo[3*i+2].y;
+      treeInfo << tInfo[3*i+2].z;
+
+      Label *lbl = new Label();
+      lbl->setPosition(xyz);
+      lbl->setProximity(10*m_scale);
+      lbl->setColor(rgb);
+      lbl->setFontSize(20);
+      lbl->setTreeInfo(treeInfo);
+	  
+      m_labels << lbl;
+    }
 }
 
 void
@@ -1063,6 +1094,7 @@ PointCloud::drawLabels(QVector3D cpos,
 		       QMatrix4x4 mat,
 		       QMatrix4x4 matR,
 		       QMatrix4x4 finalxform,
+		       QMatrix4x4 finalxformInv,
 		       float deadRadius,
 		       QVector3D deadPoint)
 {
@@ -1071,7 +1103,9 @@ PointCloud::drawLabels(QVector3D cpos,
     return;
 
   for(int i=0; i<m_labels.count(); i++)
-    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir, mat, matR, finalxform,
+    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir
+			   , mat, matR,
+			   finalxform, finalxformInv,
 			   deadRadius, deadPoint);
 }
 

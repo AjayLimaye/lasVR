@@ -380,6 +380,8 @@ Viewer::start()
       m_menuCam.setType(Camera::ORTHOGRAPHIC);
       m_menuCam.showEntireScene();
 
+      Global::setScreenSize(m_vr.screenWidth(),
+			    m_vr.screenHeight());
       Global::setMenuCam(m_menuCam);
     }
 
@@ -1945,6 +1947,7 @@ Viewer::drawLabels()
 				     mvp,
 				     mvp,
 				     mvp,
+				     mvp,
 				     -1,
 				     QVector3D(-1,-1,-1));
     }
@@ -1971,6 +1974,7 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
   QMatrix4x4 matR = m_vr.matrixDevicePoseRight();
   QVector3D cpos = m_hmdPos;
   QMatrix4x4 finalxform = m_vr.final_xform();
+  QMatrix4x4 finalxformInv = m_vr.final_xformInverted();
   
   for(int d=0; d<m_pointClouds.count(); d++)
     {
@@ -1981,6 +1985,7 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 				     m_hmdRV,
 				     mvp, matR,
 				     finalxform,
+				     finalxformInv,
 				     m_vr.deadRadius(),
 				     m_vr.deadPoint());      
     }

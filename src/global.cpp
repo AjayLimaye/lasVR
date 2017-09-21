@@ -152,3 +152,53 @@ QVector3D Global::menuCamUnprojectedCoordinatesOf(QVector3D p)
   Vec pp = m_menuCam.unprojectedCoordinatesOf(Vec(p.x(),p.y(),p.z()));
   return QVector3D(pp.x, pp.y, pp.z);
 }
+
+int Global::m_screenWidth = 0;
+int Global::m_screenHeight = 0;
+void
+Global::setScreenSize(int wd, int ht)
+{
+  m_screenWidth = wd;
+  m_screenHeight = ht;
+}
+int Global::screenWidth() { return m_screenWidth; }
+int Global::screenHeight() { return m_screenHeight; }
+
+float* Global::m_depthBuffer = 0;
+void Global::setDepthBuffer(float *db) { m_depthBuffer = db; }
+
+
+Vec
+Global::stickToGround(Vec pt)
+{
+  Vec ptGround = pt;
+  Vec ptProjected = menuCamProjectedCoordinatesOf(pt);
+  int x = ptProjected.x;
+  int y = ptProjected.y;
+  if (x > 0 && x < m_screenWidth-1 &&
+      y > 0 && y < m_screenHeight-1)
+    {
+      float z = m_depthBuffer[(m_screenHeight-1-y)*m_screenWidth + x];      
+      if (z > 0 && z < 1.0)
+	ptGround = menuCamUnprojectedCoordinatesOf(Vec(x,y,z));
+    }
+
+  return ptGround;
+}
+QVector3D
+Global::stickToGround(QVector3D pt)
+{
+  QVector3D ptGround = pt;
+  QVector3D ptProjected = menuCamProjectedCoordinatesOf(pt);
+  int x = ptProjected.x();
+  int y = ptProjected.y();
+  if (x > 0 && x < m_screenWidth-1 &&
+      y > 0 && y < m_screenHeight-1)
+    {
+      float z = m_depthBuffer[(m_screenHeight-1-y)*m_screenWidth + x];      
+      if (z > 0 && z < 1.0)
+	ptGround = menuCamUnprojectedCoordinatesOf(QVector3D(x,y,z));
+    }
+
+  return ptGround;
+}

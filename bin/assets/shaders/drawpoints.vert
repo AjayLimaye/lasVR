@@ -120,11 +120,10 @@ void main()
    float dpvp = length(deadPoint.xy-vertexPosition.xy);
    bool killPoint = ((deadRadius > 0.0) &&
 		     (dpvp < deadRadius)); 
-   if (killPoint) // setting w to 0 will make it disappear
-     {
+   if (killPoint)
+     { // point cloud distrotion to show underlying data
        float dfrc = smoothstep(deadRadius*0.9, deadRadius, dpvp);
        pointPos.z *= (0.95 + 0.05*dfrc); // bring z down by half the value
-       //fragmentColor = vec3(0,0,0);
      }
    //--------------------------------
    //--------------------------------

@@ -20,6 +20,8 @@ Label::Label()
   m_vertData = 0;
   m_boxData = 0;
   m_texWd = m_texHt = 0;
+
+  m_hitDur = 0;
 }
 
 Label::~Label()
@@ -49,6 +51,7 @@ Label::setTreeInfo(QList<float> ti)
 {
   m_treeInfo = ti;
 
+  m_hitC = 0.5*m_color + 0.5*Vec(1,0.3,0);
   QColor color(m_color.z*255,m_color.y*255,m_color.x*255);
   
   int ht = 0;
@@ -160,6 +163,7 @@ Label::drawLabel(QVector3D cpos,
 		 QMatrix4x4 mvp,
 		 QMatrix4x4 matR,
 		 QMatrix4x4 finalxform,
+		 QMatrix4x4 finalxformInv,
 		 float deadRadius,
 		 QVector3D deadPoint)
 {
@@ -315,8 +319,14 @@ Label::drawLabel(QVector3D cpos,
 	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
 	    showTreeInfoPosition(mvp);
 	  else
-	    drawBox(mvp, vDir);
-
+	    {
+	      QVector3D cenR = finalxformInv.map(centerR);
+	      QVector3D frtR = finalxformInv.map(pinPoint) - cenR;
+	      frtR.normalize();
+	      drawBox(mvp, vDir,
+		    cenR, frtR);
+	    }
+	  
 	  return;
 	}
     }
@@ -653,8 +663,20 @@ Label::createBox()
 }
 
 void
-Label::drawBox(QMatrix4x4 mvp, QVector3D vDir)
+Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
+	       QVector3D cen, QVector3D frontR)
 {
+  m_position = Global::stickToGround(m_position);
+  createBox();
+
+  QVector3D bmin = QVector3D(m_boxData[0],m_boxData[1],m_boxData[2]);
+  QVector3D bmax = QVector3D(m_boxData[48],m_boxData[49],m_boxData[50]);
+  //bmin = finalxform.map(bmin);
+  //bmax = finalxform.map(bmax);
+
+  float hitDist = StaticFunctions::intersectRayBox(bmin, bmax,
+						   cen, frontR);
+
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
   glEnable(GL_TEXTURE_2D);
@@ -703,7 +725,12 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 0.3, 0.4, 0.5); // mix color
+
+  if (hitDist > -1)
+    glUniform3f(rcShaderParm[2], m_hitC.x, m_hitC.y, m_hitC.z); // mix color
+  else
+    glUniform3f(rcShaderParm[2], m_color.x, m_color.y, m_color.z); // mix color
+
   glUniform3f(rcShaderParm[3], vDir.x(), vDir.y(), vDir.z()); // view direction
   glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
   glUniform1i(rcShaderParm[5], 5); // lines/quads/poly/tri

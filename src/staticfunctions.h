@@ -53,6 +53,9 @@ class StaticFunctions
 				QVector3D, QVector3D,
 				QVector3D, QVector3D,
 				float&, float&);
+
+  static float intersectRayBox(QVector3D, QVector3D,
+			       QVector3D, QVector3D);
 };
 
 #endif

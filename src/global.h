@@ -30,6 +30,14 @@ class Global
   static QVector3D menuCamProjectedCoordinatesOf(QVector3D);
   static QVector3D menuCamUnprojectedCoordinatesOf(QVector3D);
 
+  static void setScreenSize(int, int);
+  static int screenWidth();
+  static int screenHeight();
+
+  static void setDepthBuffer(float*);
+  static Vec stickToGround(Vec);
+  static QVector3D stickToGround(QVector3D);
+
  private :
   static GLuint m_flagSpriteTexture;
   static GLuint m_infoSpriteTexture;
@@ -37,6 +45,9 @@ class Global
   static GLuint m_boxSpriteTexture;
 
   static Camera m_menuCam;
+
+  static int m_screenWidth, m_screenHeight;
+  static float *m_depthBuffer;
 };
 
 #endif

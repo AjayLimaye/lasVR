@@ -402,3 +402,28 @@ StaticFunctions::intersectRayPlane(QVector3D v0, QVector3D vy,
 
   return false;
 }
+
+// https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
+float
+StaticFunctions::intersectRayBox(QVector3D bmin, QVector3D bmax,
+				 QVector3D rayO, QVector3D rayD)
+{
+  float t1, t2, tmin, tmax;
+
+  QVector3D rayDInv = QVector3D(1/rayD.x(),1/rayD.y(),1/rayD.z());
+  QVector3D brMin = (bmin-rayO)*rayDInv;
+  QVector3D brMax = (bmax-rayO)*rayDInv;
+
+  tmin = qMin(brMin.x(), brMax.x());
+  tmax = qMax(brMin.x(), brMax.x());
+  tmin = qMax(tmin, qMin(brMin.y(), brMax.y()));
+  tmax = qMin(tmax, qMax(brMin.y(), brMax.y()));
+  tmin = qMax(tmin, qMin(brMin.z(), brMax.z()));
+  tmax = qMin(tmax, qMax(brMin.z(), brMax.z()));
+  
+  //return tmax > qMax(tmin, 0.0f);
+  if (tmax > qMax(tmin, 0.0f))
+    return tmin;
+  else
+    return -100000;
+}

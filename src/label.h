@@ -26,7 +26,8 @@ class Label
   void drawLabel(Camera*);
   void drawLabel(QVector3D,
 		 QVector3D, QVector3D, QVector3D,
-		 QMatrix4x4, QMatrix4x4, QMatrix4x4,
+		 QMatrix4x4, QMatrix4x4,
+		 QMatrix4x4, QMatrix4x4,
 		 float, QVector3D);
 
   bool checkLink(Camera*, QPoint);
@@ -53,13 +54,16 @@ class Label
   GLuint m_glVertArray;
 
   float *m_vertData;
-
   float *m_boxData;
+
+  int m_hitDur;
+  Vec m_hitC;
 
   void showTreeInfoPosition(QMatrix4x4);
 
   void createBox();
-  void drawBox(QMatrix4x4, QVector3D);
+  void drawBox(QMatrix4x4, QVector3D,
+	       QVector3D, QVector3D);
 };
 
 #endif
