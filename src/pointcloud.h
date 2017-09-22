@@ -61,6 +61,10 @@ class PointCloud
 		  QMatrix4x4, QMatrix4x4,
 		  QMatrix4x4, QMatrix4x4,
 		  float, QVector3D);
+  void stickLabelsToGround();
+  void findNearestLabelHit(QMatrix4x4, QMatrix4x4,
+			   float, QVector3D);
+
 
   QString checkLink(Camera*, QPoint);
 
@@ -135,6 +139,9 @@ class PointCloud
   QList<OctreeNode*> m_allNodes;
 
   QList<Label*> m_labels;
+
+  int m_nearHitLabel;
+  float m_nearHit;
 
   qint64 getNumPointsInFile(QString);
 

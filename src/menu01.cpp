@@ -263,11 +263,13 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+  glUniform3f(rcShaderParm[2], 0, 0, 0); // color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], opmod); // opacity modulator
   glUniform1i(rcShaderParm[5], 5); // texture + color
   glUniform1f(rcShaderParm[6], 5); // pointsize
+
+  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
 
 
   QVector3D vfront = 2*front;

@@ -47,6 +47,9 @@ PointCloud::PointCloud()
   m_showSphere = false;
   m_pointType = true;
   m_loadAll = false;
+
+  m_nearHitLabel = -1;
+  m_nearHit = -1000;
 }
 
 PointCloud::~PointCloud()
@@ -1086,6 +1089,45 @@ PointCloud::drawLabels(Camera* cam)
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->drawLabel(cam);
 }
+
+void
+PointCloud::stickLabelsToGround()
+{
+  for(int i=0; i<m_labels.count(); i++)
+    m_labels[i]->stickToGround();
+}
+void
+PointCloud::findNearestLabelHit(QMatrix4x4 matR,
+				QMatrix4x4 finalxformInv,
+				float deadRadius,
+				QVector3D deadPoint)
+{
+  m_nearHitLabel = -1;
+  m_nearHit = 100000000;
+
+  if (!m_visible)
+    return;
+  
+  if (deadRadius <= 0)
+    return;
+  
+  if (m_labels.count() == 0)
+    return;
+
+  for(int i=0; i<m_labels.count(); i++)
+    {
+      float hit = m_labels[i]->checkHit(matR, finalxformInv,
+					deadRadius, deadPoint);
+      if (hit >= 0)
+	{
+	  if (m_nearHit > hit)
+	    {
+	      m_nearHit = hit;
+	      m_nearHitLabel = i;
+	    }
+	}
+    }
+}
 void
 PointCloud::drawLabels(QVector3D cpos,
 		       QVector3D vDir,
@@ -1103,10 +1145,11 @@ PointCloud::drawLabels(QVector3D cpos,
     return;
 
   for(int i=0; i<m_labels.count(); i++)
-    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir
-			   , mat, matR,
+    m_labels[i]->drawLabel(cpos, vDir, uDir, rDir,
+			   mat, matR,
 			   finalxform, finalxformInv,
-			   deadRadius, deadPoint);
+			   deadRadius, deadPoint,
+			   (m_nearHitLabel == i));
 }
 
 

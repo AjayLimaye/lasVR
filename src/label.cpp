@@ -156,6 +156,174 @@ Label::drawLabel(Camera* cam)
 }
 
 void
+Label::stickToGround()
+{
+  m_position = Global::stickToGround(m_position);
+  createBox();
+}
+
+float
+Label::checkHit(QMatrix4x4 matR,
+		QMatrix4x4 finalxformInv,
+		float deadRadius,
+		QVector3D deadPoint)
+{
+  if (deadRadius <= 0)
+    return -100000;
+
+  Vec vp2d(m_position.x, m_position.y, 0);
+  Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
+  
+  if ((vp2d-dp2d).norm() > deadRadius-0.02) // return if not in the zone
+    return -100000;
+  
+  QVector3D bmin = QVector3D(m_boxData[0],m_boxData[1],m_boxData[2]);
+  QVector3D bmax = QVector3D(m_boxData[48],m_boxData[49],m_boxData[50]);
+
+  QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  QVector3D cenR = finalxformInv.map(centerR);
+
+  QVector3D pinPoint = QVector3D(matR * QVector4D(0,0,-1,1));
+  QVector3D frtR = finalxformInv.map(pinPoint) - cenR;
+  frtR.normalize();
+
+  return StaticFunctions::intersectRayBox(bmin, bmax,
+					  cenR, frtR);
+}
+
+void
+Label::genVertData()
+{
+  m_vertData = new float[32];
+  memset(m_vertData, 0, sizeof(float)*32);
+
+
+  // create and bind a VAO to hold state for this model
+  glGenVertexArrays( 1, &m_glVertArray );
+  glBindVertexArray( m_glVertArray );
+      
+  // Populate a vertex buffer
+  glGenBuffers( 1, &m_glVertBuffer );
+  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer );
+  glBufferData( GL_ARRAY_BUFFER,
+		sizeof(float)*8*30,
+		NULL,
+		GL_STATIC_DRAW );
+      
+  // Identify the components in the vertex buffer
+  glEnableVertexAttribArray( 0 );
+  glVertexAttribPointer( 0, //attribute 0
+			 3, // size
+			 GL_FLOAT, // type
+			 GL_FALSE, // normalized
+			 sizeof(float)*8, // stride
+			 (void *)0 ); // starting offset
+
+  glEnableVertexAttribArray( 1 );
+  glVertexAttribPointer( 1,
+			 3,
+			 GL_FLOAT,
+			 GL_FALSE,
+			 sizeof(float)*8,
+			 (char *)NULL + sizeof(float)*3 );
+  
+  glEnableVertexAttribArray( 2 );
+  glVertexAttribPointer( 2,
+			 2,
+			 GL_FLOAT,
+			 GL_FALSE, 
+			 sizeof(float)*8,
+			 (char *)NULL + sizeof(float)*6 );
+  
+  
+  // Create and populate the index buffer
+  glGenBuffers(1, &m_glIndexBuffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
+  
+  if (m_treeInfo.count() > 0) // draw box
+    {
+      if (!m_boxData)
+	createBox();
+      
+      glBindVertexArray(m_glVertArray);
+      glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
+      glBufferSubData(GL_ARRAY_BUFFER,
+		      0,
+		      sizeof(float)*8*24,
+		      &m_boxData[0]);
+      
+      uchar indexData[36];
+      //	  for(int i=0; i<24; i++)
+      //	    indexData[i] = i;
+      
+      for(int i=0; i<6; i++)
+	{
+	  indexData[6*i+0] = 4*i+0;
+	  indexData[6*i+1] = 4*i+1;
+	  indexData[6*i+2] = 4*i+2;
+	  indexData[6*i+3] = 4*i+0;
+	  indexData[6*i+4] = 4*i+2;
+	  indexData[6*i+5] = 4*i+3;
+	}
+      
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		   sizeof(uchar)*36,
+		   &indexData[0],
+		   GL_STATIC_DRAW);
+    }
+  else
+    {
+      uchar indexData[6];
+      indexData[0] = 0;
+      indexData[1] = 1;
+      indexData[2] = 2;
+      indexData[3] = 0;
+      indexData[4] = 2;
+      indexData[5] = 3;
+      
+      glBufferData( GL_ELEMENT_ARRAY_BUFFER,
+		    sizeof(uchar) * 2 * 3,
+		    &indexData[0],
+		    GL_STATIC_DRAW );
+    }
+  
+  glBindVertexArray( 0 );
+  
+  
+  
+  int fsize = m_fontSize;
+  if (!m_glTexture)
+    {
+      QFont font = QFont("Helvetica", fsize);
+      QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
+      QImage tmpTex = StaticFunctions::renderText(m_caption,
+						  font,
+						  Qt::black, color);      
+      m_texWd = tmpTex.width();
+      m_texHt = tmpTex.height();
+      
+      glGenTextures(1, &m_glTexture);
+      glActiveTexture(GL_TEXTURE4);
+      glBindTexture(GL_TEXTURE_2D, m_glTexture);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexImage2D(GL_TEXTURE_2D,
+		   0,
+		   4,
+		   m_texWd,
+		   m_texHt,
+		   0,
+		   GL_RGBA,
+		   GL_UNSIGNED_BYTE,
+		   tmpTex.bits());
+      
+      glDisable(GL_TEXTURE_2D);
+    }  
+}
+
+void
 Label::drawLabel(QVector3D cpos,
 		 QVector3D vDir,
 		 QVector3D uDir,
@@ -165,139 +333,11 @@ Label::drawLabel(QVector3D cpos,
 		 QMatrix4x4 finalxform,
 		 QMatrix4x4 finalxformInv,
 		 float deadRadius,
-		 QVector3D deadPoint)
+		 QVector3D deadPoint,
+		 bool glow)
 {
   if (!m_vertData)
-    {
-      m_vertData = new float[32];
-      memset(m_vertData, 0, sizeof(float)*32);
-
-
-      // create and bind a VAO to hold state for this model
-      glGenVertexArrays( 1, &m_glVertArray );
-      glBindVertexArray( m_glVertArray );
-      
-      // Populate a vertex buffer
-      glGenBuffers( 1, &m_glVertBuffer );
-      glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer );
-      glBufferData( GL_ARRAY_BUFFER,
-		    sizeof(float)*8*30,
-		    NULL,
-		    GL_STATIC_DRAW );
-      
-      // Identify the components in the vertex buffer
-      glEnableVertexAttribArray( 0 );
-      glVertexAttribPointer( 0, //attribute 0
-			     3, // size
-			     GL_FLOAT, // type
-			     GL_FALSE, // normalized
-			     sizeof(float)*8, // stride
-			     (void *)0 ); // starting offset
-
-      glEnableVertexAttribArray( 1 );
-      glVertexAttribPointer( 1,
-			     3,
-			     GL_FLOAT,
-			     GL_FALSE,
-			     sizeof(float)*8,
-			     (char *)NULL + sizeof(float)*3 );
-
-      glEnableVertexAttribArray( 2 );
-      glVertexAttribPointer( 2,
-			     2,
-			     GL_FLOAT,
-			     GL_FALSE, 
-			     sizeof(float)*8,
-			     (char *)NULL + sizeof(float)*6 );
-      
-
-      // Create and populate the index buffer
-      glGenBuffers(1, &m_glIndexBuffer);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
-
-      if (m_treeInfo.count() > 0) // draw box
-	{
-	  if (!m_boxData)
-	    createBox();
-
-	  glBindVertexArray(m_glVertArray);
-	  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
-	  glBufferSubData(GL_ARRAY_BUFFER,
-			  0,
-			  sizeof(float)*8*24,
-			  &m_boxData[0]);
-
-	  uchar indexData[36];
-//	  for(int i=0; i<24; i++)
-//	    indexData[i] = i;
-
-	  for(int i=0; i<6; i++)
-	    {
-	      indexData[6*i+0] = 4*i+0;
-	      indexData[6*i+1] = 4*i+1;
-	      indexData[6*i+2] = 4*i+2;
-	      indexData[6*i+3] = 4*i+0;
-	      indexData[6*i+4] = 4*i+2;
-	      indexData[6*i+5] = 4*i+3;
-	    }
-
-	  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		       sizeof(uchar)*36,
-		       &indexData[0],
-		       GL_STATIC_DRAW);
-	}
-      else
-	{
-	  uchar indexData[6];
-	  indexData[0] = 0;
-	  indexData[1] = 1;
-	  indexData[2] = 2;
-	  indexData[3] = 0;
-	  indexData[4] = 2;
-	  indexData[5] = 3;
-
-	  glBufferData( GL_ELEMENT_ARRAY_BUFFER,
-			sizeof(uchar) * 2 * 3,
-			&indexData[0],
-			GL_STATIC_DRAW );
-	}
-
-      glBindVertexArray( 0 );
-
-
-
-      int fsize = m_fontSize;
-      if (!m_glTexture)
-	{
-	  QFont font = QFont("Helvetica", fsize);
-	  QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
-	  QImage tmpTex = StaticFunctions::renderText(m_caption,
-						  font,
-						  Qt::black, color);      
-	  m_texWd = tmpTex.width();
-	  m_texHt = tmpTex.height();
-
-	  glGenTextures(1, &m_glTexture);
-	  glActiveTexture(GL_TEXTURE4);
-	  glBindTexture(GL_TEXTURE_2D, m_glTexture);
-	  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-	  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	  glTexImage2D(GL_TEXTURE_2D,
-		       0,
-		       4,
-		       m_texWd,
-		       m_texHt,
-		       0,
-		       GL_RGBA,
-		       GL_UNSIGNED_BYTE,
-		       tmpTex.bits());
-	  
-	  glDisable(GL_TEXTURE_2D);
-	}
-
-    }
+    genVertData();
   
 
   QVector3D vp = QVector3D(m_position.x, m_position.y, m_position.z);
@@ -319,13 +359,7 @@ Label::drawLabel(QVector3D cpos,
 	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
 	    showTreeInfoPosition(mvp);
 	  else
-	    {
-	      QVector3D cenR = finalxformInv.map(centerR);
-	      QVector3D frtR = finalxformInv.map(pinPoint) - cenR;
-	      frtR.normalize();
-	      drawBox(mvp, vDir,
-		    cenR, frtR);
-	    }
+	    drawBox(mvp, vDir, glow);
 	  
 	  return;
 	}
@@ -441,11 +475,12 @@ Label::drawLabel(QVector3D cpos,
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+  glUniform3f(rcShaderParm[2], 0, 0, 0); // color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
   glUniform1i(rcShaderParm[5], 2); // applytexture
   glUniform1f(rcShaderParm[6], 5); // pointsize
+  glUniform1f(rcShaderParm[7], 0.5); // mix color
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
@@ -550,11 +585,12 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+  glUniform3f(rcShaderParm[2], 0, 0, 0); // color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
   glUniform1i(rcShaderParm[5], 3); // point sprite
   glUniform1f(rcShaderParm[6], 20); // pointsize
+  glUniform1f(rcShaderParm[7], 0.5); // mix color
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   glDrawArrays(GL_POINTS, 0, 1);  
@@ -573,9 +609,12 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
 void
 Label::createBox()
 {
+  // use area parameter for side length of box
+  float sz = qSqrt(m_treeInfo[1])/2;
+
   Vec bmin, bmax;
-  bmin = Vec(-m_treeInfo[1]/4, -m_treeInfo[1]/4, 0);
-  bmax = Vec(m_treeInfo[1]/4, m_treeInfo[1]/4, m_treeInfo[0]);
+  bmin = Vec(-sz, -sz, 0);
+  bmax = Vec(sz, sz, m_treeInfo[0]);
 
   bmin *= 0.01;
   bmax *= 0.01;
@@ -664,19 +703,8 @@ Label::createBox()
 
 void
 Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
-	       QVector3D cen, QVector3D frontR)
+	       bool glow)
 {
-  m_position = Global::stickToGround(m_position);
-  createBox();
-
-  QVector3D bmin = QVector3D(m_boxData[0],m_boxData[1],m_boxData[2]);
-  QVector3D bmax = QVector3D(m_boxData[48],m_boxData[49],m_boxData[50]);
-  //bmin = finalxform.map(bmin);
-  //bmax = finalxform.map(bmax);
-
-  float hitDist = StaticFunctions::intersectRayBox(bmin, bmax,
-						   cen, frontR);
-
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
   glEnable(GL_TEXTURE_2D);
@@ -726,15 +754,16 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
 
-  if (hitDist > -1)
+  if (glow)
     glUniform3f(rcShaderParm[2], m_hitC.x, m_hitC.y, m_hitC.z); // mix color
   else
     glUniform3f(rcShaderParm[2], m_color.x, m_color.y, m_color.z); // mix color
 
   glUniform3f(rcShaderParm[3], vDir.x(), vDir.y(), vDir.z()); // view direction
   glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
-  glUniform1i(rcShaderParm[5], 5); // lines/quads/poly/tri
+  glUniform1i(rcShaderParm[5], 5); // apply texture
   glUniform1f(rcShaderParm[6], 10); // pointsize
+  glUniform1f(rcShaderParm[7], 0.8); // mix color
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   //glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, 0);  

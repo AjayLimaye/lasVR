@@ -1936,17 +1936,18 @@ VR::renderControllers(vr::Hmd_Eye eye)
   QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;  
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 0); // texture
-  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // mix color
+  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // color
   glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
   glUniform1f(rcShaderParm[4], 1); // opacity modulator
   glUniform1i(rcShaderParm[5], 2); // applytexture
+  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
   m_rTrackedDeviceToRenderModel[ m_leftController ]->Draw();
 
 
   matDeviceToTracking = m_matrixDevicePose[m_rightController];
   mvp = currentViewProjection(eye) * matDeviceToTracking;
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // mix color
+  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
   m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
 
 
@@ -2569,13 +2570,15 @@ VR::renderTeleport(vr::Hmd_Eye eye)
   glUniform1i(rcShaderParm[1], 4); // texture
 
   if (m_telPoints > 0)
-    glUniform3f(rcShaderParm[2], 1, 1, 1); // mix color
+    glUniform3f(rcShaderParm[2], 1, 1, 1); // color
   else
-    glUniform3f(rcShaderParm[2], 1, 1, 0); // mix color
+    glUniform3f(rcShaderParm[2], 1, 1, 0); // color
 
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
   glUniform1i(rcShaderParm[5], 4); // do not apply texture
+
+  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
 
   glBindVertexArray(m_boxVID);
   

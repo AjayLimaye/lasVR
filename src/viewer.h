@@ -255,6 +255,8 @@ class Viewer : public QGLViewer
     void generateFirstImage();
 
     void loadTopJson(QString);
+
+    void stickLabelsToGround();
 };
 
 #endif

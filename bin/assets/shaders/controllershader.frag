@@ -4,6 +4,7 @@ uniform vec3 color;
 uniform vec3 viewDir;
 uniform float opmod;
 uniform int applytexture;
+uniform float mixcolor;
 
 in vec2 v2TexCoord;
 in vec3 v3Normal;
@@ -29,7 +30,9 @@ void main()
     {
       outputColor = texture( diffuse, v2TexCoord);
       if (length(color) > 0)
-	outputColor.rgb = mix(outputColor.rgb, color*outputColor.a, 0.5);
+	outputColor.rgb = mix(outputColor.rgb,
+			      color*outputColor.a,
+			      mixcolor);
     }
 
   if (length(viewDir) > 0.0)

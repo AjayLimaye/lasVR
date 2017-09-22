@@ -28,12 +28,17 @@ class Label
 		 QVector3D, QVector3D, QVector3D,
 		 QMatrix4x4, QMatrix4x4,
 		 QMatrix4x4, QMatrix4x4,
-		 float, QVector3D);
+		 float, QVector3D,
+		 bool);
 
   bool checkLink(Camera*, QPoint);
   QString linkData() { return m_linkData; }
 
   void setGlobalMinMax(Vec, Vec);
+
+  void stickToGround();
+  float checkHit(QMatrix4x4, QMatrix4x4,
+		float, QVector3D);
 
  private :
 
@@ -59,11 +64,12 @@ class Label
   int m_hitDur;
   Vec m_hitC;
 
+  void genVertData();
+
   void showTreeInfoPosition(QMatrix4x4);
 
   void createBox();
-  void drawBox(QMatrix4x4, QVector3D,
-	       QVector3D, QVector3D);
+  void drawBox(QMatrix4x4, QVector3D, bool);
 };
 
 #endif

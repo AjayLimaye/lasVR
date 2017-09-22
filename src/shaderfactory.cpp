@@ -766,6 +766,7 @@ ShaderFactory::createTextureShader()
   m_rcShaderParm[4] = glGetUniformLocation(m_rcShader, "opmod");
   m_rcShaderParm[5] = glGetUniformLocation(m_rcShader, "applytexture");
   m_rcShaderParm[6] = glGetUniformLocation(m_rcShader, "ptsz");
+  m_rcShaderParm[7] = glGetUniformLocation(m_rcShader, "mixcolor");
 }
 
 

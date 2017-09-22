@@ -1021,6 +1021,8 @@ Viewer::paintGL()
     {
       generateFirstImage();
       m_firstImageDone++;
+
+      
     }  
   //---------------------------
 
@@ -1363,6 +1365,8 @@ Viewer::generateFirstImage()
   //----------
   m_vr.menuImageFromMapBuffer();
   //----------
+
+  stickLabelsToGround();
 }
 
 //--------------------------------------------
@@ -1979,15 +1983,32 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
   for(int d=0; d<m_pointClouds.count(); d++)
     {
       if (m_pointClouds[d]->visible())
-	m_pointClouds[d]->drawLabels(cpos,
-				     m_hmdVD,
-				     m_hmdUP,
-				     m_hmdRV,
-				     mvp, matR,
-				     finalxform,
-				     finalxformInv,
-				     m_vr.deadRadius(),
-				     m_vr.deadPoint());      
+	{
+	  m_pointClouds[d]->findNearestLabelHit(matR,
+						finalxformInv,
+						m_vr.deadRadius(),
+						m_vr.deadPoint());
+
+	  m_pointClouds[d]->drawLabels(cpos,
+				       m_hmdVD,
+				       m_hmdUP,
+				       m_hmdRV,
+				       mvp, matR,
+				       finalxform,
+				       finalxformInv,
+				       m_vr.deadRadius(),
+				       m_vr.deadPoint());
+	}
+    }
+}
+
+void
+Viewer::stickLabelsToGround()
+{
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	m_pointClouds[d]->stickLabelsToGround();      
     }
 }
 
