@@ -990,7 +990,7 @@ Viewer::paintGL()
       
       // left eye
       m_vr.bindLeftBuffer();
-      //drawPoints(vr::Eye_Left);
+
       drawPointsWithShadows(vr::Eye_Left);
       drawLabelsForVR(vr::Eye_Left);
       //if (m_showBox)
@@ -1001,7 +1001,7 @@ Viewer::paintGL()
       
       // right eye
       m_vr.bindRightBuffer();
-      //drawPoints(vr::Eye_Right);
+
       drawPointsWithShadows(vr::Eye_Right);
       drawLabelsForVR(vr::Eye_Right);
       //if (m_showBox)
@@ -1984,10 +1984,10 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
     {
       if (m_pointClouds[d]->visible())
 	{
-	  m_pointClouds[d]->findNearestLabelHit(matR,
-						finalxformInv,
-						m_vr.deadRadius(),
-						m_vr.deadPoint());
+	  bool gotHit = m_pointClouds[d]->findNearestLabelHit(matR,
+							      finalxformInv,
+							      m_vr.deadRadius(),
+							      m_vr.deadPoint());
 
 	  m_pointClouds[d]->drawLabels(cpos,
 				       m_hmdVD,
@@ -1998,6 +1998,13 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 				       finalxformInv,
 				       m_vr.deadRadius(),
 				       m_vr.deadPoint());
+
+	  if (gotHit)
+	    {
+	      GLuint texId = m_pointClouds[d]->labelTexture();
+	      QSize texSize = m_pointClouds[d]->labelTextureSize();
+	      m_vr.showHUD(eye, texId, texSize);
+	    }
 	}
     }
 }

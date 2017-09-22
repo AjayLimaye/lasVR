@@ -62,8 +62,11 @@ class PointCloud
 		  QMatrix4x4, QMatrix4x4,
 		  float, QVector3D);
   void stickLabelsToGround();
-  void findNearestLabelHit(QMatrix4x4, QMatrix4x4,
+  bool findNearestLabelHit(QMatrix4x4, QMatrix4x4,
 			   float, QVector3D);
+  GLuint labelTexture();
+  QSize labelTextureSize();
+
 
 
   QString checkLink(Camera*, QPoint);

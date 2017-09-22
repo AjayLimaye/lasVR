@@ -145,6 +145,9 @@ class VR : public QObject
   float deadRadius() { return m_deadRadius; }
   QVector3D deadPoint() { return m_deadPoint; }
 
+  void renderSkyBox(vr::Hmd_Eye);
+  void showHUD(vr::Hmd_Eye, GLuint, QSize);
+
  public slots:
   void resetModel();
   void updatePointSize(int);
@@ -252,6 +255,7 @@ class VR : public QObject
   //-----------------
   GLuint m_boxVID;
   GLuint m_boxV;
+  GLuint m_boxIB;
   int m_axesPoints;
   int m_nboxPoints;
   //-----------------
@@ -406,7 +410,6 @@ class VR : public QObject
   void projectPinPoint();
   bool nextHit();
 
-  void renderSkyBox(vr::Hmd_Eye);
 };
 
 

@@ -40,6 +40,9 @@ class Label
   float checkHit(QMatrix4x4, QMatrix4x4,
 		float, QVector3D);
 
+  GLuint glTexture() { return m_glTexture; }
+  QSize textureSize() { return QSize(m_texWd, m_texHt); }
+
  private :
 
   QList<float> m_treeInfo;

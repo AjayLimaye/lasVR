@@ -1789,7 +1789,6 @@ VR::createShaders()
 void
 VR::buildAxesVB()
 {
-  //------------------------
   glGenVertexArrays(1, &m_boxVID);
   glBindVertexArray(m_boxVID);
 
@@ -1800,6 +1799,23 @@ VR::buildAxesVB()
 	       1000*sizeof(float),
 	       NULL,
 	       GL_STATIC_DRAW);
+
+
+  //------------------------
+  uchar indexData[6];
+  indexData[0] = 0;
+  indexData[1] = 1;
+  indexData[2] = 2;
+  indexData[3] = 0;
+  indexData[4] = 2;
+  indexData[5] = 3;
+  
+  glGenBuffers( 1, &m_boxIB );
+  glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, m_boxIB );
+  glBufferData( GL_ELEMENT_ARRAY_BUFFER,
+		sizeof(uchar) * 6,
+		&indexData[0],
+		GL_STATIC_DRAW );
   //------------------------
 }
 
@@ -2829,4 +2845,155 @@ VR::renderSkyBox(vr::Hmd_Eye eye)
   QMatrix4x4 mvp = viewProjection(eye);
   
   m_skybox.draw(mvp, hpos, 2.0/m_coordScale);
+}
+
+void
+VR::showHUD(vr::Hmd_Eye eye,
+	    GLuint texId, QSize texSize)
+{
+  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+  glDisable(GL_DEPTH_TEST);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+  QMatrix4x4 mvp = currentViewProjection(eye);
+
+  glUseProgram(ShaderFactory::rcShader());
+  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
+  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
+  glUniform1i(rcShaderParm[1], 4); // texture
+  glUniform3f(rcShaderParm[2], 0,0,0); // color
+  glUniform3f(rcShaderParm[3], 0,0,0); // view direction
+  glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
+  glUniform1i(rcShaderParm[5], 5); // apply texture
+  glUniform1f(rcShaderParm[6], 50); // pointsize
+  glUniform1f(rcShaderParm[7], 0); // mix color
+
+  QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];
+
+  QVector3D cen =QVector3D(mat * QVector4D(0,0,0,1));
+  QVector3D cx = QVector3D(mat * QVector4D(1,0,0,1));
+  QVector3D cy = QVector3D(mat * QVector4D(0,1,0,1));
+  QVector3D cz = QVector3D(mat * QVector4D(0,0,1,1));
+
+  int texWd = texSize.width();
+  int texHt = texSize.height();
+  float frc = 1.0/qMax(texWd, texHt);
+
+  QVector3D rDir = (cx-cen).normalized();
+  QVector3D uDir = (cy-cen).normalized();
+  QVector3D vDir = (cz-cen).normalized();
+
+  cen = cen - vDir - 0.5*uDir;
+
+  QVector3D fv = 0.3*(uDir-vDir).normalized();
+  QVector3D fr = 0.3*rDir;
+
+  QVector3D vu = frc*texHt*fv;
+  QVector3D vr0 = cen - frc*texWd*0.5*fr;
+  QVector3D vr1 = cen + frc*texWd*0.5*fr;
+
+  QVector3D v0 = vr0;
+  QVector3D v1 = vr0 + vu;
+  QVector3D v2 = vr1 + vu;
+  QVector3D v3 = vr1;
+
+  float vertData[50];
+
+  vertData[0] = v0.x();
+  vertData[1] = v0.y();
+  vertData[2] = v0.z();
+  vertData[3] = 0;
+  vertData[4] = 0;
+  vertData[5] = 0;
+  vertData[6] = 0.0;
+  vertData[7] = 0.0;
+
+  vertData[8] = v1.x();
+  vertData[9] = v1.y();
+  vertData[10] = v1.z();
+  vertData[11] = 0;
+  vertData[12] = 0;
+  vertData[13] = 0;
+  vertData[14] = 0.0;
+  vertData[15] = 1.0;
+
+  vertData[16] = v2.x();
+  vertData[17] = v2.y();
+  vertData[18] = v2.z();
+  vertData[19] = 0;
+  vertData[20] = 0;
+  vertData[21] = 0;
+  vertData[22] = 1.0;
+  vertData[23] = 1.0;
+
+  vertData[24] = v3.x();
+  vertData[25] = v3.y();
+  vertData[26] = v3.z();
+  vertData[27] = 0;
+  vertData[28] = 0;
+  vertData[29] = 0;
+  vertData[30] = 1.0;
+  vertData[31] = 0.0;
+
+
+  // Create and populate the index buffer
+
+  glBindVertexArray(m_boxVID);  
+  glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_boxIB);  
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0,  // attribute 0
+			3,  // size
+			GL_FLOAT, // type
+			GL_FALSE, // normalized
+			sizeof(float)*8, // stride
+			(char *)NULL + 200); // starting offset
+  
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1,  // attribute 1
+			3,  // size
+			GL_UNSIGNED_BYTE, // type
+			GL_FALSE, // normalized
+			sizeof(float)*8, // stride
+			(char *)NULL + 200 + sizeof(float)*3 );
+
+  glEnableVertexAttribArray( 2 );
+  glVertexAttribPointer( 2,
+			 2,
+			 GL_FLOAT,
+			 GL_FALSE, 
+			 sizeof(float)*8,
+			 (char *)NULL + 200 + sizeof(float)*6 );
+
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, texId);
+  //glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
+  glEnable(GL_TEXTURE_2D);
+  
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  200, // offset of 200 bytes
+		  sizeof(float)*8*4,
+		  &vertData[0]);
+
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+
+  glBindVertexArray(0);
+
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);  
+  glDisableVertexAttribArray(2);  
+
+  glBindVertexArray(0);
+
+  glUseProgram(0);
+
+  glDisable(GL_TEXTURE_2D);
+
+  glDisable(GL_BLEND);
+
+  //glDepthMask(GL_TRUE); // enable writing to depth buffer
+  glEnable(GL_DEPTH_TEST);
 }

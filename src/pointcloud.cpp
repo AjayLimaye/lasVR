@@ -1096,7 +1096,7 @@ PointCloud::stickLabelsToGround()
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->stickToGround();
 }
-void
+bool
 PointCloud::findNearestLabelHit(QMatrix4x4 matR,
 				QMatrix4x4 finalxformInv,
 				float deadRadius,
@@ -1106,13 +1106,13 @@ PointCloud::findNearestLabelHit(QMatrix4x4 matR,
   m_nearHit = 100000000;
 
   if (!m_visible)
-    return;
+    return false;
   
   if (deadRadius <= 0)
-    return;
+    return false;
   
   if (m_labels.count() == 0)
-    return;
+    return false;
 
   for(int i=0; i<m_labels.count(); i++)
     {
@@ -1127,7 +1127,26 @@ PointCloud::findNearestLabelHit(QMatrix4x4 matR,
 	    }
 	}
     }
+
+  return (m_nearHitLabel >= 0);    
 }
+GLuint
+PointCloud::labelTexture()
+{
+  if (m_nearHitLabel < 0)
+    return -1;
+
+  return m_labels[m_nearHitLabel]->glTexture();  
+}
+QSize
+PointCloud::labelTextureSize()
+{
+  if (m_nearHitLabel < 0)
+    return QSize(0,0);
+		 
+  return m_labels[m_nearHitLabel]->textureSize();  
+}
+
 void
 PointCloud::drawLabels(QVector3D cpos,
 		       QVector3D vDir,

@@ -368,8 +368,8 @@ Label::drawLabel(QVector3D cpos,
     return;
 
 
-  glDepthMask(GL_FALSE); // disable writing to depth buffer
-  glDisable(GL_DEPTH_TEST);
+  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+  //glDisable(GL_DEPTH_TEST);
 
 
   QVector3D nDir = (cpos-vp).normalized();
@@ -491,8 +491,8 @@ Label::drawLabel(QVector3D cpos,
   glUseProgram( 0 );
 
   glDisable(GL_BLEND);
-  glDepthMask(GL_TRUE); // enable writing to depth buffer
-  glEnable(GL_DEPTH_TEST);
+  //glDepthMask(GL_TRUE); // enable writing to depth buffer
+  //glEnable(GL_DEPTH_TEST);
 
 //  if (!m_linkData.isEmpty())
 //    {
@@ -530,7 +530,8 @@ Label::checkLink(Camera *cam, QPoint pos)
 void
 Label::showTreeInfoPosition(QMatrix4x4 mvp)
 {
-  glDepthMask(GL_FALSE); // disable writing to depth buffer
+  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -603,7 +604,7 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
   glUseProgram( 0 );
 
   glDisable(GL_BLEND);
-  glDepthMask(GL_TRUE); // enable writing to depth buffer
+  //glDepthMask(GL_TRUE); // enable writing to depth buffer
 }
 
 void
