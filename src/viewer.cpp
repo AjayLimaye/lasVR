@@ -1027,6 +1027,12 @@ Viewer::paintGL()
       m_firstImageDone++;
 
       m_vr.resetUpdateMap();
+
+      //--------------
+      Vec c = (m_coordMin+m_coordMax)/2;
+      c = Global::stickToGround(c);
+      QVector3D cmid = QVector3D(c.x, c.y, c.z);
+      m_vr.teleport(cmid);
     }  
   //---------------------------
 

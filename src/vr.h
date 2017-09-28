@@ -151,6 +151,8 @@ class VR : public QObject
   bool reUpdateMap() { return m_updateMap; }
   void resetUpdateMap() { m_updateMap = false; }
 
+  void teleport(QVector3D);
+
  public slots:
   void resetModel();
   void updateMap();
@@ -395,7 +397,6 @@ class VR : public QObject
 
   void saveTeleportNode();
   void teleport();
-  void teleport(QVector3D);
   void loadTeleports();
   void checkTeleport(bool);
   void renderTeleport(vr::Hmd_Eye);
