@@ -148,8 +148,12 @@ class VR : public QObject
   void renderSkyBox(vr::Hmd_Eye);
   void showHUD(vr::Hmd_Eye, GLuint, QSize);
 
+  bool reUpdateMap() { return m_updateMap; }
+  void resetUpdateMap() { m_updateMap = false; }
+
  public slots:
   void resetModel();
+  void updateMap();
   void updatePointSize(int);
   void updateScale(int);  
   void updateSoftShadows(bool);
@@ -207,7 +211,8 @@ class VR : public QObject
   bool m_flightActive;
 //  bool m_touchTriggerActiveLeft;
   
-  
+  bool m_updateMap;
+
   QTimer m_flyTimer;
 
   QVector3D m_prevDirection;

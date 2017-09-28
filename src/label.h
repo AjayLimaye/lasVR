@@ -69,10 +69,10 @@ class Label
 
   void genVertData();
 
-  void showTreeInfoPosition(QMatrix4x4);
+  void showTreeInfoPosition(QMatrix4x4, bool);
 
   void createBox();
-  void drawBox(QMatrix4x4, QVector3D, bool);
+  void drawBox(QMatrix4x4, QVector3D, bool, bool);
 };
 
 #endif

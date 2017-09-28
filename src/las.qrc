@@ -1,6 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-  <file>images/flag.png</file>
+  <file>images/circle.png</file>
   <file>images/info.png</file>
   <file>images/home.png</file>
   <file>images/box.png</file>

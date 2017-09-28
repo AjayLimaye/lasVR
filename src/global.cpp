@@ -1,23 +1,23 @@
 #include "global.h"
 
-GLuint Global::m_flagSpriteTexture = 0;
-void Global::removeFlagSpriteTexture()
+GLuint Global::m_circleSpriteTexture = 0;
+void Global::removeCircleSpriteTexture()
 {
-  if (m_flagSpriteTexture)
-    glDeleteTextures( 1, &m_flagSpriteTexture );
-  m_flagSpriteTexture = 0;
+  if (m_circleSpriteTexture)
+    glDeleteTextures( 1, &m_circleSpriteTexture );
+  m_circleSpriteTexture = 0;
 }
-GLuint Global::flagSpriteTexture()
+GLuint Global::circleSpriteTexture()
 {
-  if (m_flagSpriteTexture)
-    return m_flagSpriteTexture;
+  if (m_circleSpriteTexture)
+    return m_circleSpriteTexture;
 
-  glGenTextures( 1, &m_flagSpriteTexture );
+  glGenTextures( 1, &m_circleSpriteTexture );
 
-  QImage flag(":/images/flag.png");
-  int texsize = flag.height();
+  QImage circle(":/images/circle.png");
+  int texsize = circle.height();
   glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, m_flagSpriteTexture);
+  glBindTexture(GL_TEXTURE_2D, m_circleSpriteTexture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -26,11 +26,11 @@ GLuint Global::flagSpriteTexture()
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 	       texsize, texsize, 0,
 	       GL_BGRA, GL_UNSIGNED_BYTE,
-	       flag.bits());
+	       circle.bits());
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-  return m_flagSpriteTexture;
+  return m_circleSpriteTexture;
 }
 
 GLuint Global::m_infoSpriteTexture = 0;

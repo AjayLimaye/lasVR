@@ -10,6 +10,8 @@ VrMenu::VrMenu() : QObject()
 
   connect(m_menus["01"], SIGNAL(resetModel()),
 	  this, SIGNAL(resetModel()));
+  connect(m_menus["01"], SIGNAL(updateMap()),
+	  this, SIGNAL(updateMap()));
   connect(m_menus["01"], SIGNAL(updatePointSize(int)),
 	  this, SIGNAL(updatePointSize(int)));
   connect(m_menus["01"], SIGNAL(updateScale(int)),
@@ -104,6 +106,13 @@ VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
     ((Menu01*)(m_menus[m_currMenu]))->checkOptions(matL, matR, triggered);
   
   return -1;
+}
+
+void
+VrMenu::setShowMap(bool sm)
+{
+  m_showMap = sm;
+  ((Menu01*)(m_menus["01"]))->setShowMap(m_showMap);
 }
 
 void

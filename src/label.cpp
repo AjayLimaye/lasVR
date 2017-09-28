@@ -169,13 +169,35 @@ Label::checkHit(QMatrix4x4 matR,
 		QVector3D deadPoint)
 {
   if (deadRadius <= 0)
-    return -100000;
+    {
+      // we are showing info icon
+      QVector3D vp = QVector3D(m_position.x, m_position.y, m_position.z);
+      QVector3D sz = QVector3D(0.002,0.002,0.002);
+      QVector3D bmin = vp - sz;
+      QVector3D bmax = vp + sz;
+      
+      QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+      QVector3D cenR = finalxformInv.map(centerR);
+      
+      QVector3D pinPoint = QVector3D(matR * QVector4D(0,0,-1,1));
+      QVector3D frtR = finalxformInv.map(pinPoint) - cenR;
+      frtR.normalize();
+      
+      return StaticFunctions::intersectRayBox(bmin, bmax,
+					      cenR, frtR);
+    }
+
+  // we are showing boxes
+
+  //if (deadRadius <= 0)
+  //return -100000;
 
   Vec vp2d(m_position.x, m_position.y, 0);
   Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
   
   if ((vp2d-dp2d).norm() > deadRadius-0.02) // return if not in the zone
     return -100000;
+
   
   QVector3D bmin = QVector3D(m_boxData[0],m_boxData[1],m_boxData[2]);
   QVector3D bmax = QVector3D(m_boxData[48],m_boxData[49],m_boxData[50]);
@@ -357,9 +379,13 @@ Label::drawLabel(QVector3D cpos,
 	  
 	  if (deadRadius <= 0 ||
 	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
-	    showTreeInfoPosition(mvp);
+	    {
+	      // show icon only if we are close
+	      if ((cpos-vp).lengthSquared() < 1)
+		showTreeInfoPosition(mvp, glow);
+	    }
 	  else
-	    drawBox(mvp, vDir, glow);
+	    drawBox(mvp, vDir, glow, true);
 	  
 	  return;
 	}
@@ -431,8 +457,8 @@ Label::drawLabel(QVector3D cpos,
   m_vertData[30] = 1.0;
   m_vertData[31] = 0.0;
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+//  glEnable(GL_BLEND);
+//  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 
   glActiveTexture(GL_TEXTURE4);
@@ -483,14 +509,14 @@ Label::drawLabel(QVector3D cpos,
   glUniform1f(rcShaderParm[7], 0.5); // mix color
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0); 
   glBindVertexArray(0);
 
   glDisable(GL_TEXTURE_2D);
 
   glUseProgram( 0 );
 
-  glDisable(GL_BLEND);
+//  glDisable(GL_BLEND);
   //glDepthMask(GL_TRUE); // enable writing to depth buffer
   //glEnable(GL_DEPTH_TEST);
 
@@ -528,9 +554,9 @@ Label::checkLink(Camera *cam, QPoint pos)
 }
 
 void
-Label::showTreeInfoPosition(QMatrix4x4 mvp)
+Label::showTreeInfoPosition(QMatrix4x4 mvp, bool glow)
 {
-  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+  glDepthMask(GL_FALSE); // disable writing to depth buffer
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -586,12 +612,24 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform1i(rcShaderParm[1], 4); // texture
-  glUniform3f(rcShaderParm[2], 0, 0, 0); // color
+
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
-  glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
   glUniform1i(rcShaderParm[5], 3); // point sprite
-  glUniform1f(rcShaderParm[6], 20); // pointsize
-  glUniform1f(rcShaderParm[7], 0.5); // mix color
+
+  if (!glow)
+    {
+      glUniform3f(rcShaderParm[2], 0, 0, 0); // color
+      glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
+      glUniform1f(rcShaderParm[6], 20); // pointsize
+      glUniform1f(rcShaderParm[7], 0); // mix color
+    }
+  else
+    {
+      glUniform3f(rcShaderParm[2], 1, 0.3, 0.0); // mix color
+      glUniform1f(rcShaderParm[4], 1); // opacity modulator
+      glUniform1f(rcShaderParm[6], 40); // pointsize
+      glUniform1f(rcShaderParm[7], 0.8); // mix color
+    }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   glDrawArrays(GL_POINTS, 0, 1);  
@@ -604,7 +642,7 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp)
   glUseProgram( 0 );
 
   glDisable(GL_BLEND);
-  //glDepthMask(GL_TRUE); // enable writing to depth buffer
+  glDepthMask(GL_TRUE); // enable writing to depth buffer
 }
 
 void
@@ -612,6 +650,7 @@ Label::createBox()
 {
   // use area parameter for side length of box
   float sz = qSqrt(m_treeInfo[1])/2;
+  //float sz = qSqrt(m_treeInfo[1]);
 
   Vec bmin, bmax;
   bmin = Vec(-sz, -sz, 0);
@@ -704,10 +743,13 @@ Label::createBox()
 
 void
 Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
-	       bool glow)
+	       bool glow, bool box)
 {
   glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
+  if (box)
+    glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
+  else
+    glBindTexture(GL_TEXTURE_2D, Global::circleSpriteTexture());
   glEnable(GL_TEXTURE_2D);
 
 
@@ -760,20 +802,31 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
   else
     glUniform3f(rcShaderParm[2], m_color.x, m_color.y, m_color.z); // mix color
 
-  glUniform3f(rcShaderParm[3], vDir.x(), vDir.y(), vDir.z()); // view direction
-  glUniform1f(rcShaderParm[4], 0.8); // opacity modulator
+  if (box)
+    glUniform3f(rcShaderParm[3], vDir.x(), vDir.y(), vDir.z()); // view direction
+  else
+    glUniform3f(rcShaderParm[3], 0,0,0); // view direction
+
+  glUniform1f(rcShaderParm[4], 1.0); // opacity modulator
   glUniform1i(rcShaderParm[5], 5); // apply texture
   glUniform1f(rcShaderParm[6], 10); // pointsize
-  glUniform1f(rcShaderParm[7], 0.8); // mix color
+
+  if (box)
+    glUniform1f(rcShaderParm[7], 0.7); // mix color
+  else
+    glUniform1f(rcShaderParm[7], 1); // mix color
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   //glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, 0);  
-  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);  
+  
+  if (box)
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);  
+  else // draw only bottom square
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 
   glBindVertexArray(0);
 
   glUseProgram( 0 );
 
   glDisable(GL_TEXTURE_2D);
-
 }

@@ -40,8 +40,6 @@ VrMain::VrMain(QWidget *parent) :
   m_hiddenGL->context()->moveToThread(m_thread);
 
   m_hiddenGL->setViewer(m_viewer);
-  //m_hiddenGL->setVolumeFactory(&m_volumeFactory);
-  //m_hiddenGL->setVR(m_viewer->vrPointer());
 
   connect(m_viewer, SIGNAL(switchVolume()),
 	  m_hiddenGL, SLOT(switchVolume()));

@@ -35,6 +35,8 @@ Menu01::Menu01() : QObject()
   m_play = false;
   m_playMenu = false;
   m_playButton = false;
+
+  m_showMap = false;
 }
 
 Menu01::~Menu01()
@@ -42,6 +44,7 @@ Menu01::~Menu01()
   if(m_vertData)
     {
       delete [] m_vertData;
+      m_vertData = 0;
       glDeleteBuffers(1, &m_glIndexBuffer);
       glDeleteVertexArrays( 1, &m_glVertArray );
       glDeleteBuffers(1, &m_glVertBuffer);
@@ -162,32 +165,39 @@ Menu01::genVertData()
   glBindVertexArray( 0 );
     
 
-  QImage menuImg(":/images/menu00.png");
-  m_texWd = menuImg.width();
-  m_texHt = menuImg.height();
+  if (!m_glTexture)
+    {
+      QImage menuImg(":/images/menu00.png");
+      m_texWd = menuImg.width();
+      m_texHt = menuImg.height();
+
+      glGenTextures(1, &m_glTexture);
   
-  glGenTextures(1, &m_glTexture);
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, m_glTexture);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D,
-	       0,
-	       4,
-	       m_texWd,
-	       m_texHt,
-	       0,
-	       GL_RGBA,
-	       GL_UNSIGNED_BYTE,
-	       menuImg.bits());
+      glActiveTexture(GL_TEXTURE4);
+      glBindTexture(GL_TEXTURE_2D, m_glTexture);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexImage2D(GL_TEXTURE_2D,
+		   0,
+		   4,
+		   m_texWd,
+		   m_texHt,
+		   0,
+		   GL_RGBA,
+		   GL_UNSIGNED_BYTE,
+		   menuImg.bits());
   
-  glDisable(GL_TEXTURE_2D);
+      glDisable(GL_TEXTURE_2D);
+    }
 
 
   m_relGeom.clear();
-  m_relGeom << QRect(20, 10, 480, 90); // RESET
+  //m_relGeom << QRect(20, 10, 480, 90); // RESET
+  m_relGeom << QRect(20, 10, 400, 90); // RESET
+
+  m_relGeom << QRect(420, 10, 90, 90); // MAP
 
   m_relGeom << QRect(300, 100, 100, 100); // point size -
   m_relGeom << QRect(400, 100, 100, 100); // point size +
@@ -224,6 +234,64 @@ Menu01::genVertData()
 }
 
 void
+Menu01::setShowMap(bool b)
+{
+  m_showMap = b;
+
+  QImage menuImg(":/images/menu00.png");
+  m_texWd = menuImg.width();
+  m_texHt = menuImg.height();
+
+  if (!m_glTexture)
+    glGenTextures(1, &m_glTexture);
+
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, m_glTexture);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  
+  if (m_showMap)
+    {
+      QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
+      QPainter p(&pimg);
+      p.drawImage(0, 0, menuImg.rgbSwapped());
+
+      QFont font = QFont("Helvetica", 48);
+      QColor color(200, 220, 250); 
+      QImage tmpTex = StaticFunctions::renderText("map",
+						  font,
+						  Qt::black, color); 
+      tmpTex = tmpTex.scaledToWidth(60, Qt::SmoothTransformation);
+
+      p.drawImage(435, m_texHt-75, tmpTex.mirrored());
+
+      glTexImage2D(GL_TEXTURE_2D,
+		   0,
+		   4,
+		   m_texWd,
+		   m_texHt,
+		   0,
+		   GL_RGBA,
+		   GL_UNSIGNED_BYTE,
+		   pimg.bits());
+    }
+  else
+    glTexImage2D(GL_TEXTURE_2D,
+		 0,
+		 4,
+		 m_texWd,
+		 m_texHt,
+		 0,
+		 GL_RGBA,
+		 GL_UNSIGNED_BYTE,
+		 menuImg.bits());
+  
+  glDisable(GL_TEXTURE_2D);
+}
+
+void
 Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 {
   if (!m_visible)
@@ -243,7 +311,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 
   float opmod = qAbs(qBound(-0.1f, 0.0f, ofront.y()))/0.1f;  
 
-  if (!m_glTexture)
+  if (!m_vertData)
     genVertData();
 
 
@@ -344,15 +412,19 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   //for(int og=0; og<m_optionsGeom.count(); og++)
   int ogend = m_optionsGeom.count();
   if (!m_playMenu)
-    ogend = 7;
+    //ogend = 7;
+    ogend = 8;
 
   for(int og=0; og<ogend; og++)
     {
       bool ok = false;
       ok = (m_selected == og);
-      ok |= (og == 5 && m_softShadows);
-      ok |= (og == 6 && m_edges);
-      ok |= (og >= 10);
+      //ok |= (og == 5 && m_softShadows);
+      //ok |= (og == 6 && m_edges);
+      //ok |= (og >= 10);
+      ok |= (og == 6 && m_softShadows);
+      ok |= (og == 7 && m_edges);
+      ok |= (og >= 11);
 
       if (ok)
 	{
@@ -361,7 +433,8 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	  float cwd = m_optionsGeom[og].width();
 	  float cht = m_optionsGeom[og].height();
 	  
-	  if (og < 10)
+	  //if (og < 10)
+	  if (og < 11)
 	    {
 	      if (og == m_selected)
 		{
@@ -373,13 +446,15 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	      else
 		glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5);
 	    }
-	  else if (og == 10)
+	  //else if (og == 10)
+	  else if (og == 11)
 	    {
 	      if (!m_playButton) // hide play button
 		glUniform3f(rcShaderParm[2], 0.01, 0.01, 0.01);
 	      else
 		{
-		  if (m_selected == 10)
+		  //if (m_selected == 10)
+		  if (m_selected == 11)
 		    {
 		      if (triggerPressed)
 			glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2);
@@ -392,7 +467,8 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 		    glUniform3f(rcShaderParm[2], 0, 0, 0);
 		}
 	    }
-	  else if (og == 11) // show step number
+	  //else if (og == 11) // show step number
+	  else if (og == 12) // show step number
 	    {
 	      glBindTexture(GL_TEXTURE_2D, m_stepTexture);
 	      glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
@@ -419,7 +495,8 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	  float tx1 = 1;
 	  float ty1 = 1;
 	  
-	  if (og < 11)
+	  //if (og < 11)
+	  if (og < 12)
 	    {
 	      tx0 = m_relGeom[og].x()/(float)m_texWd;
 	      tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
@@ -514,11 +591,13 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   int tp = -1;
 
-  int ogend = 7;
+  //int ogend = 7;
+  int ogend = 8;
 
   // play menu : last is step number
   if (m_playMenu)
-    ogend = 11;
+    //ogend = 11;
+    ogend = 12;
 
   for(int t=0; t<ogend; t++)
     {
@@ -537,31 +616,33 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
   m_selected = tp;
 
   //--------------------
-  if (!m_playButton && m_selected == 10)
+  //if (!m_playButton && m_selected == 10)
+  if (!m_playButton && m_selected == 11)
     m_selected = -1;
   //--------------------
   
   if (triggered)
     {
       if (m_selected == 0) emit resetModel();
-      else if (m_selected == 1) emit updatePointSize(-1);
-      else if (m_selected == 2) emit updatePointSize(1);
-      else if (m_selected == 3) emit updateScale(-1);
-      else if (m_selected == 4) emit updateScale(1);
-      else if (m_selected == 5)
+      else if (m_selected == 1) emit updateMap();
+      else if (m_selected == 2) emit updatePointSize(-1);
+      else if (m_selected == 3) emit updatePointSize(1);
+      else if (m_selected == 4) emit updateScale(-1);
+      else if (m_selected == 5) emit updateScale(1);
+      else if (m_selected == 6)
 	{
 	  m_softShadows = !m_softShadows;
 	  emit updateSoftShadows(m_softShadows);
 	}
-      else if (m_selected == 6)
+      else if (m_selected == 7)
 	{
 	  m_edges = !m_edges;
 	  emit updateEdges(m_edges);
 	}
-      else if (m_selected == 7) emit gotoFirstStep();
-      else if (m_selected == 8) emit gotoPreviousStep();
-      else if (m_selected == 9) emit gotoNextStep();
-      else if (m_selected == 10 && m_playButton)
+      else if (m_selected == 8) emit gotoFirstStep();
+      else if (m_selected == 9) emit gotoPreviousStep();
+      else if (m_selected == 10) emit gotoNextStep();
+      else if (m_selected == 11 && m_playButton)
 	{
 	  m_play = !m_play;
 	  emit playPressed(m_play);

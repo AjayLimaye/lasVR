@@ -1108,8 +1108,8 @@ PointCloud::findNearestLabelHit(QMatrix4x4 matR,
   if (!m_visible)
     return false;
   
-  if (deadRadius <= 0)
-    return false;
+//  if (deadRadius <= 0)
+//    return false;
   
   if (m_labels.count() == 0)
     return false;
@@ -1128,7 +1128,18 @@ PointCloud::findNearestLabelHit(QMatrix4x4 matR,
 	}
     }
 
-  return (m_nearHitLabel >= 0);    
+  if (deadRadius > 0)
+    return (m_nearHitLabel >= 0);    
+  else
+    {
+      if (m_nearHit < 1)
+	return (m_nearHitLabel >= 0);    
+      else
+	{
+	  return false;
+	  m_nearHitLabel = -1;
+	}
+    }
 }
 GLuint
 PointCloud::labelTexture()

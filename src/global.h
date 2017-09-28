@@ -12,8 +12,8 @@ using namespace qglviewer;
 class Global
 {
  public :
-  static GLuint flagSpriteTexture();
-  static void removeFlagSpriteTexture();
+  static GLuint circleSpriteTexture();
+  static void removeCircleSpriteTexture();
 
   static GLuint infoSpriteTexture();
   static void removeInfoSpriteTexture();
@@ -39,7 +39,7 @@ class Global
   static QVector3D stickToGround(QVector3D);
 
  private :
-  static GLuint m_flagSpriteTexture;
+  static GLuint m_circleSpriteTexture;
   static GLuint m_infoSpriteTexture;
   static GLuint m_homeSpriteTexture;
   static GLuint m_boxSpriteTexture;

@@ -15,6 +15,8 @@ uniform float farDist;
 
 uniform bool showsphere;
 
+uniform bool copyOnly;
+
 void main()
 {
 
@@ -22,6 +24,19 @@ void main()
 
   color = texture2DRect(colorTex, spos.xy);
 
+  //------------------------------
+  if (copyOnly)
+    {
+      if (color.a < 0.001)
+        discard;
+
+      color /= color.a;
+
+      return;
+    }
+  //------------------------------
+
+  
   vec4 dtex = texture2DRect(depthTex, spos.xy);
   float depth = dtex.x;
   gl_FragDepth = dtex.z;

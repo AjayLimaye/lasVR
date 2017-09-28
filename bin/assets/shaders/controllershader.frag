@@ -27,13 +27,17 @@ void main()
   else if (applytexture == 4) // for textured lines
     outputColor = vec4(color*v2TexCoord.x,v2TexCoord.x);
   else if (applytexture == 5) // for texture + color
-    {
-      outputColor = texture( diffuse, v2TexCoord);
-      if (length(color) > 0)
-	outputColor.rgb = mix(outputColor.rgb,
-			      color*outputColor.a,
-			      mixcolor);
-    }
+    outputColor = texture( diffuse, v2TexCoord);
+
+
+  if (outputColor.a < 0.001)
+    discard;
+
+  if (length(color) > 0)
+    outputColor.rgb = mix(outputColor.rgb,
+			  color*outputColor.a,
+			  mixcolor);      
+
 
   if (length(viewDir) > 0.0)
     {

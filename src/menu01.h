@@ -39,10 +39,13 @@ class Menu01 : public QObject
   void setPlayButton(bool b) { m_playButton = b; }
   void setPlay(bool b) { m_play = b; }
 
+  void setShowMap(bool);
+
   void setTimeStep(QString);
 
  signals :
   void resetModel();
+  void updateMap();
   void updatePointSize(int);
   void updateScale(int);
   void updateSoftShadows(bool);
@@ -75,6 +78,7 @@ class Menu01 : public QObject
   bool m_play;
   bool m_playMenu;
   bool m_playButton;
+  bool m_showMap;
 
   QList<QString> m_menuList;
   QList<QRect> m_relGeom;

@@ -66,8 +66,12 @@ VR::VR() : QObject()
   m_edges = true;
   m_softShadows = true;
 
+  m_updateMap = false;
+
   connect(&m_leftMenu, SIGNAL(resetModel()),
 	  this, SLOT(resetModel()));
+  connect(&m_leftMenu, SIGNAL(updateMap()),
+	  this, SLOT(updateMap()));
   connect(&m_leftMenu, SIGNAL(updatePointSize(int)),
 	  this, SLOT(updatePointSize(int)));
   connect(&m_leftMenu, SIGNAL(updateScale(int)),
@@ -173,6 +177,15 @@ VR::shutdown()
     delete m_vecRenderModels[i];
   m_vecRenderModels.clear();
 	
+}
+
+void
+VR::updateMap()
+{
+  if (m_showMap)
+    m_updateMap = true;
+  else
+    m_updateMap = false;
 }
 
 void
@@ -556,20 +569,20 @@ VR::leftGripPressed()
 void
 VR::leftGripMove()
 {
-  QVector3D cen = vrHmdPosition();
-  m_model_xform.setToIdentity();
-  m_model_xform.translate(cen);
-  m_model_xform.rotate(1.0, 0, 1, 0); // rotate 1 degree
-  m_model_xform.translate(-cen);
-  m_final_xform = m_model_xform * m_final_xform;
+//  QVector3D cen = vrHmdPosition();
+//  m_model_xform.setToIdentity();
+//  m_model_xform.translate(cen);
+//  m_model_xform.rotate(1.0, 0, 1, 0); // rotate 1 degree
+//  m_model_xform.translate(-cen);
+//  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::leftGripReleased()
 {
   m_gripActiveLeft = false;
 
-  m_final_xform = m_model_xform * m_final_xform;
-  m_model_xform.setToIdentity();
+//  m_final_xform = m_model_xform * m_final_xform;
+//  m_model_xform.setToIdentity();
   
 //  // generate the drawlist each time changes are made
 //  m_genDrawList = true;
@@ -586,20 +599,29 @@ VR::rightGripPressed()
 void
 VR::rightGripMove()
 {
-  QVector3D cen = vrHmdPosition();
-  m_model_xform.setToIdentity();
-  m_model_xform.translate(cen);
-  m_model_xform.rotate(-1.0, 0, 1, 0); // rotate 1 degree
-  m_model_xform.translate(-cen);
-  m_final_xform = m_model_xform * m_final_xform;
+  //---------------------------
+  // point cloud distortion to show underlying data
+  if (m_showMap && m_pinPt.x() >= 0)
+    {
+      m_deadRadius = 0.5;
+      m_deadPoint = m_projectedPinPt;
+    }
+  //---------------------------
+
+//  QVector3D cen = vrHmdPosition();
+//  m_model_xform.setToIdentity();
+//  m_model_xform.translate(cen);
+//  m_model_xform.rotate(-1.0, 0, 1, 0); // rotate 1 degree
+//  m_model_xform.translate(-cen);
+//  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::rightGripReleased()
 {
   m_gripActiveRight = false;
 
-  m_final_xform = m_model_xform * m_final_xform;
-  m_model_xform.setToIdentity();
+//  m_final_xform = m_model_xform * m_final_xform;
+//  m_model_xform.setToIdentity();
   
 //  // generate the drawlist each time changes are made
 //  m_genDrawList = true;
@@ -758,7 +780,6 @@ VR::rightTouchMove()
   m_touchY = m_stateRight.rAxis[0].y;
 
   float acc = (m_touchY-m_startTouchY);
-  float rot = (m_touchX-m_startTouchX);
 
   m_model_xform.setToIdentity();      
 
@@ -772,27 +793,43 @@ VR::rightTouchMove()
   QVector3D move = moveD*throttle;
 
   move *= (5*acc);
-  
-  m_model_xform.translate(-move);
+
+//  m_model_xform.translate(-move);
+//  
+//  bool changeScale = false;
+//  float sf = 1.0;
+//  if (moveD.y() > 0.8) // moving up
+//    {
+//      // scale down while going up in the sky
+//      sf = 0.99;
+//      changeScale = true;
+//    }
+//  else if (moveD.y() < -0.4) // moving down
+//    {
+//      // scale up while going down to ground
+//      // but only if below threshold 
+//      sf = m_teleportScale/m_scaleFactor;
+//      if (sf > 1.0)
+//	{
+//	  sf = qPow(sf, 0.01f);
+//	  changeScale = true;
+//	}
+//    }
 
   bool changeScale = false;
   float sf = 1.0;
-  if (moveD.y() > 0.8) // moving up
+  if (qAbs(moveD.y()) < 0.8) // not moving up/down
+    m_model_xform.translate(-move);
+  else
     {
-      // scale down while going up in the sky
-      sf = 0.99;
       changeScale = true;
-    }
-  else if (moveD.y() < -0.4) // moving down
-    {
-      // scale up while going down to ground
-      // but only if below threshold 
-      sf = m_teleportScale/m_scaleFactor;
-      if (sf > 1.0)
-	{
-	  sf = qPow(sf, 0.01f);
-	  changeScale = true;
-	}
+
+      sf = 1.0 - 0.05*acc;
+
+      if (m_scaleFactor*sf < m_coordScale) sf = 1.0;
+
+      if (m_scaleFactor*sf > m_teleportScale)
+	sf = m_teleportScale/m_scaleFactor;
     }
 
   if (changeScale)
@@ -815,6 +852,7 @@ VR::rightTouchMove()
   m_final_xform = m_model_xform * m_final_xform;
 
 //  {
+//    float rot = (m_touchX-m_startTouchX);
 //    float drot = StaticFunctions::smoothstep(0.0, 1.0, qAbs(rot));
 //    drot = StaticFunctions::smoothstep(0.0, 1.0, drot);
 //    if (rot < 0.0) drot = -drot;
@@ -953,14 +991,14 @@ VR::rightTouchPressed()
 void
 VR::rightTouchPressMove()
 {
-  //---------------------------
-  // point cloud distortion to show underlying data
-  if (m_showMap && m_pinPt.x() >= 0)
-    {
-      m_deadRadius = 0.5;
-      m_deadPoint = m_projectedPinPt;
-    }
-  //---------------------------
+//  //---------------------------
+//  // point cloud distortion to show underlying data
+//  if (m_showMap && m_pinPt.x() >= 0)
+//    {
+//      m_deadRadius = 0.5;
+//      m_deadPoint = m_projectedPinPt;
+//    }
+//  //---------------------------
 
 //  m_model_xform.setToIdentity(); 
 //
@@ -1937,6 +1975,13 @@ VR::setupRenderModels()
 void
 VR::renderControllers(vr::Hmd_Eye eye)
 {
+  if (!m_hmd)
+    return;
+  
+  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
+  if(bIsInputCapturedByAnotherProcess)
+    return;
+  
   QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
   QVector4D center = mat * QVector4D(0,0,0,1);
   QVector4D point = mat * QVector4D(0,0,1,1);
@@ -1957,14 +2002,16 @@ VR::renderControllers(vr::Hmd_Eye eye)
   glUniform1f(rcShaderParm[4], 1); // opacity modulator
   glUniform1i(rcShaderParm[5], 2); // applytexture
   glUniform1f(rcShaderParm[7], 0.5); // mixcolor
-  m_rTrackedDeviceToRenderModel[ m_leftController ]->Draw();
+  if( m_rTrackedDeviceToRenderModel[m_leftController])
+    m_rTrackedDeviceToRenderModel[m_leftController]->Draw();
 
 
   matDeviceToTracking = m_matrixDevicePose[m_rightController];
   mvp = currentViewProjection(eye) * matDeviceToTracking;
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
   glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
-  m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
+  if(m_rTrackedDeviceToRenderModel[m_rightController])
+    m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
 
 
   glUseProgram( 0 );
@@ -2851,7 +2898,7 @@ void
 VR::showHUD(vr::Hmd_Eye eye,
 	    GLuint texId, QSize texSize)
 {
-  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+//  //glDepthMask(GL_FALSE); // disable writing to depth buffer
   glDisable(GL_DEPTH_TEST);
 
   glEnable(GL_BLEND);
@@ -2887,8 +2934,8 @@ VR::showHUD(vr::Hmd_Eye eye,
 
   cen = cen - vDir - 0.5*uDir;
 
-  QVector3D fv = 0.3*(uDir-vDir).normalized();
-  QVector3D fr = 0.3*rDir;
+  QVector3D fv = 0.5*(uDir-vDir).normalized();
+  QVector3D fr = 0.5*rDir;
 
   QVector3D vu = frc*texHt*fv;
   QVector3D vr0 = cen - frc*texWd*0.5*fr;

@@ -555,6 +555,7 @@ Viewer::createShaders()
       m_shadowParm[5] = glGetUniformLocation(m_shadowShader, "nearDist");
       m_shadowParm[6] = glGetUniformLocation(m_shadowShader, "farDist");
       m_shadowParm[7] = glGetUniformLocation(m_shadowShader, "showsphere");
+      m_shadowParm[8] = glGetUniformLocation(m_shadowShader, "copyOnly");
     }
   //--------------------------
 
@@ -1015,14 +1016,17 @@ Viewer::paintGL()
   m_frames++;
 
   //---------------------------
+  if (m_vr.reUpdateMap())
+    m_firstImageDone = 0;
+
   if (m_vboLoadedAll &&
-      m_firstImageDone < 2 &&
+      m_firstImageDone < 1 &&
       m_pointClouds[0]->showMap())
     {
       generateFirstImage();
       m_firstImageDone++;
 
-      
+      m_vr.resetUpdateMap();
     }  
   //---------------------------
 
@@ -1228,6 +1232,7 @@ Viewer::vboLoaded(int cvp, qint64 npts)
 {
   m_vbID = cvp;
   m_vbPoints = npts;
+  m_vboLoadedAll = false;
 }
 void
 Viewer::vboLoadedAll(int cvp, qint64 npts)
@@ -1588,6 +1593,8 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
 
   glUniform1i(m_shadowParm[7], m_showSphere);
 
+  glUniform1i(m_shadowParm[8], false); // copyOnly false
+
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
   glVertexAttribPointer(0,  // attribute 0
@@ -1794,9 +1801,9 @@ Viewer::drawPointsWithReload()
 			 GL_TEXTURE_RECTANGLE,
 			 m_depthTex[1],
 			 0);
-  GLenum buffers[2] = { GL_COLOR_ATTACHMENT0_EXT,
-			GL_COLOR_ATTACHMENT1_EXT };
-  glDrawBuffersARB(2, buffers);
+  GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT,
+		       GL_COLOR_ATTACHMENT1_EXT };
+  glDrawBuffers(2, buffers);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1890,6 +1897,8 @@ Viewer::drawPointsWithReload()
 
   glUniform1i(m_shadowParm[7], m_showSphere);
 
+  glUniform1i(m_shadowParm[8], false); // copyOnly false
+
   glEnableVertexAttribArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
   glVertexAttribPointer(0,  // attribute 0
@@ -1974,12 +1983,29 @@ Viewer::drawLabels()
 void
 Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 {
+//  glDepthMask(GL_FALSE); // enable writing to depth buffer
+//  glDisable(GL_DEPTH_TEST);
+//
+//  glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+//  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+//			 GL_COLOR_ATTACHMENT0,
+//			 GL_TEXTURE_RECTANGLE,
+//			 m_depthTex[0],
+//			 0);
+//  GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT };
+//  glDrawBuffers(1, buffers);
+//
+//  glClear(GL_COLOR_BUFFER_BIT);
+
   QMatrix4x4 mvp = m_vr.viewProjection(eye);
   QMatrix4x4 matR = m_vr.matrixDevicePoseRight();
   QVector3D cpos = m_hmdPos;
   QMatrix4x4 finalxform = m_vr.final_xform();
   QMatrix4x4 finalxformInv = m_vr.final_xformInverted();
-  
+
+//  glEnable(GL_BLEND);
+//  glBlendFunc(GL_ONE, GL_ONE);
+
   for(int d=0; d<m_pointClouds.count(); d++)
     {
       if (m_pointClouds[d]->visible())
@@ -2007,6 +2033,58 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 	    }
 	}
     }
+//  glDisable(GL_BLEND);
+//
+//  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  return;
+
+//  //------------------------------
+//
+//  m_vr.bindBuffer(eye);
+//
+//  glUseProgram(m_shadowShader);
+//
+//  glEnable(GL_BLEND);
+//  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+//
+//  glActiveTexture(GL_TEXTURE0);
+//  glEnable(GL_TEXTURE_RECTANGLE);
+//  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[0]); // colors
+//
+//  int wd = camera()->screenWidth();
+//  int ht = camera()->screenHeight();
+//
+//  QMatrix4x4 mvp4x4;
+//  mvp4x4.setToIdentity();
+//  mvp4x4.ortho(0.0, wd, 0.0, ht, 0.0, 1.0);
+//
+//  glUniformMatrix4fv(m_shadowParm[0], 1, GL_FALSE, mvp4x4.data());
+//
+//  glUniform1i(m_shadowParm[1], 0); // colors
+//  glUniform1i(m_shadowParm[8], true);
+//
+//  glEnableVertexAttribArray(0);
+//  glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
+//  glVertexAttribPointer(0,  // attribute 0
+//			2,  // size
+//			GL_FLOAT, // type
+//			GL_FALSE, // normalized
+//			0, // stride
+//			(void*)0 ); // array buffer offset
+//  glDrawArrays(GL_QUADS, 0, 8);
+//
+//  glDisableVertexAttribArray(0);
+//
+//  glActiveTexture(GL_TEXTURE0);
+//  glDisable(GL_TEXTURE_RECTANGLE);
+//
+//  glUseProgram(0);
+//
+//  glDisable(GL_BLEND);
+//  glDepthMask(GL_TRUE); // enable writing to depth buffer
+//  glEnable(GL_DEPTH_TEST);
+//  //------------------------------
 }
 
 void
@@ -2770,4 +2848,7 @@ Viewer::loadTopJson(QString jsonfile)
 	}
 
     }
+
+  if (m_pointBudget < million)
+    m_pointBudget = million;
 }

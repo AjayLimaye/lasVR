@@ -35,7 +35,7 @@ class VrMenu : public QObject
 
   QVector2D pinPoint2D();
 
-  void setShowMap(bool sm) { m_showMap = sm; }
+  void setShowMap(bool);
 
   void setPlay(bool);
 
@@ -54,6 +54,7 @@ class VrMenu : public QObject
 
  signals :
   void resetModel();
+  void updateMap();
   void updatePointSize(int);
   void updateScale(int);
   void updateSoftShadows(bool);
