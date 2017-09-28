@@ -228,6 +228,7 @@ class VR : public QObject
 
   QVector3D m_startTranslate;
   QVector3D m_scaleCenter;
+  QVector3D m_rcDir;
   
   QQuaternion m_rotQuat;
   QMatrix4x4 m_rotQ;

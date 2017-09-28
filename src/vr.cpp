@@ -599,14 +599,14 @@ VR::rightGripPressed()
 void
 VR::rightGripMove()
 {
-  //---------------------------
-  // point cloud distortion to show underlying data
-  if (m_showMap && m_pinPt.x() >= 0)
-    {
-      m_deadRadius = 0.5;
-      m_deadPoint = m_projectedPinPt;
-    }
-  //---------------------------
+//  //---------------------------
+//  // point cloud distortion to show underlying data
+//  if (m_showMap && m_pinPt.x() >= 0)
+//    {
+//      m_deadRadius = 0.5;
+//      m_deadPoint = m_projectedPinPt;
+//    }
+//  //---------------------------
 
 //  QVector3D cen = vrHmdPosition();
 //  m_model_xform.setToIdentity();
@@ -764,6 +764,12 @@ VR::rightTouched()
   
   m_startTouchX = m_stateRight.rAxis[0].x;
   m_startTouchY = m_stateRight.rAxis[0].y;
+
+  QMatrix4x4 mat = m_matrixDevicePose[m_rightController];    
+  QVector4D center = mat * QVector4D(0,0,0,1);
+  QVector4D point = mat * QVector4D(0,0,1,1);
+  m_rcDir = QVector3D(center-point);
+  m_rcDir.normalize();
   
   m_flyTimer.start(5000); // generate new draw list every 5 sec
 }
@@ -787,52 +793,20 @@ VR::rightTouchMove()
   QVector4D center = mat * QVector4D(0,0,0,1);
   QVector4D point = mat * QVector4D(0,0,1,1);
   QVector3D moveD = QVector3D(center-point);
-
   moveD.normalize();
+
   float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
   QVector3D move = moveD*throttle;
 
-  move *= (5*acc);
+  move *= acc;
 
-//  m_model_xform.translate(-move);
-//  
-//  bool changeScale = false;
-//  float sf = 1.0;
-//  if (moveD.y() > 0.8) // moving up
-//    {
-//      // scale down while going up in the sky
-//      sf = 0.99;
-//      changeScale = true;
-//    }
-//  else if (moveD.y() < -0.4) // moving down
-//    {
-//      // scale up while going down to ground
-//      // but only if below threshold 
-//      sf = m_teleportScale/m_scaleFactor;
-//      if (sf > 1.0)
-//	{
-//	  sf = qPow(sf, 0.01f);
-//	  changeScale = true;
-//	}
-//    }
+  m_model_xform.translate(-move);
+  
 
   bool changeScale = false;
-  float sf = 1.0;
-  if (qAbs(moveD.y()) < 0.8) // not moving up/down
-    m_model_xform.translate(-move);
-  else
-    {
-      changeScale = true;
-
-      sf = 1.0 - 0.05*acc;
-
-      if (m_scaleFactor*sf < m_coordScale) sf = 1.0;
-
-      if (m_scaleFactor*sf > m_teleportScale)
-	sf = m_teleportScale/m_scaleFactor;
-    }
-
-  if (changeScale)
+  float sf = 1.0-qBound(-0.005, 0.005, qPow(moveD.y(),5));
+  if (m_scaleFactor*sf > m_coordScale &&
+      m_scaleFactor*sf < m_teleportScale)
     {
       QVector3D cen;
       if (m_pinPt.x() >= 0)
@@ -851,18 +825,21 @@ VR::rightTouchMove()
 
   m_final_xform = m_model_xform * m_final_xform;
 
-//  {
-//    float rot = (m_touchX-m_startTouchX);
-//    float drot = StaticFunctions::smoothstep(0.0, 1.0, qAbs(rot));
-//    drot = StaticFunctions::smoothstep(0.0, 1.0, drot);
-//    if (rot < 0.0) drot = -drot;
-//    QVector3D cen = vrHmdPosition();
-//    m_model_xform.setToIdentity();
-//    m_model_xform.translate(cen);
-//    m_model_xform.rotate(1.0, 0, drot, 0); // rotate rot degrees
-//    m_model_xform.translate(-cen);
-//    m_final_xform = m_model_xform * m_final_xform;
-//  }
+  {
+    QVector3D v0 = QVector3D(m_rcDir.x(), 0, m_rcDir.z());
+    QVector3D v1 = QVector3D(moveD.x(), 0, moveD.z());
+    QVector3D axis = QVector3D::normal(v1,v0);
+    float angle = StaticFunctions::getAngleBetweenVectors(v1,v0);
+    QQuaternion q = QQuaternion::fromAxisAndAngle(axis, qRadiansToDegrees(angle*0.005));
+    QVector3D cen = vrHmdPosition();
+    m_model_xform.setToIdentity();
+    m_model_xform.translate(cen);
+    m_model_xform.rotate(q);
+    m_model_xform.translate(-cen);
+    m_final_xform = m_model_xform * m_final_xform;
+
+    //m_rcDir = moveD;
+  }
   
   m_final_xformInverted = m_final_xform.inverted();
       
@@ -889,8 +866,8 @@ VR::rightTouchMove()
 	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
 	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
 
-	      if (m_gravity || // stick close to ground
-		  pos.z() > hpos.z()) // push it above the ground
+	      //if (m_gravity || // stick close to ground
+	      if (pos.z() > hpos.z()) // push it above the ground
 		{
 		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
 
