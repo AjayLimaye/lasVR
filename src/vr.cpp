@@ -866,8 +866,8 @@ VR::rightTouchMove()
 	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
 	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
 
-	      //if (m_gravity || // stick close to ground
-	      if (pos.z() > hpos.z()) // push it above the ground
+	      if (m_gravity || // stick close to ground
+		  pos.z() > hpos.z()) // push it above the ground
 		{
 		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
 

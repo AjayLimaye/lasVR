@@ -17,7 +17,7 @@ PointCloud::PointCloud()
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
-  m_colorPresent = false;
+  m_colorPresent = true;
   m_classPresent = false;
   m_xformPresent = false;
   m_priority = 0;
@@ -66,7 +66,7 @@ PointCloud::reset()
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
-  m_colorPresent = false;
+  m_colorPresent = true;
   m_classPresent = false;
   m_xformPresent = false;
   m_priority = 0;
@@ -115,7 +115,7 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
-  m_colorPresent = false;
+  m_colorPresent = true;
   m_classPresent = false;
   m_xformPresent = false;
   m_priority = 0;
@@ -208,7 +208,8 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
   for (int d=0; d<dcount; d++)
     {
       progress.setValue(100*(float)d/(float)dcount);
-
+      qApp->processEvents();
+	  
       QFileInfo finfo(dirnames[d]);
       if (finfo.isDir())
 	loadTileOctree(dirnames[d]);
@@ -299,7 +300,6 @@ PointCloud::loadTileOctree(QString dirname)
 
       totalPoints += getNumPointsInFile(finfolist[i].absoluteFilePath());
     }
-  progress.setValue(100);
 
   maxOct = maxNameSize - minNameSize;
   
@@ -321,6 +321,8 @@ PointCloud::loadTileOctree(QString dirname)
 
   for(int l=0; l<=maxOct; l++)
     {
+      progress.setValue(100*(float)l/(float)(maxOct+1));
+
       QStringList flist;
       for (int i=0; i<finfolist.count(); i++)
 	{
@@ -399,6 +401,8 @@ PointCloud::loadTileOctree(QString dirname)
 
 
   saveOctreeNodeToJson(dirname, oNode);
+
+  progress.setValue(100);
 
   return true;
 }

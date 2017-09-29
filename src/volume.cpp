@@ -113,21 +113,21 @@ Volume::loadDir(QString dirname)
   m_tiles.clear();
   m_pointClouds.clear();
 
-  m_groundHeight = 0.16;
-  m_teleportScale = 1.0;
-  m_showMap = false;
+  //m_groundHeight = 0.16;
+  //m_teleportScale = 1.0;
+  m_groundHeight = 0.08;
+  m_teleportScale = 20.0;
+  m_showMap = true;
   m_gravity = false;
-  m_skybox = false;
-  m_playbutton = true;
+  m_skybox = true;
+  m_playbutton = false;
   m_showSphere = false;
-  m_pointType = true;
+  m_pointType = true; // adaptive point size
   m_loadall = false;
 
   //---------------------------------
   if (QDir(dirname).exists("top.json"))
     {
-      //QMessageBox::information(0, "", "top.json exists");
-
       QString jsonfile = QDir(dirname).absoluteFilePath("top.json");
       loadTopJson(jsonfile);
 
@@ -167,6 +167,19 @@ Volume::loadDir(QString dirname)
       dirnames << dirname;
 
       PointCloud *pointCloud = new PointCloud();
+      
+      //--------------------------------------------
+      // set defaults
+      pointCloud->setShowMap(m_showMap);
+      pointCloud->setGravity(m_gravity);
+      pointCloud->setSkybox(m_skybox);
+      pointCloud->setPlayButton(m_playbutton);
+      pointCloud->setShowSphere(m_showSphere);
+      pointCloud->setGroundHeight(m_groundHeight);
+      pointCloud->setTeleportScale(m_teleportScale);
+      pointCloud->setPointType(m_pointType);
+      //--------------------------------------------
+
       m_pointClouds << pointCloud;
       pointCloud->loadMultipleTiles(dirnames);
     }
