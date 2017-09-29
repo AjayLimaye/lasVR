@@ -136,6 +136,10 @@ class PointCloud
   bool m_pointType;
   bool m_loadAll;
 
+  bool m_fileFormat;
+  QStringList m_pointAttrib;
+  int m_attribBytes;
+
   QList< QList<uchar> > m_vData;
 
   QList<OctreeNode*> m_tiles;
@@ -146,9 +150,8 @@ class PointCloud
   int m_nearHitLabel;
   float m_nearHit;
 
-  qint64 getNumPointsInFile(QString);
-
-  void setOctreeNodeFromFile(OctreeNode*, QString);
+  qint64 getNumPointsInLASFile(QString);
+  qint64 getNumPointsInBINFile(QString);
 
   void loadOctreeNodeFromJson(QString, OctreeNode*);
   void saveOctreeNodeToJson(QString, OctreeNode*);

@@ -33,6 +33,10 @@ PointCloud::PointCloud()
   //m_dpv = 4;
   m_dpv = 6;
 
+  m_fileFormat = true; // LAS
+  m_pointAttrib.clear();
+  m_attribBytes = 0;
+
   m_tiles.clear();
   m_labels.clear();
 
@@ -50,6 +54,8 @@ PointCloud::PointCloud()
 
   m_nearHitLabel = -1;
   m_nearHit = -1000;
+
+  m_ignoreScaling = false;
 }
 
 PointCloud::~PointCloud()
@@ -85,6 +91,10 @@ PointCloud::reset()
   m_octreeMax = Vec(0,0,0);
   m_tightOctreeMin = Vec(0,0,0);
   m_tightOctreeMax = Vec(0,0,0);
+
+  m_fileFormat = true; // LAS
+  m_pointAttrib.clear();
+  m_attribBytes = 0;
 }
 
 void
@@ -255,8 +265,11 @@ PointCloud::loadTileOctree(QString dirname)
   //------------------------------------------------
 
   QStringList namefilters;
-  namefilters << "*.las" << "*.laz";
-
+  if (m_fileFormat) // LAS/LAZ
+    namefilters << "*.las" << "*.laz";
+  else
+    namefilters << "*.bin";
+  
   QProgressDialog progress("Enumerating Files in " + dirname,
 			   QString(),
 			   0, 100,
@@ -298,14 +311,20 @@ PointCloud::loadTileOctree(QString dirname)
       minNameSize = qMin(minNameSize, basename.count());
       maxNameSize = qMax(maxNameSize, basename.count());
 
-      totalPoints += getNumPointsInFile(finfolist[i].absoluteFilePath());
+      if (m_fileFormat)
+	totalPoints += getNumPointsInLASFile(finfolist[i].absoluteFilePath());
+      else
+	totalPoints += getNumPointsInBINFile(finfolist[i].absoluteFilePath());
     }
 
   maxOct = maxNameSize - minNameSize;
   
   //-----------------------------
+  qint64 npts;
   Vec shift = m_shift;
   float scale = m_scale;
+  if (m_ignoreScaling)
+    scale = 1.0;
   float bminZ = m_bminZ;
   float bmaxZ = m_bmaxZ;
   int priority = m_priority;
@@ -333,11 +352,19 @@ PointCloud::loadTileOctree(QString dirname)
 
       if (l==0)
 	{
+	  if (m_fileFormat)
+	    npts = getNumPointsInLASFile(flist[0]);
+	  else
+	    npts = getNumPointsInBINFile(flist[0]);	  
+
+	  oNode->setFileName(flist[0]);
+	  oNode->setNumPoints(npts);
 	  oNode->setLevelsBelow(maxOct);
 	  oNode->setLevelString("");
-	  setOctreeNodeFromFile(oNode, flist[0]);
-
 	  oNode->setDataPerVertex(m_dpv);
+	  oNode->setOffset(m_octreeMin);
+	  oNode->setBMin(m_octreeMin);
+	  oNode->setBMax(m_octreeMax);
 	  oNode->setTightMin(m_tightOctreeMin);
 	  oNode->setTightMax(m_tightOctreeMax);
 	  oNode->setPriority(priority);
@@ -345,6 +372,8 @@ PointCloud::loadTileOctree(QString dirname)
 	  oNode->setShift(shift);
 	  oNode->setScale(scale);
 	  oNode->setSpacing(m_spacing*scale);
+	  oNode->setPointAttributes(m_pointAttrib);
+	  oNode->setAttribBytes(m_attribBytes);
 	  oNode->setColorPresent(colorPresent);
 	  oNode->setClassPresent(classPresent);
 	  if (xformPresent)
@@ -355,6 +384,11 @@ PointCloud::loadTileOctree(QString dirname)
 	  for(int fl=0; fl<flist.count(); fl++)
 	    {
 	      QString flnm = flist[fl];
+
+	      if (m_fileFormat)
+		npts = getNumPointsInLASFile(flnm);
+	      else
+		npts = getNumPointsInBINFile(flnm);	  
 
 	      QString basename = QFileInfo(flnm).baseName();
 	      //QMessageBox::information(0, QString("level %1").arg(l), basename);
@@ -378,12 +412,35 @@ PointCloud::loadTileOctree(QString dirname)
 
 		  m_allNodes << tnode;
 		}
+
+	      //-----------------	      
+	      Vec bmin = m_octreeMin;
+	      Vec bmax = m_octreeMax;
+	      Vec bsize = m_octreeMax-m_octreeMin;
+	      if (ll.count() > 0)
+		{	  
+		  for(int vl=0; vl<ll.count(); vl++)
+		    {
+		      //spacing /= 2;
+		      bsize /= 2;
+		      
+		      if (ll[vl]%2 > 0) bmin.z += bsize.z;
+		      if (ll[vl]%4 > 1) bmin.y += bsize.y;
+		      if (ll[vl]   > 3) bmin.x += bsize.x;
+		    }
+		  
+		  bmax = bmin + bsize;
+		}
+	      //-----------------
 	      
+	      tnode->setFileName(flnm);
+	      tnode->setNumPoints(npts);
 	      tnode->setLevelsBelow(maxOct-l);
 	      tnode->setLevelString(levelString);
-	      setOctreeNodeFromFile(tnode, flnm);
-
 	      tnode->setDataPerVertex(m_dpv);
+	      tnode->setOffset(bmin);
+	      tnode->setBMin(bmin);
+	      tnode->setBMax(bmax);
 	      tnode->setTightMin(m_tightOctreeMin);
 	      tnode->setTightMax(m_tightOctreeMax);
 	      tnode->setPriority(priority);
@@ -391,6 +448,8 @@ PointCloud::loadTileOctree(QString dirname)
 	      tnode->setShift(shift);
 	      tnode->setScale(scale);
 	      tnode->setSpacing(m_spacing*scale);
+	      tnode->setPointAttributes(m_pointAttrib);
+	      tnode->setAttribBytes(m_attribBytes);
 	      tnode->setColorPresent(colorPresent);
 	      tnode->setClassPresent(classPresent);
 	      if (xformPresent)
@@ -405,54 +464,6 @@ PointCloud::loadTileOctree(QString dirname)
   progress.setValue(100);
 
   return true;
-}
-
-void
-PointCloud::setOctreeNodeFromFile(OctreeNode *node, QString flnm)
-{
-  laszip_POINTER laszip_reader;
-
-  laszip_create(&laszip_reader);
-	  
-  laszip_BOOL is_compressed = flnm.endsWith(".laz");
-  if (laszip_open_reader(laszip_reader, flnm.toLatin1().data(), &is_compressed))
-    {
-      QMessageBox::information(0, "", "Error opening file" + flnm);
-    }
-  
-  laszip_header* header;
-  laszip_get_header_pointer(laszip_reader, &header);
-  
-  laszip_I64 npts = (header->number_of_point_records ? header->number_of_point_records : header->extended_number_of_point_records);
-  
-  //QMessageBox::information(0, "", flnm);
-
-  node->setFileName(flnm);
-
-  //node->computeBB();
-
-  Vec coordMin = Vec(header->min_x, header->min_y, header->min_z);
-  Vec coordMax = Vec(header->max_x, header->max_y, header->max_z);  
-
-  node->setBMin(coordMin);
-  node->setBMax(coordMax);
-
-//  Vec bmin = node->bmin();
-//  Vec bmax = node->bmax();
-//  bmin.x = qMax(bmin.x, coordMin.x);
-//  bmin.y = qMax(bmin.y, coordMin.y);
-//  bmin.z = qMax(bmin.z, coordMin.z);
-//  bmax.x = qMin(bmax.x, coordMax.x);
-//  bmax.y = qMin(bmax.y, coordMax.y);
-//  bmax.z = qMin(bmax.z, coordMax.z);
-//
-//  node->setBMin(bmin);
-//  node->setBMax(bmax);
-
-
-  node->setNumPoints(npts);
-
-  laszip_close_reader(laszip_reader);
 }
 
 void
@@ -502,6 +513,45 @@ PointCloud::loadCloudJson(QString dirname)
 			   qMin(m_octreeMax.y,uy),
 			   qMin(m_octreeMax.z,uz));
   }
+
+  if (jsonCloudData.contains("pointAttributes"))
+    {
+      if (jsonCloudData["pointAttributes"].isArray())
+	{
+	  m_fileFormat = 0; // BINARY
+	  QJsonArray jsonArray = jsonCloudData["pointAttributes"].toArray();
+	  int jc = jsonArray.count();
+	  m_pointAttrib.clear();
+	  m_attribBytes = 0;
+	  for(int ijc=0; ijc<jc; ijc++)
+	    {
+	      QString name = jsonArray[ijc].toString();
+	      m_pointAttrib << name;
+
+	      if(name == "POSITION_CARTESIAN"){
+		m_attribBytes += 12;
+	      }else if(name == "COLOR_PACKED"){
+		m_attribBytes += 4;
+	      }else if(name == "INTENSITY"){
+		m_attribBytes += 2;
+	      }else if(name == "CLASSIFICATION"){
+		m_attribBytes += 1;
+	      }else if(name == "NORMAL_SPHEREMAPPED"){
+		m_attribBytes += 2;
+	      }else if(name == "NORMAL_OCT16"){
+		m_attribBytes += 2;
+	      }else if(name == "NORMAL"){
+		m_attribBytes += 12;		
+	      }
+	    }
+	}
+      else
+	{
+	  m_fileFormat = true; // LAS/LAZ
+	  m_pointAttrib.clear();
+	  m_attribBytes = 0;
+	}
+    }
 
 }
 
@@ -601,17 +651,17 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       QString flnm = jsonInfo["filename"].toString();
       flnm = jsondir.absoluteFilePath(flnm);
       
-      str = jsonInfo["bmin"].toString();
-      xyz = str.split(" ", QString::SkipEmptyParts);
-      Vec bmin = Vec(xyz[0].toFloat(),
-		     xyz[1].toFloat(),
-		     xyz[2].toFloat());
-
-      str = jsonInfo["bmax"].toString();
-      xyz = str.split(" ", QString::SkipEmptyParts);
-      Vec bmax = Vec(xyz[0].toFloat(),
-		     xyz[1].toFloat(),
-		     xyz[2].toFloat());
+//      str = jsonInfo["bmin"].toString();
+//      xyz = str.split(" ", QString::SkipEmptyParts);
+//      Vec bmin = Vec(xyz[0].toFloat(),
+//		     xyz[1].toFloat(),
+//		     xyz[2].toFloat());
+//
+//      str = jsonInfo["bmax"].toString();
+//      xyz = str.split(" ", QString::SkipEmptyParts);
+//      Vec bmax = Vec(xyz[0].toFloat(),
+//		     xyz[1].toFloat(),
+//		     xyz[2].toFloat());
 
       qint64 numpt = jsonInfo["numpoints"].toDouble();
 
@@ -625,8 +675,8 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       //-----------------
       //float spacing = m_spacing;
-      bmin = m_octreeMin;
-      bmax = m_octreeMax;
+      Vec bmin = m_octreeMin;
+      Vec bmax = m_octreeMax;
       Vec bsize = m_octreeMax-m_octreeMin;
       if (ll.count() > 0)
 	{	  
@@ -670,6 +720,7 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 //      //---------------------------
 
       tnode->setFileName(flnm);
+      tnode->setOffset(bmin);
       tnode->setBMin(bmin);
       tnode->setBMax(bmax);
       tnode->setTightMin(m_tightOctreeMin);
@@ -685,6 +736,9 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setScale(scale);
       //tnode->setSpacing(spacing*scale);
       tnode->setSpacing(m_spacing*scale);
+
+      tnode->setPointAttributes(m_pointAttrib);
+      tnode->setAttribBytes(m_attribBytes);
 
       tnode->setColorPresent(colorPresent);
       tnode->setClassPresent(classPresent);
@@ -720,14 +774,6 @@ PointCloud::saveOctreeNodeToJson(QString dirname, OctreeNode *oNode)
   // toplevel node
   jsonInfo["filename"] = jsondir.relativeFilePath(oNode->filename());
   
-  bmin = oNode->bmin();
-  str = QString("%1 %2 %3").arg(bmin.x).arg(bmin.y).arg(bmin.z);
-  jsonInfo["bmin"] = str;
-
-  bmax = oNode->bmax();
-  str = QString("%1 %2 %3").arg(bmax.x).arg(bmax.y).arg(bmax.z);
-  jsonInfo["bmax"] = str;
-
   jsonInfo["numpoints"] = oNode->numpoints();
   jsonInfo["levelsbelow"] = oNode->levelsBelow();
 
@@ -763,14 +809,6 @@ PointCloud::saveOctreeNodeToJson(QString dirname, OctreeNode *oNode)
 		      QJsonObject jsonInfo;
 		      jsonInfo["filename"] = jsondir.relativeFilePath(cnode->filename());
 		      
-		      bmin = cnode->bmin();
-		      str = QString("%1 %2 %3").arg(bmin.x).arg(bmin.y).arg(bmin.z);
-		      jsonInfo["bmin"] = str;
-		      
-		      bmax = cnode->bmax();
-		      str = QString("%1 %2 %3").arg(bmax.x).arg(bmax.y).arg(bmax.z);
-		      jsonInfo["bmax"] = str;
-		      
 		      jsonInfo["numpoints"] = cnode->numpoints();
 		      jsonInfo["levelsbelow"] = cnode->levelsBelow();
 		      
@@ -802,7 +840,15 @@ PointCloud::saveOctreeNodeToJson(QString dirname, OctreeNode *oNode)
 }
 
 qint64
-PointCloud::getNumPointsInFile(QString flnm)
+PointCloud::getNumPointsInBINFile(QString flnm)
+{
+  QFileInfo finfo(flnm);
+  qint64 fsz = finfo.size();
+  return fsz/m_attribBytes;
+}
+
+qint64
+PointCloud::getNumPointsInLASFile(QString flnm)
 {
   laszip_POINTER laszip_reader;
 

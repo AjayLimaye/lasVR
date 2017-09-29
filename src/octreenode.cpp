@@ -3,6 +3,8 @@
 
 #include <QMessageBox>
 #include <QtMath>
+#include <QFile>
+#include <QFileInfo>
 
 #include "laszip_dll.h"
 
@@ -29,6 +31,7 @@ OctreeNode::OctreeNode()
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
+  m_offset = Vec(0,0,0);
   m_numpoints = 0;
   m_coord = 0;
   for(int i=0; i<8; i++)
@@ -47,6 +50,9 @@ OctreeNode::OctreeNode()
   m_globalMin = Vec(0,0,0);
   m_globalMax = Vec(0,0,0);
 
+  m_pointAttrib.clear();
+  m_attribBytes = 0;
+
   setIdentity();
 }
 
@@ -61,6 +67,7 @@ OctreeNode::~OctreeNode()
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
+  m_offset = Vec(0,0,0);
   m_numpoints = 0;
 
   if (m_coord)
@@ -79,6 +86,9 @@ OctreeNode::~OctreeNode()
 
   m_pointSize = 1.0;
   m_spacing = 1.0;
+
+  m_pointAttrib.clear();
+  m_attribBytes = 0;
 
   setIdentity();
 }
@@ -211,7 +221,10 @@ OctreeNode::loadData()
   if (m_dataLoaded)
     return;
 
-  loadDataFromFile();
+  if (m_attribBytes == 0)
+    loadDataFromLASFile();
+  else
+    loadDataFromBINFile();
 
   m_dataLoaded = true;
 }
@@ -227,7 +240,96 @@ OctreeNode::unloadData()
 }
 
 void
-OctreeNode::loadDataFromFile()
+OctreeNode::loadDataFromBINFile()
+{
+  if (markedForDeletion())
+    {
+      m_numpoints = 0;
+      return;
+    }
+
+  QFileInfo finfo(m_fileName);
+  qint64 fsz = finfo.size();
+  m_numpoints = fsz/m_attribBytes;
+
+  
+  if (m_dpv == 3)
+    {
+      if (!m_coord)
+	m_coord = new uchar[m_numpoints*m_dpv*sizeof(float)];
+      memset(m_coord, m_numpoints*m_dpv*sizeof(float), 0);
+    }
+  else
+    {
+      // vertex as float and color stored as uchar
+      // treating color as 4 unsigned shorts
+      if (!m_coord)
+	m_coord = new uchar[20*m_numpoints];
+      memset(m_coord, 20*m_numpoints, 0);
+    }
+
+  int clim = m_colorMap.count()-1;
+
+  uchar *data = new uchar[fsz];
+  
+  QFile binfl(m_fileName);
+  binfl.open(QFile::ReadOnly);
+  binfl.read((char*)data, fsz);
+  binfl.close();
+
+  for(qint64 np = 0; np < m_numpoints; np++)
+    {
+      int *crd = (int*)(data + m_attribBytes*np);
+      uchar *rgb = (uchar*)(data + m_attribBytes*np + 12);
+
+      double x, y, z;
+      x = ((double)crd[0] * m_scale) + m_offset.x;
+      y = ((double)crd[1] * m_scale) + m_offset.y;
+      z = ((double)crd[2] * m_scale) + m_offset.z;
+
+      x = x*m_scale + m_shift.x;
+      y = y*m_scale + m_shift.y;
+      z = z*m_scale + m_shift.z;
+
+      if (m_dpv == 3)
+	{
+	  float *vertexPtr = (float*)(m_coord + 12*np);
+	  vertexPtr[0] = x - m_globalMin.x;
+	  vertexPtr[1] = y - m_globalMin.y;
+	  vertexPtr[2] = z - m_globalMin.z;
+	}
+      
+      if (m_dpv > 3)
+	{
+	  float *vertexPtr = (float*)(m_coord + 20*np);
+	  
+	  //-------------------------------------------
+	  // shift data
+	  vertexPtr[0] = x - m_globalMin.x;
+	  vertexPtr[1] = y - m_globalMin.y;
+	  vertexPtr[2] = z - m_globalMin.z;
+	  //-------------------------------------------
+
+	  Vec col = Vec(1,1,1);
+	  if (m_attribBytes > 15)
+	    col = Vec(rgb[0],rgb[1],rgb[2]);
+	  
+	  // color stored as ushort
+	  ushort *colorPtr = (ushort*)(m_coord + 20*np + 12);
+	  colorPtr[0] = col.x;
+	  colorPtr[1] = col.y;
+	  colorPtr[2] = col.z;
+	  colorPtr[3] = m_id; // assuming id values are less than 65536
+	}
+    }
+
+  delete [] data;
+}
+
+
+
+void
+OctreeNode::loadDataFromLASFile()
 {
   if (markedForDeletion())
     {
@@ -247,7 +349,7 @@ OctreeNode::loadDataFromFile()
   
   laszip_header* header;
   laszip_get_header_pointer(laszip_reader, &header);
-  
+
   laszip_I64 npts = (header->number_of_point_records ? header->number_of_point_records : header->extended_number_of_point_records);
   
   // get a pointer to the points that will be read  
@@ -292,10 +394,19 @@ OctreeNode::loadDataFromFile()
 //	  point->classification != 18)
 	{
 	  double x, y, z;
-	  x = (point->X * header->x_scale_factor) + header->x_offset;
-	  y = (point->Y * header->y_scale_factor) + header->y_offset;
-	  z = (point->Z * header->z_scale_factor) + header->z_offset;
+//	  x = (point->X * header->x_scale_factor) + header->x_offset;
+//	  y = (point->Y * header->y_scale_factor) + header->y_offset;
+//	  z = (point->Z * header->z_scale_factor) + header->z_offset;
+//
+//	  x = x*m_scale + m_shift.x;
+//	  y = y*m_scale + m_shift.y;
+//	  z = z*m_scale + m_shift.z;
 
+
+	  x = ((double)point->X * m_scale) + m_offset.x;
+	  y = ((double)point->Y * m_scale) + m_offset.y;
+	  z = ((double)point->Z * m_scale) + m_offset.z;
+	  
 	  x = x*m_scale + m_shift.x;
 	  y = y*m_scale + m_shift.y;
 	  z = z*m_scale + m_shift.z;
@@ -314,10 +425,10 @@ OctreeNode::loadDataFromFile()
 
 	  if (m_dpv == 3)
 	    {
-	      float *vertexPtr = (float*)m_coord;
-	      vertexPtr[0] = x;
-	      vertexPtr[1] = y;
-	      vertexPtr[2] = z;
+	      float *vertexPtr = (float*)(m_coord + 12*np);
+	      vertexPtr[0] = x - m_globalMin.x;
+	      vertexPtr[1] = y - m_globalMin.y;
+	      vertexPtr[2] = z - m_globalMin.z;
 	    }
 
 	  if (m_dpv > 3)

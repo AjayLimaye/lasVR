@@ -29,11 +29,15 @@ class OctreeNode
   void setActive(bool a) { m_active = a; }
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
+  void setOffset(Vec off) { m_offset = off; }
   void setBMin(Vec bmin) { m_bmin = bmin; }
   void setBMax(Vec bmax) { m_bmax = bmax; }
   void setTightMin(Vec bmin) { m_tightMin = bmin; }
   void setTightMax(Vec bmax) { m_tightMax = bmax; }
   void setNumPoints(qint64 n) { m_numpoints = n; }
+
+  void setPointAttributes(QStringList s) { m_pointAttrib = s; }
+  void setAttribBytes(int a) { m_attribBytes = a; }
 
   void addChild(int i, OctreeNode* o) { m_child[i] = o; }
   void setLevel(int l) { m_level = l; }
@@ -103,6 +107,7 @@ class OctreeNode
   bool m_active;
   QString m_fileName;
   QString m_levelString;
+  Vec m_offset;
   Vec m_bmin, m_bmax;
   Vec m_tightMin, m_tightMax;
   qint64 m_numpoints;
@@ -117,6 +122,9 @@ class OctreeNode
   bool m_classPresent;
   float m_spacing;
 
+  QStringList m_pointAttrib;
+  int m_attribBytes;
+
   QList<Vec> m_colorMap;
   Vec m_globalMin;
   Vec m_globalMax;
@@ -128,7 +136,8 @@ class OctreeNode
 
   bool m_removalFlag;
 
-  void loadDataFromFile();
+  void loadDataFromLASFile();
+  void loadDataFromBINFile();
 
   void setIdentity();
 };
