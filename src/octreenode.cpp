@@ -287,9 +287,13 @@ OctreeNode::loadDataFromBINFile()
       y = ((double)crd[1] * m_scale) + m_offset.y;
       z = ((double)crd[2] * m_scale) + m_offset.z;
 
-      x = x*m_scale + m_shift.x;
-      y = y*m_scale + m_shift.y;
-      z = z*m_scale + m_shift.z;
+      x *= m_scale;
+      y *= m_scale;
+      z *= m_scale;
+
+      x += m_shift.x;
+      y += m_shift.y;
+      z += m_shift.z;
 
       if (m_dpv == 3)
 	{
@@ -379,6 +383,8 @@ OctreeNode::loadDataFromLASFile()
     }
 
 
+  //QMessageBox::information(0, "", QString("%1 %2").arg(header->x_scale_factor).arg(m_scale));
+
   int clim = m_colorMap.count()-1;
 
   qint64 np = 0;
@@ -407,9 +413,13 @@ OctreeNode::loadDataFromLASFile()
 	  y = ((double)point->Y * m_scale) + m_offset.y;
 	  z = ((double)point->Z * m_scale) + m_offset.z;
 	  
-	  x = x*m_scale + m_shift.x;
-	  y = y*m_scale + m_shift.y;
-	  z = z*m_scale + m_shift.z;
+	  x *= m_scale;
+	  y *= m_scale;
+	  z *= m_scale;
+	  
+	  x += m_shift.x;
+	  y += m_shift.y;
+	  z += m_shift.z;
 
 //	  if (m_xformPresent)
 //	    {
