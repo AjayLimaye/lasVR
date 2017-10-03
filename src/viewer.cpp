@@ -656,8 +656,15 @@ Viewer::setPointBudget(int b)
   GLuint vb1 = m_vertexBuffer[1];
   emit setVBOs(vb0, vb1);	  
 
-  genDrawNodeList();
-  update();      
+  QString assetDir = qApp->applicationDirPath() + QDir::separator() + "assets";
+  QString jsonfile = QDir(assetDir).absoluteFilePath("top.json");
+  saveTopJson(jsonfile);
+
+  if (m_pointClouds.count() > 0)
+    {
+      genDrawNodeList();
+      update();
+    }
 }
 
 void
@@ -665,21 +672,10 @@ Viewer::keyPressEvent(QKeyEvent *event)
 {
   if (event->key() == Qt::Key_N)
     {      
-      qint64 million = 1000000; 
       if (event->modifiers() & Qt::ShiftModifier)
-	m_pointBudget += million;
+	m_minNodePixelSize += 50;
       else
-	m_pointBudget = qMax(million, m_pointBudget-million);
-			     
-      generateVBOs();
-      GLuint vb0 = m_vertexBuffer[0];
-      GLuint vb1 = m_vertexBuffer[1];
-      emit setVBOs(vb0, vb1);	  
-
-//      if (event->modifiers() & Qt::ShiftModifier)
-//	m_minNodePixelSize += 50;
-//      else
-//	m_minNodePixelSize = qMax(m_minNodePixelSize-10, 10);
+	m_minNodePixelSize = qMax(m_minNodePixelSize-10, 10);
 
       genDrawNodeList();
       update();      
@@ -2861,6 +2857,27 @@ Viewer::genDrawNodeListForVR()
   emit updateView();
 
   emit message("viewer - update view");
+}
+
+void
+Viewer::saveTopJson(QString jsonfile)
+{
+  QJsonObject jsonMod;
+
+  QJsonObject jsonInfo;
+
+  qint64 million = 1000000; 
+  int pb = m_pointBudget/million;
+  jsonInfo["point_budget"] = pb;
+
+
+  jsonMod["top"] = jsonInfo;
+
+  QJsonDocument saveDoc(jsonMod);
+
+  QFile saveFile(jsonfile);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson());
 }
 
 void

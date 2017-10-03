@@ -25,17 +25,6 @@ VrMain::VrMain(QWidget *parent) :
 
   setMouseTracking(true);
 
-  m_pointBudget = new PopUpSlider(this, Qt::Horizontal);
-  m_pointBudget->setText("Point Budget (Mil)");
-  m_pointBudget->setRange(1, 10);
-  connect(m_pointBudget, SIGNAL(valueChanged(int)),
-	  m_viewer, SLOT(setPointBudget(int)));
-
-  QWidgetAction *ptBudget = new QWidgetAction(ui.menuOptions);
-  ptBudget->setDefaultWidget(m_pointBudget);
-  ui.menuOptions->addAction(ptBudget);
-
-  
 
   m_viewer->setVolumeFactory(&m_volumeFactory);
 
@@ -86,6 +75,26 @@ VrMain::VrMain(QWidget *parent) :
 	  this, &VrMain::showFramerate);
   connect(m_viewer, &Viewer::message,
 	  this, &VrMain::showMessage);
+
+
+
+  //============================
+  m_pointBudget = new PopUpSlider(this, Qt::Horizontal);
+  m_pointBudget->setText("Point Budget (Mil)");
+  m_pointBudget->setRange(1, 20);
+
+  qint64 million = 1000000; 
+  int pb = m_viewer->pointBudget()/million;
+  m_pointBudget->setValue(pb);
+
+  connect(m_pointBudget, SIGNAL(valueChanged(int)),
+	  m_viewer, SLOT(setPointBudget(int)));
+
+  QWidgetAction *ptBudget = new QWidgetAction(ui.menuOptions);
+  ptBudget->setDefaultWidget(m_pointBudget);
+  ui.menuOptions->addAction(ptBudget);
+  //============================
+  
 }
 
 void
