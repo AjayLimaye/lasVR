@@ -6,6 +6,7 @@
 #include "volumefactory.h"
 #include "glhiddenwidget.h"
 #include "loaderthread.h"
+#include "popupslider.h"
 
 #include <QThread>
 
@@ -25,6 +26,7 @@ class VrMain : public QMainWindow
  private slots :
    void on_actionLoad_LAS_triggered();
    void on_actionQuit_triggered();
+   void on_actionFly_triggered();
    void showFramerate(float);
    void showMessage(QString);
 
@@ -40,6 +42,8 @@ class VrMain : public QMainWindow
   VolumeFactory m_volumeFactory;
 
   QString m_prevDir;
+
+  PopUpSlider *m_pointBudget;
 
   void loadTiles(QStringList);
 };

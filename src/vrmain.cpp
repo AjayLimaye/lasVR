@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QFileDialog>
 #include <QPushButton>
+#include <QWidgetAction>
 
 
 VrMain::VrMain(QWidget *parent) :
@@ -23,6 +24,18 @@ VrMain::VrMain(QWidget *parent) :
   centralWidget()->layout()->addWidget(m_viewer);
 
   setMouseTracking(true);
+
+  m_pointBudget = new PopUpSlider(this, Qt::Horizontal);
+  m_pointBudget->setText("Point Budget (Mil)");
+  m_pointBudget->setRange(1, 10);
+  connect(m_pointBudget, SIGNAL(valueChanged(int)),
+	  m_viewer, SLOT(setPointBudget(int)));
+
+  QWidgetAction *ptBudget = new QWidgetAction(ui.menuOptions);
+  ptBudget->setDefaultWidget(m_pointBudget);
+  ui.menuOptions->addAction(ptBudget);
+
+  
 
   m_viewer->setVolumeFactory(&m_volumeFactory);
 
@@ -145,17 +158,37 @@ VrMain::on_actionQuit_triggered()
 }
 
 void
+VrMain::on_actionFly_triggered()
+{
+  m_viewer->setFlyMode(ui.actionFly->isChecked());
+}
+
+void
 VrMain::on_actionLoad_LAS_triggered()
 {
-  QStringList flnms = QFileDialog::getOpenFileNames(0,
-						    "Load Directories",
-						    "",
-						    "Files",
-						    0,
-						    QFileDialog::DontUseNativeDialog);
-  
-  if (flnms.isEmpty())
+//  QStringList flnms = QFileDialog::getOpenFileNames(0,
+//						    "Load PoTree Directory",
+//						    "",
+//						    "Dir",
+//						    0,
+//						    QFileDialog::DontUseNativeDialog);
+//  
+//  if (flnms.isEmpty())
+//    return;
+//
+
+  QString dirname = QFileDialog::getExistingDirectory(0,
+						      "Load PoTree Directory",
+						      "",
+						      QFileDialog::ShowDirsOnly |
+						      QFileDialog::DontResolveSymlinks);
+
+  if (dirname.isEmpty())
     return;
+
+  
+  QStringList flnms;
+  flnms << dirname;
 
   loadTiles(flnms);
 }

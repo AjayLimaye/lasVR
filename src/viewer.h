@@ -61,6 +61,8 @@ class Viewer : public QGLViewer
   int pointSize() { return m_pointSize; }
   void setPointSize(int p) { m_pointSize = p; updateGL(); }
 
+  void setFlyMode(bool f) { m_flyMode = f; toggleCameraMode(); }
+
   VR* vrPointer() { return &m_vr; }
 
   int currentTime() { return m_currTime; }
@@ -80,6 +82,7 @@ class Viewer : public QGLViewer
     void loadLink(QStringList);
 
     void updateFramerate();
+    void setPointBudget(int);
 
  signals :
     void loadLinkedData(QString);

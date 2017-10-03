@@ -363,7 +363,7 @@ Viewer::start()
 
 
   //set flying speed some percentage of sceneRadius
-  float flyspeed = sceneRadius()*0.0001;
+  float flyspeed = sceneRadius()*0.001;
   camera()->setFlySpeed(flyspeed);
 
   camera()->setZNearCoefficient(0.01);
@@ -646,14 +646,40 @@ Viewer::createShaders()
 }
 
 void
+Viewer::setPointBudget(int b)
+{
+  qint64 million = 1000000; 
+  m_pointBudget = b*million;
+
+  generateVBOs();
+  GLuint vb0 = m_vertexBuffer[0];
+  GLuint vb1 = m_vertexBuffer[1];
+  emit setVBOs(vb0, vb1);	  
+
+  genDrawNodeList();
+  update();      
+}
+
+void
 Viewer::keyPressEvent(QKeyEvent *event)
 {
   if (event->key() == Qt::Key_N)
-    {
+    {      
+      qint64 million = 1000000; 
       if (event->modifiers() & Qt::ShiftModifier)
-	m_minNodePixelSize += 50;
+	m_pointBudget += million;
       else
-	m_minNodePixelSize = qMax(m_minNodePixelSize-10, 10);
+	m_pointBudget = qMax(million, m_pointBudget-million);
+			     
+      generateVBOs();
+      GLuint vb0 = m_vertexBuffer[0];
+      GLuint vb1 = m_vertexBuffer[1];
+      emit setVBOs(vb0, vb1);	  
+
+//      if (event->modifiers() & Qt::ShiftModifier)
+//	m_minNodePixelSize += 50;
+//      else
+//	m_minNodePixelSize = qMax(m_minNodePixelSize-10, 10);
 
       genDrawNodeList();
       update();      
@@ -1073,7 +1099,7 @@ Viewer::draw()
   drawLabels();
   if (m_showBox)
     drawAABB();
-  drawInfo();
+  //drawInfo();
 }
 
 void
@@ -1092,7 +1118,7 @@ Viewer::fastDraw()
   if (m_showBox)
     drawAABB();
 
-  drawInfo();
+  //drawInfo();
 
 
   if (m_flyMode)

@@ -63,6 +63,10 @@ GLHiddenWidget::setVBOs(GLuint vb0, GLuint vb1)
 {
   m_vertexBuffer[0] = vb0;
   m_vertexBuffer[1] = vb1;
+
+  m_pointBudget = m_viewer->pointBudget();
+  m_prevNodes.clear();
+  m_firstLoad = true;
 }
 
 void
