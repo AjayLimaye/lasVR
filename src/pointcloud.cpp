@@ -14,6 +14,7 @@ PointCloud::PointCloud()
   m_filenames.clear(); 
 
   m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
@@ -69,6 +70,7 @@ PointCloud::reset()
   m_filenames.clear();
 
   m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
@@ -122,6 +124,7 @@ void
 PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling)
 {
   m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
@@ -370,7 +373,7 @@ PointCloud::loadTileOctree(QString dirname)
 	  oNode->setPriority(priority);
 	  oNode->setTime(time);
 	  oNode->setShift(shift);
-	  oNode->setScale(scale);
+	  oNode->setScale(scale, m_scaleCloudJs);
 	  oNode->setSpacing(m_spacing*scale);
 	  oNode->setPointAttributes(m_pointAttrib);
 	  oNode->setAttribBytes(m_attribBytes);
@@ -446,7 +449,7 @@ PointCloud::loadTileOctree(QString dirname)
 	      tnode->setPriority(priority);
 	      tnode->setTime(time);
 	      tnode->setShift(shift);
-	      tnode->setScale(scale);
+	      tnode->setScale(scale, m_scaleCloudJs);
 	      tnode->setSpacing(m_spacing*scale);
 	      tnode->setPointAttributes(m_pointAttrib);
 	      tnode->setAttribBytes(m_attribBytes);
@@ -482,7 +485,7 @@ PointCloud::loadCloudJson(QString dirname)
   QJsonObject jsonCloudData = jsonDoc.object();
 
   m_spacing = jsonCloudData["spacing"].toDouble();
-  m_scale = jsonCloudData["scale"].toDouble();
+  m_scaleCloudJs = jsonCloudData["scale"].toDouble();
 
   {
     QJsonObject jsonInfo = jsonCloudData["boundingBox"].toObject();
@@ -733,7 +736,7 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setPriority(priority);
       tnode->setTime(time);
       tnode->setShift(shift);
-      tnode->setScale(scale);
+      tnode->setScale(scale, m_scaleCloudJs);
       //tnode->setSpacing(spacing*scale);
       tnode->setSpacing(m_spacing*scale);
 

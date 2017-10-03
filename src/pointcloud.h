@@ -112,6 +112,7 @@ class PointCloud
   Vec m_tightOctreeMin, m_tightOctreeMax;
 
   float m_scale;
+  float m_scaleCloudJs;
   Vec m_shift;
   float m_bminZ, m_bmaxZ;
   bool m_colorPresent;

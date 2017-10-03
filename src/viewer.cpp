@@ -1029,10 +1029,24 @@ Viewer::paintGL()
       m_vr.resetUpdateMap();
 
       //--------------
-      Vec c = (m_coordMin+m_coordMax)/2;
+      Vec cmin = m_pointClouds[0]->tightOctreeMin();
+      Vec cmax = m_pointClouds[0]->tightOctreeMax();
+      for(int d=0; d<m_pointClouds.count(); d++)
+	{
+	  if (m_pointClouds[d]->time() == -1 ||
+	      m_pointClouds[d]->time() == m_currTime)
+	    {
+	      cmin = m_pointClouds[d]->tightOctreeMin();
+	      cmax = m_pointClouds[d]->tightOctreeMax();
+	      break;
+	    }
+	}
+      
+      Vec c = (cmin+cmax)/2;
       c = Global::stickToGround(c);
       QVector3D cmid = QVector3D(c.x, c.y, c.z);
       m_vr.teleport(cmid);
+      //--------------
     }  
   //---------------------------
 

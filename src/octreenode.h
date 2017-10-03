@@ -25,7 +25,7 @@ class OctreeNode
   void setTime(int i) { m_time = i; }
   void setId(int);
   void setUId(int i) { m_uid = i; }
-  void setScale(float);
+  void setScale(float, float);
   void setActive(bool a) { m_active = a; }
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
@@ -102,6 +102,7 @@ class OctreeNode
   int m_time;
   int m_id, m_uid;
   float m_scale;
+  float m_scaleCloudJs;
   float m_pointSize;
 
   bool m_active;

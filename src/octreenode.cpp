@@ -28,6 +28,7 @@ OctreeNode::OctreeNode()
   m_id = -1;
   m_uid = -1;
   m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
@@ -64,6 +65,7 @@ OctreeNode::~OctreeNode()
   m_time = -1;
   m_id = -1;
   m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
@@ -107,9 +109,10 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
 }
 
 void
-OctreeNode::setScale(float scl)
+OctreeNode::setScale(float scl, float sclCloudJs)
 {
   m_scale = scl;
+  m_scaleCloudJs = sclCloudJs;
 
   m_bmin *= m_scale;
   m_bmax *= m_scale;
@@ -283,9 +286,9 @@ OctreeNode::loadDataFromBINFile()
       uchar *rgb = (uchar*)(data + m_attribBytes*np + 12);
 
       double x, y, z;
-      x = ((double)crd[0] * m_scale) + m_offset.x;
-      y = ((double)crd[1] * m_scale) + m_offset.y;
-      z = ((double)crd[2] * m_scale) + m_offset.z;
+      x = ((double)crd[0] * m_scaleCloudJs) + m_offset.x;
+      y = ((double)crd[1] * m_scaleCloudJs) + m_offset.y;
+      z = ((double)crd[2] * m_scaleCloudJs) + m_offset.z;
 
       x *= m_scale;
       y *= m_scale;
@@ -409,9 +412,9 @@ OctreeNode::loadDataFromLASFile()
 //	  z = z*m_scale + m_shift.z;
 
 
-	  x = ((double)point->X * m_scale) + m_offset.x;
-	  y = ((double)point->Y * m_scale) + m_offset.y;
-	  z = ((double)point->Z * m_scale) + m_offset.z;
+	  x = ((double)point->X * m_scaleCloudJs) + m_offset.x;
+	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
+	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 	  
 	  x *= m_scale;
 	  y *= m_scale;
@@ -578,9 +581,13 @@ OctreeNode::computeBB()
 	  point->classification != 18)
 	{
 	  float x, y, z;
-	  x = (point->X * header->x_scale_factor) + header->x_offset;
-	  y = (point->Y * header->y_scale_factor) + header->y_offset;
-	  z = (point->Z * header->z_scale_factor) + header->z_offset;
+	  //x = (point->X * header->x_scale_factor) + header->x_offset;
+	  //y = (point->Y * header->y_scale_factor) + header->y_offset;
+	  //z = (point->Z * header->z_scale_factor) + header->z_offset;
+
+	  x = ((double)point->X * m_scaleCloudJs) + m_offset.x;
+	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
+	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 
 	  x = x*m_scale + m_shift.x;
 	  y = y*m_scale + m_shift.y;

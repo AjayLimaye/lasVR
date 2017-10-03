@@ -830,6 +830,12 @@ VR::rightTouchMove()
     QVector3D v1 = QVector3D(moveD.x(), 0, moveD.z());
     QVector3D axis = QVector3D::normal(v1,v0);
     float angle = StaticFunctions::getAngleBetweenVectors(v1,v0);
+
+    // modulate angle based on tilt above/below horizon
+    // parallel with horizon means take the full effect
+    // more the tile less the effect
+    angle *= (1.0-StaticFunctions::smoothstep(0.0, 0.5, qAbs(moveD.y())));
+
     QQuaternion q = QQuaternion::fromAxisAndAngle(axis, qRadiansToDegrees(angle*0.005));
     QVector3D cen = vrHmdPosition();
     m_model_xform.setToIdentity();
@@ -837,8 +843,6 @@ VR::rightTouchMove()
     m_model_xform.rotate(q);
     m_model_xform.translate(-cen);
     m_final_xform = m_model_xform * m_final_xform;
-
-    //m_rcDir = moveD;
   }
   
   m_final_xformInverted = m_final_xform.inverted();
