@@ -30,6 +30,11 @@ PointCloud::PointCloud()
   m_tightOctreeMin = Vec(0,0,0);
   m_tightOctreeMax = Vec(0,0,0);
 
+  m_octreeMinO = Vec(0,0,0);
+  m_octreeMaxO = Vec(0,0,0);
+  m_tightOctreeMinO = Vec(0,0,0);
+  m_tightOctreeMaxO = Vec(0,0,0);
+
   //m_dpv = 3;
   //m_dpv = 4;
   m_dpv = 6;
@@ -81,18 +86,22 @@ PointCloud::reset()
   m_time = -1;
 
   m_spacing = 1.0;
-  m_octreeMin = m_octreeMax = Vec(0,0,0);
 
   m_tiles.clear();
   m_labels.clear();
 
   m_vData.clear();
 
-  m_octreeMin = m_octreeMax = Vec(0,0,0);
   m_octreeMin = Vec(0,0,0);
   m_octreeMax = Vec(0,0,0);
   m_tightOctreeMin = Vec(0,0,0);
   m_tightOctreeMax = Vec(0,0,0);
+
+  m_octreeMinO = Vec(0,0,0);
+  m_octreeMaxO = Vec(0,0,0);
+  m_tightOctreeMinO = Vec(0,0,0);
+  m_tightOctreeMaxO = Vec(0,0,0);
+
 
   m_fileFormat = true; // LAS
   m_pointAttrib.clear();
@@ -249,6 +258,17 @@ PointCloud::loadTileOctree(QString dirname)
   //-----------------------
   if (jsondir.exists("cloud.js"))
     loadCloudJson(dirname);
+  //-----------------------
+
+
+  //-----------------------
+  // load mod.json if present in the directory
+  // this will overwrite earlier values
+  if (QDir(dirname).exists("mod.json"))
+    {
+      QString jsonfile = QDir(dirname).absoluteFilePath("mod.json");
+      loadModJson(jsonfile);
+    }
   //-----------------------
 
 
@@ -498,6 +518,8 @@ PointCloud::loadCloudJson(QString dirname)
 
     m_octreeMin = Vec(lx,ly,lz);
     m_octreeMax = Vec(ux,uy,uz);
+    m_octreeMinO = Vec(lx,ly,lz);
+    m_octreeMaxO = Vec(ux,uy,uz);
   }
 
   {
@@ -515,6 +537,9 @@ PointCloud::loadCloudJson(QString dirname)
     m_tightOctreeMax = Vec(qMin(m_octreeMax.x,ux),
 			   qMin(m_octreeMax.y,uy),
 			   qMin(m_octreeMax.z,uz));
+
+    m_tightOctreeMinO = m_tightOctreeMin;
+    m_tightOctreeMaxO = m_tightOctreeMax;
   }
 
   if (jsonCloudData.contains("pointAttributes"))
@@ -749,15 +774,15 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 	tnode->setXform(xform);
     }
   
-  m_octreeMin *= m_scale;
-  m_octreeMax *= m_scale;
-  m_octreeMin += m_shift;
-  m_octreeMax += m_shift;
+  m_octreeMin = m_octreeMinO * m_scale;
+  m_octreeMax = m_octreeMaxO * m_scale;
+  m_octreeMin = m_octreeMinO + m_shift;
+  m_octreeMax = m_octreeMaxO + m_shift;
 
-  m_tightOctreeMin *= m_scale;
-  m_tightOctreeMax *= m_scale;
-  m_tightOctreeMin += m_shift;
-  m_tightOctreeMax += m_shift;
+  m_tightOctreeMin = m_tightOctreeMinO * m_scale;
+  m_tightOctreeMax = m_tightOctreeMaxO * m_scale;
+  m_tightOctreeMin = m_tightOctreeMinO + m_shift;
+  m_tightOctreeMax = m_tightOctreeMaxO + m_shift;
 }
 
 void
@@ -1449,11 +1474,38 @@ PointCloud::setGlobalMinMax(Vec gmin, Vec gmax)
 
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->setGlobalMinMax(gmin, gmax);
+}
 
-//  Vec gbox = gmax-gmin;
-//  float gboxmax = qMax(gbox.x, qMax(gbox.y, gbox.z));
-//  m_octreeMin /= gboxmax;
-//  m_octreeMax /= gboxmax;
-//  m_tightOctreeMin /= gboxmax;
-//  m_tightOctreeMax /= gboxmax;
+void
+PointCloud::translate(Vec trans)
+{
+  m_octreeMin += trans;
+  m_octreeMax += trans;
+  m_tightOctreeMin += trans;
+  m_tightOctreeMax += trans;
+  m_shift += trans;
+
+   for(int d=0; d<m_allNodes.count(); d++)
+    {
+      OctreeNode *node = m_allNodes[d];
+      node->unloadData();
+      node->setShift(m_shift);
+    } 
+}
+
+void
+PointCloud::setShift(Vec shift)
+{
+  m_octreeMin = m_octreeMinO + shift;
+  m_octreeMax = m_octreeMaxO + shift;
+  m_tightOctreeMin = m_tightOctreeMinO + shift;
+  m_tightOctreeMax = m_tightOctreeMaxO + shift;
+  m_shift = shift;
+
+   for(int d=0; d<m_allNodes.count(); d++)
+    {
+      OctreeNode *node = m_allNodes[d];
+      node->unloadData();
+      node->setShift(m_shift);
+    } 
 }

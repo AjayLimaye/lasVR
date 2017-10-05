@@ -23,6 +23,9 @@ class Volume : public QObject
 
   void reset();
 
+  void shiftToZero() { m_zeroShift = true; }
+
+  bool loadOnTop(QString);
   bool loadDir(QString);
 
   bool loadTiles(QStringList);
@@ -58,6 +61,8 @@ class Volume : public QObject
   Vec getCamSceneCenter() { return m_camSceneCenter; }
   Vec getCamPivot() { return m_camPivot; }
 
+  int xformNodeId() { return m_xformNodeId; }
+
  signals :
   void startLoading();
 
@@ -66,6 +71,9 @@ class Volume : public QObject
   VolumeLoaderThread *m_lt;
 
   QStringList m_filenames;
+
+  bool m_zeroShift;
+  int m_xformNodeId;
 
   qint64 m_npoints;
   float *m_coord;

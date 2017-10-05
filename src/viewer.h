@@ -71,6 +71,8 @@ class Viewer : public QGLViewer
 
   Vec menuCamPos();
 
+  bool editMode() { return m_editMode; }
+
   public slots :
     void GlewInit();
     void showBox(bool);
@@ -78,11 +80,14 @@ class Viewer : public QGLViewer
     void vboLoaded(int, qint64);
     void vboLoadedAll(int, qint64);
 
+    void loadLinkOnTop(QString);
     void loadLink(QString);
     void loadLink(QStringList);
 
     void updateFramerate();
     void setPointBudget(int);
+
+    void setEditMode(bool);
 
  signals :
     void loadLinkedData(QString);
@@ -201,6 +206,11 @@ class Viewer : public QGLViewer
 
     QString m_dataDir;
 
+    bool m_editMode;
+    QPoint m_prevPos;
+    int m_moveAxis;
+    Vec m_deltaShift;
+
     void createFBO();
 
     void genColorMap();
@@ -261,6 +271,8 @@ class Viewer : public QGLViewer
     void saveTopJson(QString);
 
     void stickLabelsToGround();
+
+    void movePointCloud(QPoint);
 };
 
 #endif

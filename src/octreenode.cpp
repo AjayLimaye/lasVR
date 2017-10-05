@@ -32,6 +32,7 @@ OctreeNode::OctreeNode()
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
+  m_bminO = m_bmaxO = Vec(0,0,0);
   m_offset = Vec(0,0,0);
   m_numpoints = 0;
   m_coord = 0;
@@ -114,21 +115,31 @@ OctreeNode::setScale(float scl, float sclCloudJs)
   m_scale = scl;
   m_scaleCloudJs = sclCloudJs;
 
-  m_bmin *= m_scale;
-  m_bmax *= m_scale;
-  m_bmin += m_shift;
-  m_bmax += m_shift;
+  m_bmin = m_bminO * m_scale;
+  m_bmax = m_bmaxO * m_scale;
+  m_bmin = m_bminO + m_shift;
+  m_bmax = m_bmaxO + m_shift;
 
-  m_tightMin *= m_scale;
-  m_tightMax *= m_scale;
-  m_tightMin += m_shift;
-  m_tightMax += m_shift;
+  m_tightMin = m_tightMinO * m_scale;
+  m_tightMax = m_tightMaxO * m_scale;
+  m_tightMin = m_tightMinO + m_shift;
+  m_tightMax = m_tightMaxO + m_shift;
 }
 
 void
 OctreeNode::setShift(Vec s)
 {
   m_shift = s;
+
+  m_bmin = m_bminO * m_scale;
+  m_bmax = m_bmaxO * m_scale;
+  m_bmin = m_bminO + m_shift;
+  m_bmax = m_bmaxO + m_shift;
+
+  m_tightMin = m_tightMinO * m_scale;
+  m_tightMax = m_tightMaxO * m_scale;
+  m_tightMin = m_tightMinO + m_shift;
+  m_tightMax = m_tightMaxO + m_shift;
 }
 
 void

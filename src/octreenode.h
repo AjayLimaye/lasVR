@@ -30,10 +30,10 @@ class OctreeNode
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
   void setOffset(Vec off) { m_offset = off; }
-  void setBMin(Vec bmin) { m_bmin = bmin; }
-  void setBMax(Vec bmax) { m_bmax = bmax; }
-  void setTightMin(Vec bmin) { m_tightMin = bmin; }
-  void setTightMax(Vec bmax) { m_tightMax = bmax; }
+  void setBMin(Vec bmin) { m_bmin = m_bminO = bmin; }
+  void setBMax(Vec bmax) { m_bmax = m_bmaxO = bmax; }
+  void setTightMin(Vec bmin) { m_tightMin = m_tightMinO = bmin; }
+  void setTightMax(Vec bmax) { m_tightMax = m_tightMaxO = bmax; }
   void setNumPoints(qint64 n) { m_numpoints = n; }
 
   void setPointAttributes(QStringList s) { m_pointAttrib = s; }
@@ -111,6 +111,8 @@ class OctreeNode
   Vec m_offset;
   Vec m_bmin, m_bmax;
   Vec m_tightMin, m_tightMax;
+  Vec m_bminO, m_bmaxO;
+  Vec m_tightMinO, m_tightMaxO;
   qint64 m_numpoints;
   uchar *m_coord;
   OctreeNode* m_child[8];

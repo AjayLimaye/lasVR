@@ -9,6 +9,8 @@
 
 Volume::Volume() : QObject()
 {
+  m_zeroShift = false;
+
   m_coord = 0;
   m_color = 0;
   m_filenames.clear(); 
@@ -90,6 +92,44 @@ Volume::maxTime()
 
   return maxTime;
 }
+
+bool
+Volume::loadOnTop(QString dirname)
+{
+  m_scale = 1.0;
+  m_shift = Vec(0,0,0);
+
+  if (QDir(dirname).exists("cloud.js"))
+    {
+      // Load single PoTree directory
+      QStringList dirnames;
+      dirnames << dirname;
+
+      PointCloud *pointCloud = new PointCloud();
+      
+      //--------------------------------------------
+      // set defaults
+      pointCloud->setShowMap(m_showMap);
+      pointCloud->setGravity(m_gravity);
+      pointCloud->setSkybox(m_skybox);
+      pointCloud->setPlayButton(m_playbutton);
+      pointCloud->setShowSphere(m_showSphere);
+      pointCloud->setGroundHeight(m_groundHeight);
+      pointCloud->setTeleportScale(m_teleportScale);
+      pointCloud->setPointType(m_pointType);
+      //--------------------------------------------
+
+      m_pointClouds << pointCloud;
+      pointCloud->loadMultipleTiles(dirnames);
+    }
+  else
+    return false;
+  
+  postLoad();
+
+  return true;
+}
+
 
 bool
 Volume::loadDir(QString dirname)
@@ -271,15 +311,10 @@ Volume::postLoad()
   m_coordMin = m_pointClouds[0]->tightOctreeMin();
   m_coordMax = m_pointClouds[0]->tightOctreeMax();
 
-//  m_coordMin = m_pointClouds[0]->octreeMin();
-//  m_coordMax = m_pointClouds[0]->octreeMax();
-
   for(int d=1; d<m_pointClouds.count(); d++)
     {
       Vec cmin = m_pointClouds[d]->tightOctreeMin();
       Vec cmax = m_pointClouds[d]->tightOctreeMax();
-//      Vec cmin = m_pointClouds[d]->octreeMin();
-//      Vec cmax = m_pointClouds[d]->octreeMax();
       
       m_coordMin.x = qMin(cmin.x, m_coordMin.x);
       m_coordMin.y = qMin(cmin.y, m_coordMin.y);
@@ -297,26 +332,31 @@ Volume::postLoad()
       QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
       for(int od=0; od<allNodes.count(); od++)
 	{
-	  allNodes[od]->setGlobalMinMax(m_coordMin, m_coordMax);
+	  if (m_zeroShift)
+	    allNodes[od]->setGlobalMinMax(m_coordMin, m_coordMax);
 	  allNodes[od]->setUId(oid);
 	  oid++;
 	}
-    }
 
+      //-------------------------
+      // required when doing manual registration
+      if (d == 0)
+	m_xformNodeId = oid;
+      //-------------------------
+    }
 
   //----------------------------
   // coordinates are shifted by m_coordMin via setGlobalMinMax
   // now lie within 0 and m_coordMax-m_coordMin
-  for(int d=0; d<m_pointClouds.count(); d++)
+  if (m_zeroShift)
     {
-      m_pointClouds[d]->setGlobalMinMax(m_coordMin, m_coordMax);
+      for(int d=0; d<m_pointClouds.count(); d++)
+	{
+	  m_pointClouds[d]->setGlobalMinMax(m_coordMin, m_coordMax);
+	}
+      m_coordMax -= m_coordMin;
+      m_coordMin = Vec(0,0,0);
     }
-  m_coordMax -= m_coordMin;
-  m_coordMin = Vec(0,0,0);
-//  Vec gbox = m_coordMax-m_coordMin;
-//  float gboxmax = qMax(gbox.x, qMax(gbox.y, gbox.z));
-//  m_coordMin /= gboxmax;
-//  m_coordMax /= gboxmax;
   //----------------------------
 
 

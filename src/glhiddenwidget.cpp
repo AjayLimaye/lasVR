@@ -259,6 +259,9 @@ GLHiddenWidget::loadPointsToVBO()
     currload = m_volume->getLoadingNodes();
   QList<OctreeNode*> loadNodes;
   
+  if (m_viewer->editMode())
+    m_prevNodes.clear();
+  
   //-------------------------------
   if (m_prevNodes.count() > 0)
     {
@@ -609,7 +612,6 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
 	  node->setActive(true);
 	}
     }
-
 
   // now consider the nodes within each tile
   while (onl0.count() > 0)

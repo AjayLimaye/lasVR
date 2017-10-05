@@ -37,6 +37,10 @@ uniform float maxPointSize;
 uniform float deadRadius;
 uniform vec3 deadPoint;
 
+uniform bool applyXform;
+uniform int xformNodeId;
+uniform vec3 xformShift;
+
 //-----------------------
 float numberOfOnes(float number, float index)
 {
@@ -113,6 +117,15 @@ void main()
    // Output position of the vertex, in clip space : MVP * position
 
    pointPos = vertexPosition.xyz;
+
+
+   //----------------------------------
+   // transform point during manual registration
+   if (applyXform && vertexColor.a > xformNodeId/65535)
+     pointPos += xformShift;
+   //----------------------------------
+
+
 
    //----------------------------------
    //--------------------------------

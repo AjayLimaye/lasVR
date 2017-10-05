@@ -100,6 +100,11 @@ class PointCloud
   void setLoadAll(bool b) { m_loadAll = b; }  
   void loadAll();
 
+  void translate(Vec);
+
+  void setShift(Vec);
+  Vec shift() { return m_shift; }
+
  private :
   QStringList m_filenames;
 
@@ -110,6 +115,8 @@ class PointCloud
   float m_spacing;
   Vec m_octreeMin, m_octreeMax;
   Vec m_tightOctreeMin, m_tightOctreeMax;
+  Vec m_octreeMinO, m_octreeMaxO;
+  Vec m_tightOctreeMinO, m_tightOctreeMaxO;
 
   float m_scale;
   float m_scaleCloudJs;

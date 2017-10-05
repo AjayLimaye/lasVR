@@ -123,6 +123,9 @@ Viewer::reset()
   qint64 million = 1000000; 
   m_pointBudget = 5*million;
 
+  m_editMode = false;
+  m_moveAxis = -1;
+
   m_headSetType = 0; // None
 
   QString assetDir = qApp->applicationDirPath() + QDir::separator() + "assets";
@@ -209,6 +212,9 @@ Viewer::GlewInit()
   m_vr.initVR();
 
   emit message("Start");
+
+  if (m_vr.vrEnabled())
+    m_volume->shiftToZero();
 }
 
 void
@@ -288,6 +294,7 @@ Viewer::start()
   m_volume = m_volumeFactory->topVolume();
 
   emit switchVolume();
+
 
   m_dpv = m_volume->dataPerVertex();
   m_maxTime = m_volume->maxTime();
@@ -642,6 +649,10 @@ Viewer::createShaders()
 
   m_depthParm[18] = glGetUniformLocation(m_depthShader, "deadRadius");
   m_depthParm[19] = glGetUniformLocation(m_depthShader, "deadPoint");
+
+  m_depthParm[20] = glGetUniformLocation(m_depthShader, "applyXform");
+  m_depthParm[21] = glGetUniformLocation(m_depthShader, "xformNodeId");
+  m_depthParm[22] = glGetUniformLocation(m_depthShader, "xformShift");
   //--------------------------
 }
 
@@ -668,8 +679,89 @@ Viewer::setPointBudget(int b)
 }
 
 void
+Viewer::setEditMode(bool b)
+{
+  m_editMode = b;
+}
+
+void
 Viewer::keyPressEvent(QKeyEvent *event)
 {
+  if (event->key() == Qt::Key_0)
+    {
+      if (m_pointClouds.count() != 2)
+	return;
+
+      Vec cmin0 = m_pointClouds[0]->tightOctreeMin();
+      Vec cmax0 = m_pointClouds[0]->tightOctreeMax();
+      Vec cmid0 = (cmax0+cmin0)/2;
+
+      Vec cmin1 = m_pointClouds[1]->tightOctreeMin();
+      Vec cmax1 = m_pointClouds[1]->tightOctreeMax();
+      Vec cmid1 = (cmax1+cmin1)/2;
+
+      Vec shift = cmid0 - cmin1;
+      m_pointClouds[1]->setShift(shift);
+
+      m_coordMin = cmin0;
+      m_coordMax = cmax0;
+      setSceneBoundingBox(cmin0, cmax0);
+      showEntireScene();
+    }
+
+  if (event->key() == Qt::Key_I)
+    {
+      if (m_pointClouds.count() != 2)
+	return;
+
+      QString mesg;
+      Vec shift = m_pointClouds[1]->shift();
+      mesg = QString("Shift : %1 %2 %3").\
+	arg(shift.x, 10, 'f', 2).\
+	arg(shift.y, 10, 'f', 2).\
+	arg(shift.z, 10, 'f', 2);
+      QMessageBox::information(0, "", mesg);
+      return;
+    }
+
+  if (event->key() == Qt::Key_O)
+    {
+      if (camera()->type() == Camera::ORTHOGRAPHIC)
+	camera()->setType(Camera::PERSPECTIVE);
+      else
+	camera()->setType(Camera::ORTHOGRAPHIC);
+      update();
+      return;
+    }
+
+  if (event->key() == Qt::Key_X)
+    {
+      m_moveAxis = 0;
+      return;
+    }
+  if (event->key() == Qt::Key_Y)
+    {
+      m_moveAxis = 1;
+      return;
+    }
+  if (event->key() == Qt::Key_Z)
+    {
+      m_moveAxis = 2;
+      return;
+    }
+  if (event->key() == Qt::Key_W)
+    {
+      m_moveAxis = -1;
+      return;
+    }
+
+  if (event->key() == Qt::Key_F1)
+    {      
+      m_editMode = !m_editMode;
+      QMessageBox::information(0, "", QString("Edit Mode : %1").arg(m_editMode));
+      return;
+    }
+
   if (event->key() == Qt::Key_N)
     {      
       if (event->modifiers() & Qt::ShiftModifier)
@@ -701,7 +793,6 @@ Viewer::keyPressEvent(QKeyEvent *event)
   if (event->key() == Qt::Key_1)
     {
       m_showEdges = !m_showEdges;
-      //createShaders();
       update();
       return;
     }  
@@ -832,6 +923,8 @@ Viewer::mousePressEvent(QMouseEvent *event)
   if (m_pointClouds.count() == 0)
     return;
   
+  m_prevPos = event->pos();
+  m_deltaShift = Vec(0,0,0);
   m_fastDraw = true;
 
 //
@@ -898,10 +991,16 @@ Viewer::mouseReleaseEvent(QMouseEvent *event)
   
   m_fastDraw = false;
 
-  QGLViewer::mouseReleaseEvent(event);
-
   // generate new node list only when mouse released
+  if (m_editMode)
+    {
+      m_pointClouds[1]->translate(m_deltaShift);
+      m_deltaShift = Vec(0,0,0);
+    }
+
   genDrawNodeList();
+
+  QGLViewer::mouseReleaseEvent(event);
 }
 
 void
@@ -913,8 +1012,18 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
   if (m_pointClouds.count() == 0)
     return;
 
-
-  QGLViewer::mouseMoveEvent(event);
+  if (m_editMode &&
+      m_pointClouds.count() == 2 &&
+      event->modifiers() & Qt::ControlModifier &&
+      event->buttons())
+    {
+      QPoint delta = event->pos() - m_prevPos;
+      movePointCloud(delta);
+      m_prevPos = event->pos();
+      update();
+    }
+  else
+    QGLViewer::mouseMoveEvent(event);
 
 //  if (!m_flyMode && event->buttons())
 //    {
@@ -926,6 +1035,40 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
 //	}
 //    }
 }
+
+void
+Viewer::movePointCloud(QPoint delta)
+{
+//  Vec trans(delta.x(), -delta.y(), 0.0f);
+//
+//  // Scale to fit the screen mouse displacement
+//  trans *= 2.0 * tan(camera()->fieldOfView()/2.0) *
+//               fabs((camera()->frame()->coordinatesOf(Vec(0,0,0))).z) /
+//                     camera()->screenHeight();
+//  // Transform to world coordinate system.
+//  trans = camera()->frame()->orientation().rotate(trans);
+//
+//  if (m_moveAxis == 0)
+//    trans = Vec(trans.x,0,0);
+//  else if (m_moveAxis == 1)
+//    trans = Vec(0,trans.y,0);
+//  else if (m_moveAxis == 2)
+//    trans = Vec(0,0,trans.z);
+//  
+  Vec cmin = m_pointClouds[0]->tightOctreeMin();
+  Vec cmax = m_pointClouds[0]->tightOctreeMax();
+//  Vec csz = cmax-cmin;
+//  float scaleFactor = 1.0/qMax(csz.x, qMax(csz.y, csz.z));
+//  m_deltaShift += trans*scaleFactor;
+
+  Vec cmid = (cmax+cmin)/2;
+  Vec scrPt = camera()->projectedCoordinatesOf(cmid);
+  Vec moveScrPt = scrPt + Vec(delta.x(), delta.y(), 0);
+  Vec move = camera()->unprojectedCoordinatesOf(moveScrPt) - cmid;
+
+  m_deltaShift += move;
+}
+
 
 void
 Viewer::dummydraw()
@@ -1392,6 +1535,9 @@ Viewer::generateFirstImage()
   glUniform1f(m_depthParm[18], -1); // deadRadius
   glUniform3f(m_depthParm[19], -1000, -1000, -1000); // deadPoint
 
+  glUniform1i(m_depthParm[20], 0); // applyXform
+
+
   drawVAO();
   
   
@@ -1525,6 +1671,10 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
   glUniform1f(m_depthParm[18], m_vr.deadRadius());
   QVector3D deadPt = m_vr.deadPoint();
   glUniform3f(m_depthParm[19], deadPt.x(), deadPt.y(), deadPt.z());
+
+
+  glUniform1i(m_depthParm[20], 0); // applyXform
+
 
   drawVAO();
 
@@ -1759,6 +1909,10 @@ Viewer::drawPoints(vr::Hmd_Eye eye)
   QVector3D deadPt = m_vr.deadPoint();
   glUniform3f(m_depthParm[19], deadPt.x(), deadPt.y(), deadPt.z());
 
+
+  glUniform1i(m_depthParm[20], 0); // applyXform
+
+
   drawVAO();
   
   
@@ -1887,6 +2041,12 @@ Viewer::drawPointsWithReload()
 
   glUniform1f(m_depthParm[18], -1); // deadRadius
   glUniform3f(m_depthParm[19], -1000, -1000, -1000); // deadPoint
+
+
+  glUniform1i(m_depthParm[20], m_editMode); // applyXform
+  glUniform1i(m_depthParm[21], m_volume->xformNodeId());
+  glUniform3f(m_depthParm[22], m_deltaShift.x, m_deltaShift.y, m_deltaShift.z);
+
 
   drawVAO();
 
@@ -2148,15 +2308,33 @@ Viewer::drawAABB()
 
   glColor3f(1,1,1);
   glLineWidth(1.0);
-  StaticFunctions::drawBox(m_coordMin, m_coordMax);
 
-  for(int d=0; d<m_pointClouds.count(); d++)
-    m_pointClouds[d]->drawInactiveTiles();
-  
+  if (m_editMode)
+    {
+      for(int d=0; d<m_pointClouds.count(); d++)
+	{
+	  Vec cmin = m_pointClouds[d]->tightOctreeMin();
+	  Vec cmax = m_pointClouds[d]->tightOctreeMax();
+	  if (d == 1)
+	    {
+	      cmin += m_deltaShift;
+	      cmax += m_deltaShift;
+	    }
+	  StaticFunctions::drawBox(cmin, cmax);
+	}
+    }
+  else
+    {
+      StaticFunctions::drawBox(m_coordMin, m_coordMax);
 
-  glLineWidth(2.0);
-  for(int d=0; d<m_pointClouds.count(); d++)
-    m_pointClouds[d]->drawActiveNodes();
+      for(int d=0; d<m_pointClouds.count(); d++)
+	m_pointClouds[d]->drawInactiveTiles();
+      
+      
+      glLineWidth(2.0);
+      for(int d=0; d<m_pointClouds.count(); d++)
+	m_pointClouds[d]->drawActiveNodes();
+    }
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -2724,8 +2902,46 @@ Viewer::createVisibilityTexture()
 }
 
 void
+Viewer::loadLinkOnTop(QString dirname)
+{
+  if (!m_volume)
+    {
+      QMessageBox::information(0, "", "Volume not found - should not be here");
+      return;
+    }
+
+  m_volumeFactory->pushVolume(m_volume);
+
+  m_dataDir = dirname;
+
+  m_vr.setDataDir(dirname);
+
+  if (!m_volume->loadOnTop(dirname))
+    {
+      QMessageBox::information(0, "Error", "Cannot load tiles from directory");
+      return;
+    }
+
+  start();
+
+  QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
+			 QPointF(0,0),
+			 Qt::LeftButton,
+			 Qt::LeftButton,
+			 Qt::NoModifier);
+  mouseReleaseEvent(&dummyEvent);
+}
+
+
+void
 Viewer::loadLink(QString dirname)
 {
+  if (m_volume)
+    {
+      loadLinkOnTop(dirname);
+      return;
+    }
+
   m_dataDir = dirname;
 
   m_vr.setDataDir(dirname);
