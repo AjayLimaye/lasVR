@@ -97,6 +97,8 @@ class PointCloud
   void setPointType(bool s) { m_pointType = s; }
   bool pointType() { return m_pointType; }
 
+  void setColorPresent(bool b) { m_colorPresent = b; }
+
   void setLoadAll(bool b) { m_loadAll = b; }  
   void loadAll();
 
@@ -104,6 +106,8 @@ class PointCloud
 
   void setShift(Vec);
   Vec shift() { return m_shift; }
+
+  void saveShift();
 
  private :
   QStringList m_filenames;

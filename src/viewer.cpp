@@ -120,6 +120,8 @@ Viewer::updateFramerate()
 void
 Viewer::reset()
 {
+  m_moveViewerToCenter = true;
+
   qint64 million = 1000000; 
   m_pointBudget = 5*million;
 
@@ -212,9 +214,6 @@ Viewer::GlewInit()
   m_vr.initVR();
 
   emit message("Start");
-
-  if (m_vr.vrEnabled())
-    m_volume->shiftToZero();
 }
 
 void
@@ -224,14 +223,14 @@ Viewer::genColorMap()
     return;
 
 //  QList<Vec> colgrad;
-//  colgrad << 255*Vec(0.0, 1.000, 0.500);
-//  colgrad << 255*Vec(0.3, 1.000, 0.767);
-//  colgrad << 255*Vec(0.6, 1.000, 0.933);
-//  colgrad << 255*Vec(0.8, 1.000, 1.000);
-//  colgrad << 255*Vec(1.0, 1.000, 0.800);
-//  colgrad << 255*Vec(1.0, 0.933, 0.600);
-//  colgrad << 255*Vec(1.0, 0.767, 0.300);
-//  colgrad << 255*Vec(1.0, 0.500, 0.000);
+//  colgrad << Vec(0.0, 1.000, 0.500);
+//  colgrad << Vec(0.3, 1.000, 0.767);
+//  colgrad << Vec(0.6, 1.000, 0.933);
+//  colgrad << Vec(0.8, 1.000, 1.000);
+//  colgrad << Vec(1.0, 1.000, 0.800);
+//  colgrad << Vec(1.0, 0.933, 0.600);
+//  colgrad << Vec(1.0, 0.767, 0.300);
+//  colgrad << Vec(1.0, 0.500, 0.000);
   
 //  m_colorGrad << Vec(0.0, 0.500, 1.000);
 //  m_colorGrad << Vec(0.6, 1.000, 0.933);
@@ -707,6 +706,8 @@ Viewer::keyPressEvent(QKeyEvent *event)
       m_coordMax = cmax0;
       setSceneBoundingBox(cmin0, cmax0);
       showEntireScene();
+      genDrawNodeList();
+      return;
     }
 
   if (event->key() == Qt::Key_I)
@@ -717,10 +718,12 @@ Viewer::keyPressEvent(QKeyEvent *event)
       QString mesg;
       Vec shift = m_pointClouds[1]->shift();
       mesg = QString("Shift : %1 %2 %3").\
-	arg(shift.x, 10, 'f', 2).\
-	arg(shift.y, 10, 'f', 2).\
-	arg(shift.z, 10, 'f', 2);
-      QMessageBox::information(0, "", mesg);
+	arg(shift.x, 12, 'f', 2).\
+	arg(shift.y, 12, 'f', 2).\
+	arg(shift.z, 12, 'f', 2);
+      QMessageBox::information(0, "", mesg.simplified());
+
+      m_pointClouds[1]->saveShift();
       return;
     }
 
@@ -1039,29 +1042,10 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
 void
 Viewer::movePointCloud(QPoint delta)
 {
-//  Vec trans(delta.x(), -delta.y(), 0.0f);
-//
-//  // Scale to fit the screen mouse displacement
-//  trans *= 2.0 * tan(camera()->fieldOfView()/2.0) *
-//               fabs((camera()->frame()->coordinatesOf(Vec(0,0,0))).z) /
-//                     camera()->screenHeight();
-//  // Transform to world coordinate system.
-//  trans = camera()->frame()->orientation().rotate(trans);
-//
-//  if (m_moveAxis == 0)
-//    trans = Vec(trans.x,0,0);
-//  else if (m_moveAxis == 1)
-//    trans = Vec(0,trans.y,0);
-//  else if (m_moveAxis == 2)
-//    trans = Vec(0,0,trans.z);
-//  
   Vec cmin = m_pointClouds[0]->tightOctreeMin();
   Vec cmax = m_pointClouds[0]->tightOctreeMax();
-//  Vec csz = cmax-cmin;
-//  float scaleFactor = 1.0/qMax(csz.x, qMax(csz.y, csz.z));
-//  m_deltaShift += trans*scaleFactor;
-
   Vec cmid = (cmax+cmin)/2;
+
   Vec scrPt = camera()->projectedCoordinatesOf(cmid);
   Vec moveScrPt = scrPt + Vec(delta.x(), delta.y(), 0);
   Vec move = camera()->unprojectedCoordinatesOf(moveScrPt) - cmid;
@@ -1185,8 +1169,8 @@ Viewer::paintGL()
     m_firstImageDone = 0;
 
   if (m_vboLoadedAll &&
-      m_firstImageDone < 1 &&
-      m_pointClouds[0]->showMap())
+      m_pointClouds[0]->showMap()&&
+      m_firstImageDone < 2)
     {
       generateFirstImage();
       m_firstImageDone++;
@@ -1194,23 +1178,28 @@ Viewer::paintGL()
       m_vr.resetUpdateMap();
 
       //--------------
-      Vec cmin = m_pointClouds[0]->tightOctreeMin();
-      Vec cmax = m_pointClouds[0]->tightOctreeMax();
-      for(int d=0; d<m_pointClouds.count(); d++)
+      if (m_moveViewerToCenter) // do it only once
 	{
-	  if (m_pointClouds[d]->time() == -1 ||
-	      m_pointClouds[d]->time() == m_currTime)
+	  Vec cmin = m_pointClouds[0]->tightOctreeMin();
+	  Vec cmax = m_pointClouds[0]->tightOctreeMax();
+	  for(int d=0; d<m_pointClouds.count(); d++)
 	    {
-	      cmin = m_pointClouds[d]->tightOctreeMin();
-	      cmax = m_pointClouds[d]->tightOctreeMax();
-	      break;
+	      if (m_pointClouds[d]->time() == -1 ||
+		  m_pointClouds[d]->time() == m_currTime)
+		{
+		  cmin = m_pointClouds[d]->tightOctreeMin();
+		  cmax = m_pointClouds[d]->tightOctreeMax();
+		  break;
+		}
 	    }
+	  
+	  Vec c = (cmin+cmax)/2;
+	  c = Global::stickToGround(c);
+	  QVector3D cmid = QVector3D(c.x, c.y, c.z);
+	  m_vr.teleport(cmid);
+
+	  m_moveViewerToCenter = false;
 	}
-      
-      Vec c = (cmin+cmax)/2;
-      c = Global::stickToGround(c);
-      QVector3D cmid = QVector3D(c.x, c.y, c.z);
-      m_vr.teleport(cmid);
       //--------------
     }  
   //---------------------------
@@ -1236,7 +1225,7 @@ Viewer::draw()
 
   drawPointsWithReload();
   drawLabels();
-  if (m_showBox)
+  if (m_showBox || m_editMode)
     drawAABB();
   //drawInfo();
 }
@@ -2963,6 +2952,9 @@ Viewer::loadLink(QString dirname)
       // create new volume
       // new volume is automatically pushed on the stack
       Volume *newvol = m_volumeFactory->newVolume();
+
+      if (m_vr.vrEnabled())
+	newvol->shiftToZero();
       
       if (!newvol->loadDir(dirname))
 	{
@@ -2996,6 +2988,9 @@ Viewer::loadLink(QStringList dirnames)
   // create new volume
   // new volume is automatically pushed on the stack
   Volume *vol = m_volumeFactory->newVolume();
+  if (m_vr.vrEnabled())
+    vol->shiftToZero();
+      
 
   if (!vol->loadTiles(dirnames))
     {

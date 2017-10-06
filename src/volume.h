@@ -85,12 +85,11 @@ class Volume : public QObject
   float m_scale;
   Vec m_shift;
   float m_bminZ, m_bmaxZ;
-  bool m_colorPresent;
-  bool m_classPresent;
   bool m_xformPresent;
   float m_xform[16];
   int m_priority;
   int m_time;
+  bool m_colorPresent;
 
   Vec m_coordMin;
   Vec m_coordMax;

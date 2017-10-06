@@ -112,6 +112,7 @@ class Viewer : public QGLViewer
     qint64 m_npoints;
 
     int m_firstImageDone;
+    bool m_moveViewerToCenter;
     bool m_vboLoadedAll;
 
     QList<PointCloud*> m_pointClouds;

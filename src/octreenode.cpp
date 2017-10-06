@@ -115,15 +115,15 @@ OctreeNode::setScale(float scl, float sclCloudJs)
   m_scale = scl;
   m_scaleCloudJs = sclCloudJs;
 
-  m_bmin = m_bminO * m_scale;
-  m_bmax = m_bmaxO * m_scale;
   m_bmin = m_bminO + m_shift;
   m_bmax = m_bmaxO + m_shift;
+  m_bmin = m_bmin * m_scale;
+  m_bmax = m_bmax * m_scale;
 
-  m_tightMin = m_tightMinO * m_scale;
-  m_tightMax = m_tightMaxO * m_scale;
   m_tightMin = m_tightMinO + m_shift;
   m_tightMax = m_tightMaxO + m_shift;
+  m_tightMin = m_tightMin * m_scale;
+  m_tightMax = m_tightMax * m_scale;
 }
 
 void
@@ -131,15 +131,7 @@ OctreeNode::setShift(Vec s)
 {
   m_shift = s;
 
-  m_bmin = m_bminO * m_scale;
-  m_bmax = m_bmaxO * m_scale;
-  m_bmin = m_bminO + m_shift;
-  m_bmax = m_bmaxO + m_shift;
-
-  m_tightMin = m_tightMinO * m_scale;
-  m_tightMax = m_tightMaxO * m_scale;
-  m_tightMin = m_tightMinO + m_shift;
-  m_tightMax = m_tightMaxO + m_shift;
+  setScale(m_scale, m_scaleCloudJs);
 }
 
 void
@@ -301,13 +293,13 @@ OctreeNode::loadDataFromBINFile()
       y = ((double)crd[1] * m_scaleCloudJs) + m_offset.y;
       z = ((double)crd[2] * m_scaleCloudJs) + m_offset.z;
 
-      x *= m_scale;
-      y *= m_scale;
-      z *= m_scale;
-
       x += m_shift.x;
       y += m_shift.y;
       z += m_shift.z;
+
+      x *= m_scale;
+      y *= m_scale;
+      z *= m_scale;
 
       if (m_dpv == 3)
 	{
@@ -397,8 +389,6 @@ OctreeNode::loadDataFromLASFile()
     }
 
 
-  //QMessageBox::information(0, "", QString("%1 %2").arg(header->x_scale_factor).arg(m_scale));
-
   int clim = m_colorMap.count()-1;
 
   qint64 np = 0;
@@ -427,14 +417,14 @@ OctreeNode::loadDataFromLASFile()
 	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
 	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 	  
-	  x *= m_scale;
-	  y *= m_scale;
-	  z *= m_scale;
-	  
 	  x += m_shift.x;
 	  y += m_shift.y;
 	  z += m_shift.z;
 
+	  x *= m_scale;
+	  y *= m_scale;
+	  z *= m_scale;
+	  
 //	  if (m_xformPresent)
 //	    {
 //	      float x1 = x*m_xform[0] + y*m_xform[1] + z*m_xform[2] + m_xform[3];
@@ -600,9 +590,13 @@ OctreeNode::computeBB()
 	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
 	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 
-	  x = x*m_scale + m_shift.x;
-	  y = y*m_scale + m_shift.y;
-	  z = z*m_scale + m_shift.z;
+	  x += m_shift.x;
+	  y += m_shift.y;
+	  z += m_shift.z;
+
+	  x *= m_scale;
+	  y *= m_scale;
+	  z *= m_scale;
 
 	  if (i == 0)
 	    {

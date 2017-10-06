@@ -23,8 +23,6 @@ Volume::Volume() : QObject()
   m_priority = 0;
   m_time = -1;
 
-  m_colorPresent = false;
-  m_classPresent = false;
   m_xformPresent = false;
 
   //m_dpv = 3;
@@ -101,6 +99,9 @@ Volume::loadOnTop(QString dirname)
 
   if (QDir(dirname).exists("cloud.js"))
     {
+      if (m_pointClouds.count() == 2)
+	m_pointClouds.removeLast();
+
       // Load single PoTree directory
       QStringList dirnames;
       dirnames << dirname;
@@ -143,8 +144,6 @@ Volume::loadDir(QString dirname)
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
-  m_colorPresent = false;
-  m_classPresent = false;
   m_xformPresent = false;
   m_priority = 0;
   m_time = -1;
@@ -164,6 +163,7 @@ Volume::loadDir(QString dirname)
   m_showSphere = false;
   m_pointType = true; // adaptive point size
   m_loadall = false;
+  m_colorPresent = true;
 
   //---------------------------------
   if (QDir(dirname).exists("top.json"))
@@ -189,6 +189,7 @@ Volume::loadDir(QString dirname)
 	  pointCloud->setGroundHeight(m_groundHeight);
 	  pointCloud->setTeleportScale(m_teleportScale);
 	  pointCloud->setPointType(m_pointType);
+	  pointCloud->setColorPresent(m_colorPresent);
 
 	  m_pointClouds << pointCloud;
 
@@ -664,6 +665,9 @@ Volume::loadTopJson(QString jsonfile)
 
       if (jsonInfo.contains("play_button"))
 	m_playbutton = jsonInfo["play_button"].toBool();
+
+      if (jsonInfo.contains("color"))
+	m_colorPresent = jsonInfo["color"].toBool();
 
       if (jsonInfo.contains("point_as_sphere"))
 	{

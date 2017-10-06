@@ -137,7 +137,6 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_shift = Vec(0,0,0);
   m_bminZ = 1;
   m_bmaxZ = 0;
-  m_colorPresent = true;
   m_classPresent = false;
   m_xformPresent = false;
   m_priority = 0;
@@ -179,15 +178,6 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
     }
   
   loadMultipleTiles(dirnames);
-
-
-//  m_labels[0]->setPosition(m_tiles[0]->bmin());
-//  m_labels[1]->setPosition(m_tiles[0]->bmax());
-//  Vec bmin = m_tiles[0]->bmin();
-//  Vec bmax = m_tiles[0]->bmax();
-//  QMessageBox::information(0, "", QString("%1 %2 %3\n %4 %5 %6").	\
-//			   arg(bmin.x).arg(bmin.y).arg(bmin.z).	\
-//			   arg(bmax.x).arg(bmax.y).arg(bmax.z));
 }
 
 int
@@ -414,18 +404,13 @@ PointCloud::loadTileOctree(QString dirname)
 		npts = getNumPointsInBINFile(flnm);	  
 
 	      QString basename = QFileInfo(flnm).baseName();
-	      //QMessageBox::information(0, QString("level %1").arg(l), basename);
 
 	      QString levelString = basename.mid(minNameSize, l);
 
 	      // now put the node in octree
 	      QList<int> ll;
 	      for(int vl=0; vl<l; vl++)
-		{
-//		  QMessageBox::information(0, "", QString("%1 : %2").\
-//					   arg(vl).arg(basename[minNameSize+vl]));
-		  ll << basename[minNameSize+vl].digitValue();
-		}
+		ll << basename[minNameSize+vl].digitValue();
 	      
 	      OctreeNode* tnode = oNode;
 	      if (ll.count() > 0)
@@ -492,6 +477,8 @@ PointCloud::loadTileOctree(QString dirname)
 void
 PointCloud::loadCloudJson(QString dirname)
 {
+  m_filenames << dirname;
+
   QDir jsondir(dirname);
   QString jsonfile = jsondir.absoluteFilePath("cloud.js");
 
@@ -774,15 +761,15 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 	tnode->setXform(xform);
     }
   
-  m_octreeMin = m_octreeMinO * m_scale;
-  m_octreeMax = m_octreeMaxO * m_scale;
   m_octreeMin = m_octreeMinO + m_shift;
   m_octreeMax = m_octreeMaxO + m_shift;
+  m_octreeMin = m_octreeMin * m_scale;
+  m_octreeMax = m_octreeMax * m_scale;
 
-  m_tightOctreeMin = m_tightOctreeMinO * m_scale;
-  m_tightOctreeMax = m_tightOctreeMaxO * m_scale;
   m_tightOctreeMin = m_tightOctreeMinO + m_shift;
   m_tightOctreeMax = m_tightOctreeMaxO + m_shift;
+  m_tightOctreeMin = m_tightOctreeMin * m_scale;
+  m_tightOctreeMax = m_tightOctreeMax * m_scale;
 }
 
 void
@@ -858,7 +845,6 @@ PointCloud::saveOctreeNodeToJson(QString dirname, OctreeNode *oNode)
   QJsonDocument saveDoc(jsonOctreeData);
   
   QString jsonfile = jsondir.absoluteFilePath("octree.json");
-  //QMessageBox::information(0, "", jsonfile);
   
   QFile saveFile(jsonfile);
   saveFile.open(QIODevice::WriteOnly);
@@ -1508,4 +1494,27 @@ PointCloud::setShift(Vec shift)
       node->unloadData();
       node->setShift(m_shift);
     } 
+}
+
+void
+PointCloud::saveShift()
+{
+  QJsonObject jsonMod;
+
+  QJsonObject jsonInfo;
+
+  QString str = QString("%1  %2  %3").arg(m_shift.x, 12, 'f', 2).arg(m_shift.y, 12, 'f', 2).arg(m_shift.z, 12, 'f', 2); 
+  str = str.simplified();
+
+  jsonInfo["shift"] = str;
+
+  jsonMod["mod"] = jsonInfo;
+
+  QJsonDocument saveDoc(jsonMod);
+
+  QString jsonfile = QDir(m_filenames[0]).absoluteFilePath("mod.json");
+
+  QFile saveFile(jsonfile);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson());
 }
