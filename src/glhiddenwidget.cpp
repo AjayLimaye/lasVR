@@ -85,7 +85,7 @@ GLHiddenWidget::setVolume(Volume *v)
   m_pointClouds = m_volume->pointClouds();
 
   int ht;
-  if (m_vr->vrEnabled())
+  if (m_viewer->vrMode() && m_vr->vrEnabled())
     {
       ht = m_vr->screenHeight();
       m_fov = qDegreesToRadians(110.0); // FOV is 110 degrees for HTC Vive
@@ -204,7 +204,7 @@ GLHiddenWidget::switchVolume()
   m_pointClouds = m_volume->pointClouds();
 
   int ht;
-  if (m_vr->vrEnabled())
+  if (m_viewer->vrMode() && m_vr->vrEnabled())
     {
       ht = m_vr->screenHeight();
       m_fov = qDegreesToRadians(110.0); // FOV is 110 degrees for HTC Vive
@@ -233,6 +233,23 @@ GLHiddenWidget::stopLoading()
 }
 
 void
+GLHiddenWidget::removeEditedNodes()
+{
+  if (m_prevNodes.count() > 0)
+    {
+      QMap<int, QPair<qint64, qint64> > newLoad;
+      int xid = m_volume->xformNodeId();
+      QList<int> keys = m_prevNodes.keys();
+      for(int i=0; i<keys.count(); i++)
+	{
+	  if (keys[i] < xid)
+	    newLoad[keys[i]] = m_prevNodes[keys[i]];
+	}
+      m_prevNodes = newLoad;
+    }
+}
+
+void
 GLHiddenWidget::loadPointsToVBO()
 {
   if (m_currVBO < 0) return;
@@ -253,14 +270,17 @@ GLHiddenWidget::loadPointsToVBO()
 
   // get current node data to load
   QList<OctreeNode*> currload;
-  if (m_vr->vrEnabled())
+  if (m_viewer->vrMode() && m_vr->vrEnabled())
     currload = m_newNodes;
   else
     currload = m_volume->getLoadingNodes();
   QList<OctreeNode*> loadNodes;
   
   if (m_viewer->editMode())
-    m_prevNodes.clear();
+    {
+      removeEditedNodes();
+      //m_prevNodes.clear();
+    }
   
   //-------------------------------
   if (m_prevNodes.count() > 0)
@@ -395,11 +415,15 @@ GLHiddenWidget::loadPointsToVBO()
 //			    loadNodes[i]->coords());
 	}
       
+
       //-----------------
       // save to info for next load
-      int nodeId = loadNodes[i]->uid();
-      QPair<qint64, qint64> qp = qMakePair(lpoints, npts);
-      newLoad[nodeId] = qp;
+      if (!m_viewer->editMode() ||
+	  loadNodes[i]->id() < m_volume->xformNodeId())
+	{
+	  int nodeId = loadNodes[i]->uid();
+	  newLoad[nodeId] = qMakePair(lpoints, npts);
+	}
       //-----------------
 
       lpoints += npts;
@@ -456,7 +480,7 @@ GLHiddenWidget::genDrawNodeList()
   Vec cpos;
 
   QVector3D hp;
-  if (m_vr->vrEnabled())
+  if (m_viewer->vrMode() && m_vr->vrEnabled())
     {
       QVector3D hp = m_vr->vrHmdPosition();
       cpos = Vec(hp.x(),hp.y(),hp.z());
@@ -543,18 +567,14 @@ GLHiddenWidget::genDrawNodeList()
   m_viewer->setNearFar(nearDist, farDist);
 }
 
-
 void
 GLHiddenWidget::genPriorityQueue(Vec cpos)
 {
   QMatrix4x4 MV;
-  //Vec viewDir;
 
-  if (m_vr->vrEnabled())
+  if (m_viewer->vrMode() && m_vr->vrEnabled())
     {
       MV = m_vr->modelView();
-      //QVector3D hmdVD = -m_vr->viewDir();
-      //viewDir = Vec(hmdVD.x(), hmdVD.y(), hmdVD.z());
     }
   else
     {
@@ -563,8 +583,6 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
       for(int i=0; i<16; i++)
 	MV.data()[i] = m[i];
       MV = MV.transposed();
-      
-      //viewDir = -m_viewer->camera()->viewDirection();
     }
 
   m_pointsDrawn = 0;

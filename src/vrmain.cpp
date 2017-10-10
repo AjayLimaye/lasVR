@@ -46,6 +46,9 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_viewer, SIGNAL(switchVolume()),
 	  m_hiddenGL, SLOT(switchVolume()));
 
+  connect(m_viewer, SIGNAL(removeEditedNodes()),
+	  m_hiddenGL, SLOT(removeEditedNodes()));
+
   connect(m_viewer, SIGNAL(setVBOs(GLuint, GLuint)),
 	  m_hiddenGL, SLOT(setVBOs(GLuint, GLuint)));
 
@@ -244,5 +247,54 @@ VrMain::showFramerate(float f)
 void
 VrMain::showMessage(QString mesg)
 {
-  setWindowTitle(mesg);
+  QStringList slst = mesg.split(" ");
+  if (slst[0] == "VRMode")
+    {
+      if (slst[1].toInt() == 0)
+	{
+	  ui.actionVRMode->setEnabled(false);
+	  ui.actionVRMode->setChecked(false);
+	  ui.toolBar->show();
+	}
+      else
+	{
+	  ui.actionVRMode->setEnabled(true);
+	  ui.actionVRMode->setChecked(true);
+	  ui.toolBar->hide();
+	}
+
+      setWindowTitle("Start");
+    }
+  else
+    setWindowTitle(mesg);
+}
+
+void VrMain::on_actionEditMode_triggered() { m_viewer->toggleEditMode(); }
+void VrMain::on_actionCamMode_triggered() { m_viewer->toggleCamMode(); }
+void VrMain::on_actionAlign_triggered() { m_viewer->centerPointClouds(); }
+void VrMain::on_actionUndo_triggered() { m_viewer->undo(); }
+void VrMain::on_actionSaveInfo_triggered() { m_viewer->saveModInfo(); }
+void
+VrMain::on_actionVRMode_triggered()
+{
+  m_viewer->setVRMode(ui.actionVRMode->isChecked());
+
+  if (ui.actionVRMode->isChecked())
+    {
+      if (ui.actionEditMode->isChecked())
+	{
+	  ui.actionEditMode->setChecked(false);
+	  m_viewer->toggleEditMode();
+	}
+
+      if (ui.actionCamMode->isChecked())
+	{
+	  ui.actionCamMode->setChecked(false);
+	  m_viewer->toggleCamMode();
+	}
+
+      ui.toolBar->hide();
+    }
+  else
+    ui.toolBar->show();
 }

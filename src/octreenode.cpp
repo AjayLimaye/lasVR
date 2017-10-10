@@ -55,6 +55,8 @@ OctreeNode::OctreeNode()
   m_pointAttrib.clear();
   m_attribBytes = 0;
 
+  m_editMode = false;
+
   setIdentity();
 }
 
@@ -93,6 +95,8 @@ OctreeNode::~OctreeNode()
   m_pointAttrib.clear();
   m_attribBytes = 0;
 
+  m_editMode = false;
+
   setIdentity();
 }
 
@@ -109,21 +113,42 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
   m_tightMax -= gmin;
 }
 
+Vec
+OctreeNode::scaleAndShift(Vec v, Vec tomid)
+{
+  Vec ov = v-tomid;
+  ov *= m_scale;
+  ov += tomid;
+  
+  ov += m_shift;
+
+  ov -= m_globalMin;
+
+  return ov;
+}
+
 void
 OctreeNode::setScale(float scl, float sclCloudJs)
 {
   m_scale = scl;
   m_scaleCloudJs = sclCloudJs;
 
-  m_bmin = m_bminO + m_shift;
-  m_bmax = m_bmaxO + m_shift;
-  m_bmin = m_bmin * m_scale;
-  m_bmax = m_bmax * m_scale;
+  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
 
-  m_tightMin = m_tightMinO + m_shift;
-  m_tightMax = m_tightMaxO + m_shift;
-  m_tightMin = m_tightMin * m_scale;
-  m_tightMax = m_tightMax * m_scale;
+  m_bmin = scaleAndShift(m_bminO, tomid);
+  m_bmax = scaleAndShift(m_bmaxO, tomid);
+  m_tightMin = scaleAndShift(m_tightMinO, tomid);
+  m_tightMax = scaleAndShift(m_tightMaxO, tomid);
+
+//  m_bmin = m_bminO + m_shift;
+//  m_bmax = m_bmaxO + m_shift;
+//  m_bmin = m_bmin * m_scale;
+//  m_bmax = m_bmax * m_scale;
+//
+//  m_tightMin = m_tightMinO + m_shift;
+//  m_tightMax = m_tightMaxO + m_shift;
+//  m_tightMin = m_tightMin * m_scale;
+//  m_tightMax = m_tightMax * m_scale;
 }
 
 void
@@ -236,6 +261,16 @@ OctreeNode::loadData()
 }
 
 void
+OctreeNode::reloadData()
+{
+  if (m_dataLoaded)
+    {
+      unloadData();
+      loadData();
+    }
+}
+
+void
 OctreeNode::unloadData()
 {
   m_dataLoaded = false;
@@ -283,6 +318,9 @@ OctreeNode::loadDataFromBINFile()
   binfl.read((char*)data, fsz);
   binfl.close();
 
+
+  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
+
   for(qint64 np = 0; np < m_numpoints; np++)
     {
       int *crd = (int*)(data + m_attribBytes*np);
@@ -293,20 +331,32 @@ OctreeNode::loadDataFromBINFile()
       y = ((double)crd[1] * m_scaleCloudJs) + m_offset.y;
       z = ((double)crd[2] * m_scaleCloudJs) + m_offset.z;
 
-      x += m_shift.x;
-      y += m_shift.y;
-      z += m_shift.z;
+      if (!m_editMode)
+	{
+	  Vec ve = Vec(x,y,z);
+	  ve = scaleAndShift(ve, tomid);
+	  x = ve.x;
+	  y = ve.y;
+	  z = ve.z;
+	}
 
-      x *= m_scale;
-      y *= m_scale;
-      z *= m_scale;
+//      x += m_shift.x;
+//      y += m_shift.y;
+//      z += m_shift.z;
+//
+//      x *= m_scale;
+//      y *= m_scale;
+//      z *= m_scale;
 
       if (m_dpv == 3)
 	{
 	  float *vertexPtr = (float*)(m_coord + 12*np);
-	  vertexPtr[0] = x - m_globalMin.x;
-	  vertexPtr[1] = y - m_globalMin.y;
-	  vertexPtr[2] = z - m_globalMin.z;
+	  vertexPtr[0] = x;
+	  vertexPtr[1] = y;
+	  vertexPtr[2] = z;
+	  //vertexPtr[0] = x - m_globalMin.x;
+	  //vertexPtr[1] = y - m_globalMin.y;
+	  //vertexPtr[2] = z - m_globalMin.z;
 	}
       
       if (m_dpv > 3)
@@ -315,9 +365,12 @@ OctreeNode::loadDataFromBINFile()
 	  
 	  //-------------------------------------------
 	  // shift data
-	  vertexPtr[0] = x - m_globalMin.x;
-	  vertexPtr[1] = y - m_globalMin.y;
-	  vertexPtr[2] = z - m_globalMin.z;
+	  vertexPtr[0] = x;
+	  vertexPtr[1] = y;
+	  vertexPtr[2] = z;
+	  //vertexPtr[0] = x - m_globalMin.x;
+	  //vertexPtr[1] = y - m_globalMin.y;
+	  //vertexPtr[2] = z - m_globalMin.z;
 	  //-------------------------------------------
 
 	  Vec col = Vec(1,1,1);
@@ -391,6 +444,8 @@ OctreeNode::loadDataFromLASFile()
 
   int clim = m_colorMap.count()-1;
 
+  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
+
   qint64 np = 0;
   for(qint64 i = 0; i < npts; i++)
     {
@@ -417,13 +472,22 @@ OctreeNode::loadDataFromLASFile()
 	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
 	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 	  
-	  x += m_shift.x;
-	  y += m_shift.y;
-	  z += m_shift.z;
+	  if (!m_editMode)
+	    {
+	      Vec ve = Vec(x,y,z);
+	      ve = scaleAndShift(ve, tomid);
+	      x = ve.x;
+	      y = ve.y;
+	      z = ve.z;
+	    }
 
-	  x *= m_scale;
-	  y *= m_scale;
-	  z *= m_scale;
+//	  x += m_shift.x;
+//	  y += m_shift.y;
+//	  z += m_shift.z;
+//
+//	  x *= m_scale;
+//	  y *= m_scale;
+//	  z *= m_scale;
 	  
 //	  if (m_xformPresent)
 //	    {
@@ -440,9 +504,12 @@ OctreeNode::loadDataFromLASFile()
 	  if (m_dpv == 3)
 	    {
 	      float *vertexPtr = (float*)(m_coord + 12*np);
-	      vertexPtr[0] = x - m_globalMin.x;
-	      vertexPtr[1] = y - m_globalMin.y;
-	      vertexPtr[2] = z - m_globalMin.z;
+	      vertexPtr[0] = x;
+	      vertexPtr[1] = y;
+	      vertexPtr[2] = z;
+	      //vertexPtr[0] = x - m_globalMin.x;
+	      //vertexPtr[1] = y - m_globalMin.y;
+	      //vertexPtr[2] = z - m_globalMin.z;
 	    }
 
 	  if (m_dpv > 3)
@@ -452,9 +519,12 @@ OctreeNode::loadDataFromLASFile()
 	      
 	      //-------------------------------------------
 	      // shift data
-	      vertexPtr[0] = x - m_globalMin.x;
-	      vertexPtr[1] = y - m_globalMin.y;
-	      vertexPtr[2] = z - m_globalMin.z;
+	      vertexPtr[0] = x;
+	      vertexPtr[1] = y;
+	      vertexPtr[2] = z;
+	      //vertexPtr[0] = x - m_globalMin.x;
+	      //vertexPtr[1] = y - m_globalMin.y;
+	      //vertexPtr[2] = z - m_globalMin.z;
 	      //-------------------------------------------
 
 	      Vec col = Vec(1,1,1);
@@ -573,6 +643,8 @@ OctreeNode::computeBB()
   Vec bbmin;
   Vec bbmax;
 
+  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
+
   for(qint64 i = 0; i < npts; i++)
     {
       // read a point
@@ -590,13 +662,22 @@ OctreeNode::computeBB()
 	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
 	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
 
-	  x += m_shift.x;
-	  y += m_shift.y;
-	  z += m_shift.z;
+	  if (!m_editMode)
+	    {
+	      Vec ve = Vec(x,y,z);
+	      ve = scaleAndShift(ve, tomid);
+	      x = ve.x;
+	      y = ve.y;
+	      z = ve.z;
+	    }
 
-	  x *= m_scale;
-	  y *= m_scale;
-	  z *= m_scale;
+	  //x += m_shift.x;
+	  //y += m_shift.y;
+	  //z += m_shift.z;
+	  //
+	  //x *= m_scale;
+	  //y *= m_scale;
+	  //z *= m_scale;
 
 	  if (i == 0)
 	    {

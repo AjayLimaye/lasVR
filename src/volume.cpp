@@ -9,7 +9,7 @@
 
 Volume::Volume() : QObject()
 {
-  m_zeroShift = false;
+  m_zeroShift = true;
 
   m_coord = 0;
   m_color = 0;
@@ -126,7 +126,7 @@ Volume::loadOnTop(QString dirname)
   else
     return false;
   
-  postLoad();
+  postLoad(true);
 
   return true;
 }
@@ -154,8 +154,8 @@ Volume::loadDir(QString dirname)
 
   //m_groundHeight = 0.16;
   //m_teleportScale = 1.0;
-  m_groundHeight = 0.08;
-  m_teleportScale = 20.0;
+  m_groundHeight = 1.8;
+  m_teleportScale = 1.0;
   m_showMap = true;
   m_gravity = false;
   m_skybox = true;
@@ -237,7 +237,7 @@ Volume::loadDir(QString dirname)
 //  pruneOctreeNodesBasedOnPriority();
 
 
-  postLoad();
+  postLoad(true);
 
 
   //------------------------
@@ -267,14 +267,14 @@ Volume::loadTiles(QStringList dirnames)
   pointCloud->loadMultipleTiles(dirnames);
 
 
-  postLoad();
+  postLoad(true);
 
 
   return true;
 }
 
 void
-Volume::postLoad()
+Volume::postLoad(bool showInfo)
 {
   m_validCamera = false;
   
@@ -289,7 +289,15 @@ Volume::postLoad()
   // collect tiles from all point clouds
   m_tiles.clear();
   for(int d=0; d<m_pointClouds.count(); d++)
-    m_tiles += m_pointClouds[d]->tiles();
+    {
+      m_tiles += m_pointClouds[d]->tiles();
+
+      //-------------------------
+      // required when doing manual registration
+      if (d == 0)
+	m_xformTileId = m_tiles.count();
+      //-------------------------
+    }
   //--------------------------------------
   
 
@@ -302,16 +310,24 @@ Volume::postLoad()
     }
   //--------------------------------------
 
-//  // set uid
-//  QList<OctreeNode*> allNodes = OctreeNode::allNodes();
-//  for(int d=0; d<allNodes.count(); d++)
-//    allNodes[d]->setUId(d);
   
+  // unload previously loaded data if any and reset all globalmin
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
+      for(int od=0; od<allNodes.count(); od++)
+	allNodes[od]->setGlobalMinMax(Vec(0,0,0), Vec(1,1,1));
+
+      m_pointClouds[d]->setGlobalMinMax(Vec(0,0,0), Vec(1,1,1));
+      Vec shift = m_pointClouds[d]->getShift();
+      float scale = m_pointClouds[d]->getScale();
+      m_pointClouds[d]->setScaleAndShift(scale, shift);
+    }
+
 
   // calculate min and max coord
   m_coordMin = m_pointClouds[0]->tightOctreeMin();
   m_coordMax = m_pointClouds[0]->tightOctreeMax();
-
   for(int d=1; d<m_pointClouds.count(); d++)
     {
       Vec cmin = m_pointClouds[d]->tightOctreeMin();
@@ -327,7 +343,7 @@ Volume::postLoad()
     }
 
 
-  int oid = 0;
+  int uid = 0;
   for(int d=0; d<m_pointClouds.count(); d++)
     {
       QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
@@ -335,14 +351,14 @@ Volume::postLoad()
 	{
 	  if (m_zeroShift)
 	    allNodes[od]->setGlobalMinMax(m_coordMin, m_coordMax);
-	  allNodes[od]->setUId(oid);
-	  oid++;
+	  allNodes[od]->setUId(uid);
+	  uid++;
 	}
 
       //-------------------------
       // required when doing manual registration
       if (d == 0)
-	m_xformNodeId = oid;
+	m_xformNodeId = uid;
       //-------------------------
     }
 
@@ -398,6 +414,9 @@ Volume::postLoad()
   m_npoints = totpts;
 
 
+  if (!showInfo)
+    return;
+  
   QString mesg;
 
   mesg += QString("Number of points : %1\n\n").arg(m_npoints); 
@@ -417,7 +436,7 @@ Volume::postLoad()
 
   mesg += QString("Tile node count : %1\n").arg(m_tiles.count()); 
   //mesg += QString("Octree node count : %1\n\n").arg(allNodes.count()); 
-  mesg += QString("Octree node count : %1\n\n").arg(oid+1); 
+  mesg += QString("Octree node count : %1\n\n").arg(uid+1); 
   
   QMessageBox::information(0, "", mesg);
 }

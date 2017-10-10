@@ -23,7 +23,7 @@ class Volume : public QObject
 
   void reset();
 
-  void shiftToZero() { m_zeroShift = true; }
+  void shiftToZero(bool b) { m_zeroShift = b; }
 
   bool loadOnTop(QString);
   bool loadDir(QString);
@@ -49,6 +49,8 @@ class Volume : public QObject
   bool newLoad() { return m_newLoad; }
   void resetNewLoad() { m_newLoad = false; }
   
+  void postLoad(bool);
+
 
   int dataPerVertex() { return m_dpv; }
   int maxTime();
@@ -62,6 +64,7 @@ class Volume : public QObject
   Vec getCamPivot() { return m_camPivot; }
 
   int xformNodeId() { return m_xformNodeId; }
+  int xformTileId() { return m_xformTileId; }
 
  signals :
   void startLoading();
@@ -74,6 +77,7 @@ class Volume : public QObject
 
   bool m_zeroShift;
   int m_xformNodeId;
+  int m_xformTileId;
 
   qint64 m_npoints;
   float *m_coord;
@@ -127,8 +131,6 @@ class Volume : public QObject
 
   int cullNodes(OctreeNode*, QList<OctreeNode*>);
   QList<OctreeNode*> getNodesWithOccupiedLeaves(OctreeNode*, QList<int>);
-
-  void postLoad();
 
   void loadTopJson(QString);
 };

@@ -36,6 +36,7 @@ class GLHiddenWidget : public QGLWidget
     void loadPointsToVBO();
     void stopLoading();
     void updateView();
+    void removeEditedNodes();
     
  signals :
     void vboLoaded(int, qint64);

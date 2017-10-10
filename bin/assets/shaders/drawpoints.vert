@@ -38,8 +38,10 @@ uniform float deadRadius;
 uniform vec3 deadPoint;
 
 uniform bool applyXform;
-uniform int xformNodeId;
+uniform int xformTileId;
 uniform vec3 xformShift;
+uniform vec3 xformCen;
+uniform float xformScale;
 
 //-----------------------
 float numberOfOnes(float number, float index)
@@ -121,8 +123,14 @@ void main()
 
    //----------------------------------
    // transform point during manual registration
-   if (applyXform && vertexColor.a > xformNodeId/65535)
-     pointPos += xformShift;
+   if (applyXform && vertexColor.a >= xformTileId)
+     {
+       pointPos -= xformCen;
+       pointPos *= xformScale;
+       pointPos += xformCen;
+
+       pointPos += xformShift;
+     }
    //----------------------------------
 
 

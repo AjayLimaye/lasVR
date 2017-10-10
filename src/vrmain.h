@@ -30,6 +30,13 @@ class VrMain : public QMainWindow
    void showFramerate(float);
    void showMessage(QString);
 
+   void on_actionEditMode_triggered();
+   void on_actionCamMode_triggered();
+   void on_actionAlign_triggered();
+   void on_actionUndo_triggered();
+   void on_actionSaveInfo_triggered();
+   void on_actionVRMode_triggered();
+
  private :
   Ui::VrMain ui;
 

@@ -30,6 +30,9 @@ class PointCloud
   Vec coordMin() { return m_coordMin; };
   Vec coordMax() { return m_coordMax; };
 
+  Vec tightOctreeMinO() { return m_tightOctreeMinO; }
+  Vec tightOctreeMaxO() { return m_tightOctreeMaxO; }
+
   Vec tightOctreeMin();
   Vec tightOctreeMax();
 
@@ -103,11 +106,18 @@ class PointCloud
   void loadAll();
 
   void translate(Vec);
+  void setScale(float);
+  float getScale() { return m_scale; }
 
   void setShift(Vec);
-  Vec shift() { return m_shift; }
+  Vec getShift() { return m_shift; }
 
-  void saveShift();
+  void setScaleAndShift(float, Vec);
+  void undo();
+
+  void saveModInfo();
+
+  void setEditMode(bool);
 
  private :
   QStringList m_filenames;
@@ -121,6 +131,7 @@ class PointCloud
   Vec m_tightOctreeMin, m_tightOctreeMax;
   Vec m_octreeMinO, m_octreeMaxO;
   Vec m_tightOctreeMinO, m_tightOctreeMaxO;
+  Vec m_gmin, m_gmax;
 
   float m_scale;
   float m_scaleCloudJs;
@@ -159,6 +170,8 @@ class PointCloud
 
   QList<Label*> m_labels;
 
+  QList<QVector4D> m_undo;
+
   int m_nearHitLabel;
   float m_nearHit;
 
@@ -176,6 +189,8 @@ class PointCloud
 
   void loadLabelsJson(QString);
   void loadLabelsCSV(QString);
+
+  Vec scaleAndShift(Vec, Vec);
 };
 
 #endif

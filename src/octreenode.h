@@ -56,6 +56,7 @@ class OctreeNode
 
   void loadData();
   void unloadData();
+  void reloadData();
 
 
   OctreeNode* parent() { return m_parent; }
@@ -92,6 +93,8 @@ class OctreeNode
 
   QList<OctreeNode*> allActiveNodes();
   int setPointSizeForActiveNodes(float);
+
+  void setEditMode(bool b) { m_editMode = b; }
 
   static void pruneDeletedNodes();
 
@@ -139,10 +142,14 @@ class OctreeNode
 
   bool m_removalFlag;
 
+  bool m_editMode;
+
   void loadDataFromLASFile();
   void loadDataFromBINFile();
 
   void setIdentity();
+
+  Vec scaleAndShift(Vec, Vec);
 };
 
 #endif

@@ -46,7 +46,7 @@ VR::VR() : QObject()
   m_scaleFactor = 1.0;
   m_teleportScale = 1.0;
   m_flightSpeed = 1.0;
-  m_speedDamper = 0.0005;
+  m_speedDamper = 0.1;
 
   m_flyTimer.setSingleShot(true);
 
@@ -795,33 +795,64 @@ VR::rightTouchMove()
   QVector3D moveD = QVector3D(center-point);
   moveD.normalize();
 
-  float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
-  QVector3D move = moveD*throttle;
+  //float throttle = qBound(0.01f, 0.2f, m_speedDamper*m_flightSpeed);
 
+//  // change speed based on height above ground
+//  {
+//    int wd = screenWidth();
+//    int ht = screenHeight();
+//    
+//    QVector3D hpos = hmdPosition();
+//    QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
+//    int dx = hp.x();
+//    int dy = hp.y();
+//    
+//    if (dx > 0 && dx < wd-1 &&
+//	dy > 0 && dy < ht-1)
+//      {
+//	float z = m_depthBuffer[(ht-1-dy)*wd + dx];
+//	if (z > 0.0 && z < 1.0)
+//	  {
+//	    float sf = m_teleportScale/m_scaleFactor;
+//	    QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
+//	    QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
+//	    
+//	    // increase speed when away from normal height
+//	    float speed = qAbs(pos.z()-hpos.z())/(m_groundHeight*sf);
+//	    speed += 1.0;
+//	    throttle *= speed;
+//	  }
+//      }
+//  }
+
+
+  QVector3D move = moveD;
+  //move *= throttle;
   move *= acc;
 
   m_model_xform.translate(-move);
   
-
-  bool changeScale = false;
-  float sf = 1.0-qBound(-0.005, 0.005, qPow(moveD.y(),5));
-  if (m_scaleFactor*sf > m_coordScale &&
-      m_scaleFactor*sf < m_teleportScale)
-    {
-      QVector3D cen;
-      if (m_pinPt.x() >= 0)
-	cen = m_final_xform.map(m_projectedPinPt);
-      else 
-	cen = getPosition(m_rightController);
-      
-      m_model_xform.translate(cen);
-      m_model_xform.scale(sf);
-      m_model_xform.translate(-cen);
-      
-      m_scaleFactor *= sf;
-      m_flightSpeed *= sf;
-    }
-
+//--------------------------------------------
+// change scaling based on where viewer is moving
+//--------------------------------------------
+//  float sf = 1.0-qBound(-0.005, 0.005, qPow(moveD.y(),5));
+//  if (m_scaleFactor*sf > m_coordScale &&
+//      m_scaleFactor*sf < m_teleportScale)
+//    {
+//      QVector3D cen;
+//      if (m_pinPt.x() >= 0)
+//	cen = m_final_xform.map(m_projectedPinPt);
+//      else 
+//	cen = getPosition(m_rightController);
+//      
+//      m_model_xform.translate(cen);
+//      m_model_xform.scale(sf);
+//      m_model_xform.translate(-cen);
+//      
+//      m_scaleFactor *= sf;
+//      m_flightSpeed *= sf;
+//    }
+//--------------------------------------------
 
   m_final_xform = m_model_xform * m_final_xform;
 

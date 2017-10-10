@@ -62,6 +62,8 @@ PointCloud::PointCloud()
   m_nearHit = -1000;
 
   m_ignoreScaling = false;
+
+  m_undo.clear();
 }
 
 PointCloud::~PointCloud()
@@ -106,6 +108,8 @@ PointCloud::reset()
   m_fileFormat = true; // LAS
   m_pointAttrib.clear();
   m_attribBytes = 0;
+
+  m_undo.clear();
 }
 
 void
@@ -467,6 +471,8 @@ PointCloud::loadTileOctree(QString dirname)
     }
 
 
+  setScaleAndShift(m_scale, m_shift);
+
   saveOctreeNodeToJson(dirname, oNode);
 
   progress.setValue(100);
@@ -760,16 +766,25 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       if (xformPresent)
 	tnode->setXform(xform);
     }
-  
-  m_octreeMin = m_octreeMinO + m_shift;
-  m_octreeMax = m_octreeMaxO + m_shift;
-  m_octreeMin = m_octreeMin * m_scale;
-  m_octreeMax = m_octreeMax * m_scale;
 
-  m_tightOctreeMin = m_tightOctreeMinO + m_shift;
-  m_tightOctreeMax = m_tightOctreeMaxO + m_shift;
-  m_tightOctreeMin = m_tightOctreeMin * m_scale;
-  m_tightOctreeMax = m_tightOctreeMax * m_scale;
+  setScaleAndShift(m_scale, m_shift);
+
+//  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
+//
+//  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
+//  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
+//  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
+//  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+
+//  m_octreeMin = m_octreeMinO + m_shift;
+//  m_octreeMax = m_octreeMaxO + m_shift;
+//  m_octreeMin = m_octreeMin * m_scale;
+//  m_octreeMax = m_octreeMax * m_scale;
+//
+//  m_tightOctreeMin = m_tightOctreeMinO + m_shift;
+//  m_tightOctreeMax = m_tightOctreeMaxO + m_shift;
+//  m_tightOctreeMin = m_tightOctreeMin * m_scale;
+//  m_tightOctreeMax = m_tightOctreeMax * m_scale;
 }
 
 void
@@ -1263,28 +1278,32 @@ PointCloud::checkLink(Camera *cam, QPoint pos)
 Vec
 PointCloud::tightOctreeMin()
 {
-  Vec tm = m_tiles[0]->tightOctreeMin();
-  for(int d=1; d<m_tiles.count(); d++)
-    {
-      Vec tom = m_tiles[d]->tightOctreeMin();
-      tm.x = qMin(tom.x,tm.x);
-      tm.y = qMin(tom.y,tm.y);
-      tm.z = qMin(tom.z,tm.z);
-    }
-  return tm;
+  return m_tightOctreeMin;
+
+//  Vec tm = m_tiles[0]->tightOctreeMin();
+//  for(int d=1; d<m_tiles.count(); d++)
+//    {
+//      Vec tom = m_tiles[d]->tightOctreeMin();
+//      tm.x = qMin(tom.x,tm.x);
+//      tm.y = qMin(tom.y,tm.y);
+//      tm.z = qMin(tom.z,tm.z);
+//    }
+//  return tm;
 }
 Vec
 PointCloud::tightOctreeMax()
 {
-  Vec tm = m_tiles[0]->tightOctreeMax();
-  for(int d=1; d<m_tiles.count(); d++)
-    {
-      Vec tom = m_tiles[d]->tightOctreeMax();
-      tm.x = qMax(tom.x,tm.x);
-      tm.y = qMax(tom.y,tm.y);
-      tm.z = qMax(tom.z,tm.z);
-    }
-  return tm;
+  return m_tightOctreeMax;
+
+//  Vec tm = m_tiles[0]->tightOctreeMax();
+//  for(int d=1; d<m_tiles.count(); d++)
+//    {
+//      Vec tom = m_tiles[d]->tightOctreeMax();
+//      tm.x = qMax(tom.x,tm.x);
+//      tm.y = qMax(tom.y,tm.y);
+//      tm.z = qMax(tom.z,tm.z);
+//    }
+//  return tm;
 }
 
 Vec
@@ -1449,46 +1468,74 @@ PointCloud::updateVisibilityData()
 
 }
 
+Vec
+PointCloud::scaleAndShift(Vec v, Vec tomid)
+{
+  Vec ov = v-tomid;
+  ov *= m_scale;
+  ov += tomid;
+  
+  ov += m_shift;
+
+  ov -= m_gmin;
+
+  return ov;
+}
+
 void
 PointCloud::setGlobalMinMax(Vec gmin, Vec gmax)
 {
-  m_octreeMin -= gmin;
-  m_octreeMax -= gmin;
+  m_gmin = gmin;
+  m_gmax = gmax;
 
-  m_tightOctreeMin -= gmin;
-  m_tightOctreeMax -= gmin;
+  m_octreeMin -= m_gmin;
+  m_octreeMax -= m_gmin;
+
+  m_tightOctreeMin -= m_gmin;
+  m_tightOctreeMax -= m_gmin;
 
   for(int i=0; i<m_labels.count(); i++)
-    m_labels[i]->setGlobalMinMax(gmin, gmax);
+    m_labels[i]->setGlobalMinMax(m_gmin, m_gmax);
 }
 
 void
 PointCloud::translate(Vec trans)
 {
-  m_octreeMin += trans;
-  m_octreeMax += trans;
-  m_tightOctreeMin += trans;
-  m_tightOctreeMax += trans;
-  m_shift += trans;
+  setShift(m_shift+trans);
+}
 
-   for(int d=0; d<m_allNodes.count(); d++)
+void
+PointCloud::setScale(float scl)
+{
+  m_scale = scl;
+
+  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
+
+  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
+  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
+  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
       node->unloadData();
-      node->setShift(m_shift);
+      node->setScale(m_scale, m_scaleCloudJs);
     } 
 }
 
 void
 PointCloud::setShift(Vec shift)
 {
-  m_octreeMin = m_octreeMinO + shift;
-  m_octreeMax = m_octreeMaxO + shift;
-  m_tightOctreeMin = m_tightOctreeMinO + shift;
-  m_tightOctreeMax = m_tightOctreeMaxO + shift;
   m_shift = shift;
 
-   for(int d=0; d<m_allNodes.count(); d++)
+  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
+
+  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
+  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
+  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+
+  for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
       node->unloadData();
@@ -1497,16 +1544,79 @@ PointCloud::setShift(Vec shift)
 }
 
 void
-PointCloud::saveShift()
+PointCloud::setScaleAndShift(float scale, Vec shift)
+{
+  m_undo << QVector4D(m_shift.x, m_shift.y, m_shift.z, m_scale);
+
+  m_scale = scale;
+  m_shift = shift;
+  
+  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
+  
+  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
+  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
+  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  
+  for(int d=0; d<m_allNodes.count(); d++)
+    {
+      OctreeNode *node = m_allNodes[d];
+      node->setShift(m_shift);
+      node->setScale(m_scale, m_scaleCloudJs);
+      node->reloadData();
+    } 
+}
+
+void
+PointCloud::undo()
+{
+  if (m_undo.count() == 0)
+    return;
+
+  QVector4D u = m_undo.takeLast();
+
+  //-------
+  // always keep the first one
+  if (m_undo.count() == 0)
+    m_undo << u;
+  //-------
+
+  
+  m_shift = Vec(u.x(), u.y(), u.z());
+  m_scale = u.w();
+
+  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
+  
+  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
+  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
+  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  
+  for(int d=0; d<m_allNodes.count(); d++)
+    {
+      OctreeNode *node = m_allNodes[d];
+      node->setShift(m_shift);
+      node->setScale(m_scale, m_scaleCloudJs);
+      node->reloadData();
+    } 
+  
+}
+
+void
+PointCloud::saveModInfo()
 {
   QJsonObject jsonMod;
 
   QJsonObject jsonInfo;
+  
 
-  QString str = QString("%1  %2  %3").arg(m_shift.x, 12, 'f', 2).arg(m_shift.y, 12, 'f', 2).arg(m_shift.z, 12, 'f', 2); 
-  str = str.simplified();
+  QString str = QString("%1  %2  %3").\
+    arg(m_shift.x, 12, 'f', 2).\
+    arg(m_shift.y, 12, 'f', 2).\
+    arg(m_shift.z, 12, 'f', 2); 
+  jsonInfo["shift"] = str.simplified();
 
-  jsonInfo["shift"] = str;
+  jsonInfo["scale"] = m_scale;
 
   jsonMod["mod"] = jsonInfo;
 
@@ -1517,4 +1627,16 @@ PointCloud::saveShift()
   QFile saveFile(jsonfile);
   saveFile.open(QIODevice::WriteOnly);
   saveFile.write(saveDoc.toJson());
+
+  QMessageBox::information(0, "", "Information saved to\n"+jsonfile);
+}
+
+void
+PointCloud::setEditMode(bool b)
+{
+  for(int d=0; d<m_allNodes.count(); d++)
+    {
+      m_allNodes[d]->setEditMode(b);
+      m_allNodes[d]->reloadData();
+    }
 }

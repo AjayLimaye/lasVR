@@ -73,6 +73,12 @@ class Viewer : public QGLViewer
 
   bool editMode() { return m_editMode; }
 
+  void toggleEditMode();
+  void toggleCamMode();
+  void centerPointClouds();
+  void undo();
+  void saveModInfo();
+
   public slots :
     void GlewInit();
     void showBox(bool);
@@ -88,6 +94,8 @@ class Viewer : public QGLViewer
     void setPointBudget(int);
 
     void setEditMode(bool);
+    void setVRMode(bool);
+    bool vrMode() { return m_vrMode; }
 
  signals :
     void loadLinkedData(QString);
@@ -101,6 +109,7 @@ class Viewer : public QGLViewer
     void framesPerSecond(float);
     void message(QString);
     void updateView();
+    void removeEditedNodes();
 
  private :
     VR m_vr;
@@ -207,10 +216,14 @@ class Viewer : public QGLViewer
 
     QString m_dataDir;
 
+    bool m_vrMode;
     bool m_editMode;
     QPoint m_prevPos;
     int m_moveAxis;
     Vec m_deltaShift;
+    float m_deltaScale;
+    bool m_deltaChanged;
+    QList<QVector4D> m_undoXform;
 
     void createFBO();
 
@@ -274,6 +287,7 @@ class Viewer : public QGLViewer
     void stickLabelsToGround();
 
     void movePointCloud(QPoint);
+    void scalePointCloud(QPoint);
 };
 
 #endif
