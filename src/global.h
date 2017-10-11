@@ -8,6 +8,10 @@ using namespace qglviewer;
 
 #include <QList>
 #include <QVector3D>
+#include <QStatusBar>
+#include <QLabel>
+#include <QProgressBar>
+#include <QProgressDialog>
 
 class Global
 {
@@ -38,6 +42,14 @@ class Global
   static Vec stickToGround(Vec);
   static QVector3D stickToGround(QVector3D);
 
+  static void setStatusBar(QStatusBar*);
+  static QStatusBar* statusBar();
+
+  static QProgressBar* progressBar();
+  static void hideProgressBar();
+  static void showProgressBar();
+
+
  private :
   static GLuint m_circleSpriteTexture;
   static GLuint m_infoSpriteTexture;
@@ -48,6 +60,9 @@ class Global
 
   static int m_screenWidth, m_screenHeight;
   static float *m_depthBuffer;
+
+  static QProgressBar *m_progressBar;
+  static QStatusBar *m_statusBar;
 };
 
 #endif

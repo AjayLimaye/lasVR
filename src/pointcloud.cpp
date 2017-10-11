@@ -1,9 +1,9 @@
+#include "global.h"
 #include "staticfunctions.h"
 #include "pointcloud.h"
 
 #include <QtGui>
 #include <QMessageBox>
-#include <QProgressDialog>
 #include <QFileDialog>
 #include <QTextStream>
 
@@ -214,24 +214,20 @@ PointCloud::setLevelsBelow()
 bool
 PointCloud::loadMultipleTiles(QStringList dirnames)
 {
-  QProgressDialog progress("Loading tiles",
-			   "",
-			   0, 100,
-			   0);
-  progress.setMinimumDuration(0);
-
+  Global::statusBar()->showMessage("Loading tiles", 2000);
+  Global::progressBar()->show();
   int dcount = dirnames.count();
   for (int d=0; d<dcount; d++)
     {
-      progress.setValue(100*(float)d/(float)dcount);
-      qApp->processEvents();
+      Global::progressBar()->setValue(100*(float)d/(float)dcount);
 	  
       QFileInfo finfo(dirnames[d]);
       if (finfo.isDir())
 	loadTileOctree(dirnames[d]);
     }
 
-  progress.setValue(100);
+  Global::progressBar()->hide();
+  Global::statusBar()->showMessage("Start", 100);
 
   return true;
 }
@@ -287,12 +283,9 @@ PointCloud::loadTileOctree(QString dirname)
   else
     namefilters << "*.bin";
   
-  QProgressDialog progress("Enumerating Files in " + dirname,
-			   QString(),
-			   0, 100,
-			   0);
-  progress.setMinimumDuration(0);
+  Global::statusBar()->showMessage("Enumerating Files in "+dirname);
 
+  Global::progressBar()->show();
 
   QDirIterator topDirIter(dirname,
 			  namefilters,
@@ -308,12 +301,10 @@ PointCloud::loadTileOctree(QString dirname)
       nfl++;
       if (nfl%100 == 1)
 	{
-	  float pg = (nfl/100)%100;
-	  progress.setValue(pg);
-	  qApp->processEvents();
+	  float pg = nfl%100;
+	  Global::progressBar()->setValue(pg);
 	}
     }
-
 
   qint64 totalPoints = 0;
   int maxOct = 0;
@@ -321,8 +312,7 @@ PointCloud::loadTileOctree(QString dirname)
   int maxNameSize = 0;
   for (int i=0; i<finfolist.count(); i++)
     {
-      progress.setValue(100*(float)i/(float)finfolist.count());
-      qApp->processEvents();
+      Global::progressBar()->setValue(100*(float)i/(float)finfolist.count());
 
       QString basename = finfolist[i].baseName();
       minNameSize = qMin(minNameSize, basename.count());
@@ -357,7 +347,7 @@ PointCloud::loadTileOctree(QString dirname)
 
   for(int l=0; l<=maxOct; l++)
     {
-      progress.setValue(100*(float)l/(float)(maxOct+1));
+      Global::progressBar()->setValue(100*(float)l/(float)(maxOct+1));
 
       QStringList flist;
       for (int i=0; i<finfolist.count(); i++)
@@ -474,8 +464,6 @@ PointCloud::loadTileOctree(QString dirname)
   setScaleAndShift(m_scale, m_shift);
 
   saveOctreeNodeToJson(dirname, oNode);
-
-  progress.setValue(100);
 
   return true;
 }

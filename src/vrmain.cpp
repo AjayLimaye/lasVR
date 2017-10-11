@@ -19,6 +19,13 @@ VrMain::VrMain(QWidget *parent) :
   QGLFormat qglFormat;
   qglFormat.setProfile(QGLFormat::CoreProfile);
 
+
+  Global::setStatusBar(ui.statusbar);
+  ui.statusbar->setEnabled(true);
+  ui.statusbar->setSizeGripEnabled(true);
+  ui.statusbar->addPermanentWidget(Global::progressBar());
+  Global::progressBar()->show();
+
   m_viewer = new Viewer(qglFormat, this);
 
   centralWidget()->layout()->addWidget(m_viewer);

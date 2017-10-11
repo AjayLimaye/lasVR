@@ -292,8 +292,8 @@ OctreeNode::loadDataFromBINFile()
   QFileInfo finfo(m_fileName);
   qint64 fsz = finfo.size();
   m_numpoints = fsz/m_attribBytes;
-
   
+
   if (m_dpv == 3)
     {
       if (!m_coord)
@@ -340,23 +340,12 @@ OctreeNode::loadDataFromBINFile()
 	  z = ve.z;
 	}
 
-//      x += m_shift.x;
-//      y += m_shift.y;
-//      z += m_shift.z;
-//
-//      x *= m_scale;
-//      y *= m_scale;
-//      z *= m_scale;
-
       if (m_dpv == 3)
 	{
 	  float *vertexPtr = (float*)(m_coord + 12*np);
 	  vertexPtr[0] = x;
 	  vertexPtr[1] = y;
 	  vertexPtr[2] = z;
-	  //vertexPtr[0] = x - m_globalMin.x;
-	  //vertexPtr[1] = y - m_globalMin.y;
-	  //vertexPtr[2] = z - m_globalMin.z;
 	}
       
       if (m_dpv > 3)
@@ -368,14 +357,23 @@ OctreeNode::loadDataFromBINFile()
 	  vertexPtr[0] = x;
 	  vertexPtr[1] = y;
 	  vertexPtr[2] = z;
-	  //vertexPtr[0] = x - m_globalMin.x;
-	  //vertexPtr[1] = y - m_globalMin.y;
-	  //vertexPtr[2] = z - m_globalMin.z;
 	  //-------------------------------------------
 
-	  Vec col = Vec(1,1,1);
+	  Vec col = Vec(255,255,255);
 	  if (m_attribBytes > 15)
 	    col = Vec(rgb[0],rgb[1],rgb[2]);
+
+	  if (!m_colorPresent)
+	    {
+	      z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+	      z = qBound(0.0, z, 1.0);
+	      z*=clim;
+	      int zi = z;
+	      float zf = z - zi;
+	      if (zi >= clim) { zi = clim-1; zf = 1.0; }
+	      col = m_colorMap[zi]*(1.0-zf) + zf*m_colorMap[zi+1];
+	      col *= 255;
+	    }
 	  
 	  // color stored as ushort
 	  ushort *colorPtr = (ushort*)(m_coord + 20*np + 12);

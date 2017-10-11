@@ -1332,7 +1332,7 @@ Viewer::draw()
   if (m_showBox || m_editMode)
     drawAABB();
 
-  drawInfo();
+  //drawInfo();
 }
 
 void
@@ -1511,6 +1511,14 @@ Viewer::vboLoaded(int cvp, qint64 npts)
   m_vbID = cvp;
   m_vbPoints = npts;
   m_vboLoadedAll = false;
+
+  if (!m_vrMode ||
+      !m_vr.vrEnabled())
+    {
+      update();
+      return;
+    }
+
 }
 void
 Viewer::vboLoadedAll(int cvp, qint64 npts)

@@ -202,3 +202,17 @@ Global::stickToGround(QVector3D pt)
 
   return ptGround;
 }
+
+QStatusBar* Global::m_statusBar = 0;
+QStatusBar* Global::statusBar() { return m_statusBar; }
+void Global::setStatusBar(QStatusBar *sb) { m_statusBar = sb; }
+
+QProgressBar* Global::m_progressBar = 0;
+QProgressBar* Global::progressBar()
+{
+  if (!m_progressBar)
+    m_progressBar = new QProgressBar();
+  return m_progressBar;
+}
+void Global::hideProgressBar() { m_statusBar->hide(); }
+void Global::showProgressBar() { m_statusBar->show(); }
