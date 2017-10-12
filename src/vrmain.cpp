@@ -28,12 +28,94 @@ VrMain::VrMain(QWidget *parent) :
 
   m_viewer = new Viewer(qglFormat, this);
 
+
   centralWidget()->layout()->addWidget(m_viewer);
 
   setMouseTracking(true);
 
-
   m_viewer->setVolumeFactory(&m_volumeFactory);
+
+
+  //-------------------------
+  m_keyFrame = new KeyFrame();
+
+  m_dockKeyframe = new QDockWidget("KeyFrame Editor", this);
+  m_dockKeyframe->setAllowedAreas(Qt::BottomDockWidgetArea | 
+        			  Qt::TopDockWidgetArea);
+  m_keyFrameEditor = new KeyFrameEditor();
+  m_dockKeyframe->setWidget(m_keyFrameEditor);
+  m_dockKeyframe->hide();
+
+  addDockWidget(Qt::BottomDockWidgetArea,m_dockKeyframe);
+
+  ui.menuView->addAction(m_dockKeyframe->toggleViewAction());
+
+  connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion)),
+	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion)));
+
+  connect(m_keyFrame, SIGNAL(updateGL()),
+	  m_viewer, SLOT(updateGL())); // 
+
+  connect(m_keyFrame, SIGNAL(setImage(int, QImage)),
+	  m_keyFrameEditor, SLOT(setImage(int, QImage)));
+
+  connect(m_keyFrame, SIGNAL(loadKeyframes(QList<int>, QList<QImage>)),
+	  m_keyFrameEditor, SLOT(loadKeyframes(QList<int>, QList<QImage>)));  
+
+//  connect(m_keyFrame, SIGNAL(replaceKeyFrameImage(int)),
+//	  m_viewer, SLOT(captureKeyFrameImage(int)));
+//  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
+//	  m_keyFrameEditor, SLOT(setImage(int, QImage)));
+//  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
+//	  m_keyFrame, SLOT(replaceKeyFrameImage(int, QImage)));
+
+
+  connect(m_keyFrameEditor, SIGNAL(updateGL),
+	  m_viewer, SLOT(updateGL));
+
+  connect(m_keyFrameEditor, SIGNAL(setKeyFrame(int)),
+	  m_viewer, SLOT(setKeyFrame(int)));
+
+  connect(m_viewer, SIGNAL(setKeyFrame(Vec, Quaternion, int, QImage)),
+	  m_keyFrame, SLOT(setKeyFrame(Vec, Quaternion, int, QImage)));
+
+  connect(m_keyFrameEditor, SIGNAL(checkKeyFrameNumbers()),
+	  m_keyFrame, SLOT(checkKeyFrameNumbers()));
+
+  connect(m_keyFrameEditor, SIGNAL(reorder(QList<int>)),
+	  m_keyFrame, SLOT(reorder(QList<int>)));
+
+  connect(m_keyFrameEditor, SIGNAL(setKeyFrameNumbers(QList<int>)),
+	  m_keyFrame, SLOT(setKeyFrameNumbers(QList<int>)));
+
+  connect(m_keyFrameEditor, SIGNAL(playFrameNumber(int)),
+	  m_keyFrame, SLOT(playFrameNumber(int)));
+
+  connect(m_keyFrameEditor, SIGNAL(setKeyFrameNumber(int, int)),
+	  m_keyFrame, SLOT(setKeyFrameNumber(int, int)));
+
+  connect(m_keyFrameEditor, SIGNAL(removeKeyFrame(int)),
+	  m_keyFrame, SLOT(removeKeyFrame(int)));
+
+connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
+	m_keyFrame, SLOT(removeKeyFrames(int, int)));
+
+  connect(m_keyFrameEditor, SIGNAL(copyFrame(int)),
+	  m_keyFrame, SLOT(copyFrame(int)));
+
+  connect(m_keyFrameEditor, SIGNAL(pasteFrame(int)),
+	  m_keyFrame, SLOT(pasteFrame(int)));
+
+  connect(m_keyFrameEditor, SIGNAL(pasteFrameOnTop(int)),
+	  m_keyFrame, SLOT(pasteFrameOnTop(int)));
+
+  connect(m_keyFrameEditor, SIGNAL(pasteFrameOnTop(int, int)),
+	  m_keyFrame, SLOT(pasteFrameOnTop(int, int)));
+
+  connect(m_keyFrameEditor, SIGNAL(editFrameInterpolation(int)),
+	  m_keyFrame, SLOT(editFrameInterpolation(int)));
+
+  //-------------------------
 
 
   QTimer::singleShot(2000, m_viewer, SLOT(GlewInit()));
@@ -172,6 +254,8 @@ void
 VrMain::on_actionQuit_triggered()
 {
   m_thread->quit();
+
+  delete m_keyFrameEditor;
 
   close();
 }

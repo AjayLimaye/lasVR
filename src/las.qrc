@@ -5,5 +5,10 @@
   <file>images/home.png</file>
   <file>images/box.png</file>
   <file>images/menu00.png</file>
+  <file>images/animation-pause.png</file>
+  <file>images/animation-reset.png</file>
+  <file>images/animation-start.png</file>
+  <file>images/zoomin.png</file>
+  <file>images/zoomout.png</file>
 </qresource>
 </RCC>

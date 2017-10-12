@@ -7,8 +7,11 @@
 #include "glhiddenwidget.h"
 #include "loaderthread.h"
 #include "popupslider.h"
+#include "keyframeeditor.h"
+#include "keyframe.h"
 
 #include <QThread>
+#include <QDockWidget>
 
 class VrMain : public QMainWindow
 {
@@ -51,6 +54,10 @@ class VrMain : public QMainWindow
   QString m_prevDir;
 
   PopUpSlider *m_pointBudget;
+
+  QDockWidget *m_dockKeyframe;
+  KeyFrameEditor *m_keyFrameEditor;
+  KeyFrame *m_keyFrame;
 
   void loadTiles(QStringList);
 };

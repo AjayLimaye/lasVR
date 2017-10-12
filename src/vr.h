@@ -250,6 +250,8 @@ class VR : public QObject
   float m_flightSpeed;
   float m_prevFlightSpeed;
 
+  QVector3D m_coordMin;
+  QVector3D m_coordMax;
   QVector3D m_coordCen;
   float m_coordScale;
 

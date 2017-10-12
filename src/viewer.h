@@ -97,6 +97,9 @@ class Viewer : public QGLViewer
     void setVRMode(bool);
     bool vrMode() { return m_vrMode; }
 
+    void setKeyFrame(int);
+    void updateLookFrom(Vec, Quaternion);
+
  signals :
     void loadLinkedData(QString);
     void loadLinkedData(QStringList);
@@ -110,6 +113,7 @@ class Viewer : public QGLViewer
     void message(QString);
     void updateView();
     void removeEditedNodes();
+    void setKeyFrame(Vec, Quaternion, int, QImage);
 
  private :
     VR m_vr;

@@ -201,6 +201,11 @@ VR::resetModel()
   genEyeMatrices();
 
   m_play = false;
+
+  
+  QVector3D cmid = (m_coordMin+m_coordMax)/2;
+  cmid.setZ(m_coordMax.z());
+  teleport(cmid);
 }
 
 QMatrix4x4
@@ -222,6 +227,8 @@ VR::initModel(QVector3D cmin, QVector3D cmax)
   QVector3D box = cmax - cmin;
   m_coordScale = 1.0/qMax(box.x(), qMax(box.y(), box.z()));
 
+  m_coordMin = cmin;
+  m_coordMax = cmax;
   m_coordCen = (cmin+cmax)/2;
 
   m_las_xform = initXform(1, 0, 0, -90);
@@ -569,12 +576,12 @@ VR::leftGripPressed()
 void
 VR::leftGripMove()
 {
-//  QVector3D cen = vrHmdPosition();
-//  m_model_xform.setToIdentity();
-//  m_model_xform.translate(cen);
-//  m_model_xform.rotate(1.0, 0, 1, 0); // rotate 1 degree
-//  m_model_xform.translate(-cen);
-//  m_final_xform = m_model_xform * m_final_xform;
+  QVector3D cen = vrHmdPosition();
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(cen);
+  m_model_xform.rotate(0.25, 0, 1, 0); // rotate 1 degree
+  m_model_xform.translate(-cen);
+  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::leftGripReleased()
@@ -584,8 +591,8 @@ VR::leftGripReleased()
 //  m_final_xform = m_model_xform * m_final_xform;
 //  m_model_xform.setToIdentity();
   
-//  // generate the drawlist each time changes are made
-//  m_genDrawList = true;
+  // generate the drawlist each time changes are made
+  m_genDrawList = true;
 }
 //---------------------------------------
 
@@ -608,12 +615,12 @@ VR::rightGripMove()
 //    }
 //  //---------------------------
 
-//  QVector3D cen = vrHmdPosition();
-//  m_model_xform.setToIdentity();
-//  m_model_xform.translate(cen);
-//  m_model_xform.rotate(-1.0, 0, 1, 0); // rotate 1 degree
-//  m_model_xform.translate(-cen);
-//  m_final_xform = m_model_xform * m_final_xform;
+  QVector3D cen = vrHmdPosition();
+  m_model_xform.setToIdentity();
+  m_model_xform.translate(cen);
+  m_model_xform.rotate(-0.25, 0, 1, 0); // rotate 1 degree
+  m_model_xform.translate(-cen);
+  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::rightGripReleased()
@@ -623,8 +630,8 @@ VR::rightGripReleased()
 //  m_final_xform = m_model_xform * m_final_xform;
 //  m_model_xform.setToIdentity();
   
-//  // generate the drawlist each time changes are made
-//  m_genDrawList = true;
+  // generate the drawlist each time changes are made
+  m_genDrawList = true;
 }
 //---------------------------------------
 //---------------------------------------
@@ -901,7 +908,7 @@ VR::rightTouchMove()
 	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
 	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
 
-	      if (m_gravity || // stick close to ground
+	      if (m_gravity && // stick close to ground
 		  pos.z() > hpos.z()) // push it above the ground
 		{
 		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();

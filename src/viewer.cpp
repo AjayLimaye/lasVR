@@ -1296,7 +1296,8 @@ Viewer::paintGL()
 	    }
 	  
 	  Vec c = (cmin+cmax)/2;
-	  c = Global::stickToGround(c);
+	  c.z = cmax.z;
+	  //c = Global::stickToGround(c);
 	  QVector3D cmid = QVector3D(c.x, c.y, c.z);
 	  m_vr.teleport(cmid);
 
@@ -3278,4 +3279,26 @@ Viewer::loadTopJson(QString jsonfile)
 
   if (m_pointBudget < million)
     m_pointBudget = million;
+}
+
+void
+Viewer::setKeyFrame(int fno)
+{
+  Vec pos;
+  Quaternion rot;
+
+  pos = camera()->position();
+  rot = camera()->orientation();
+
+  QImage image = grabFrameBuffer();
+  image = image.scaled(100, 100);
+
+  emit setKeyFrame(pos, rot, fno, image);
+}
+
+void
+Viewer::updateLookFrom(Vec pos, Quaternion rot)
+{
+  camera()->setPosition(pos);
+  camera()->setOrientation(rot);
 }

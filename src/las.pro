@@ -48,8 +48,10 @@ HEADERS += vrmain.h \
 	map.h \
 	menu01.h \
 	cubemap.h \
-	popupslider.h
-
+	popupslider.h \
+	keyframe.h \
+	keyframeinformation.h \
+	keyframeeditor.h
 
 SOURCES += main.cpp \
 	vrmain.cpp \
@@ -74,4 +76,7 @@ SOURCES += main.cpp \
 	map.cpp \
 	menu01.cpp \
 	cubemap.cpp \
-	popupslider.cpp
+	popupslider.cpp \
+	keyframe.cpp \
+	keyframeinformation.cpp \
+	keyframeeditor.cpp
