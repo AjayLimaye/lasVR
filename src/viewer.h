@@ -101,6 +101,7 @@ class Viewer : public QGLViewer
     void updateLookFrom(Vec, Quaternion);
 
  signals :
+    void nextFrame();
     void loadLinkedData(QString);
     void loadLinkedData(QStringList);
     void switchVolume();

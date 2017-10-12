@@ -1,5 +1,6 @@
 #include "glhiddenwidget.h"
 #include "staticfunctions.h"
+#include "global.h"
 
 #include <QMessageBox>
 #include <QApplication>
@@ -295,7 +296,8 @@ GLHiddenWidget::loadPointsToVBO()
       // no nodes to load, so just return
       if (loadNodes.count() == 0)
 	{
-	  //emit vboLoadedAll(m_currVBO, -1);
+	  if (Global::playFrames())
+	    emit vboLoadedAll(m_currVBO, -1);
 	  return;
 	}
     }

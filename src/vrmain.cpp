@@ -50,6 +50,9 @@ VrMain::VrMain(QWidget *parent) :
 
   ui.menuView->addAction(m_dockKeyframe->toggleViewAction());
 
+  connect(m_viewer, SIGNAL(nextFrame()),
+	  m_keyFrameEditor, SLOT(nextFrame()));
+
   connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion)),
 	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion)));
 

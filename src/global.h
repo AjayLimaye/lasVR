@@ -49,6 +49,9 @@ class Global
   static void hideProgressBar();
   static void showProgressBar();
 
+  static bool playFrames();
+  static void setPlayFrames(bool);
+
 
  private :
   static GLuint m_circleSpriteTexture;
@@ -63,6 +66,8 @@ class Global
 
   static QProgressBar *m_progressBar;
   static QStatusBar *m_statusBar;
+
+  static bool m_playFrames;
 };
 
 #endif

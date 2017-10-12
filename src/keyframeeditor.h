@@ -58,6 +58,7 @@ class KeyFrameEditor : public QWidget
   void checkKeyFrameNumbers();
 
  public slots :
+  void nextFrame();
   void loadKeyframes(QList<int>, QList<QImage>);
   void clear();
   void setImage(int, QImage);
@@ -96,6 +97,8 @@ class KeyFrameEditor : public QWidget
   int m_pressed;
   int m_pressedMinFrame;
   bool m_playFrames;
+
+  int m_endFrame, m_stepFrame;
 
   int m_copyFno;
   QImage m_copyImage;

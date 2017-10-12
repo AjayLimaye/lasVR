@@ -346,6 +346,7 @@ Viewer::start()
   m_tiles.clear();
   m_orderedTiles.clear();
   m_pointClouds.clear();
+  m_loadNodes.clear();
 
   genColorMap();
 
@@ -1333,7 +1334,10 @@ Viewer::draw()
   if (m_showBox || m_editMode)
     drawAABB();
 
-  //drawInfo();
+  drawInfo();
+
+  if (Global::playFrames() && m_vboLoadedAll)
+    emit nextFrame();
 }
 
 void
@@ -1396,7 +1400,7 @@ Viewer::drawInfo()
       //mesg += QString("Fps : %1    ").arg(currentFPS());
       //mesg += QString("PtSz : %1    ").arg(ptsz);
       mesg += QString("Points : %1 (%2)  ").arg(m_pointBudget).arg(m_vbPoints);
-      mesg += QString("%1").arg(m_volume->xformTileId());
+      mesg += QString("%1").arg(m_vboLoadedAll);
 
       StaticFunctions::renderText(10, 30,
 				  mesg, tfont,
@@ -1530,6 +1534,8 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
       m_vbPoints = npts;
     }
   
+  m_vboLoadedAll = true;
+
   if (!m_vrMode ||
       !m_vr.vrEnabled())
     {
@@ -1540,7 +1546,7 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
   if (m_vr.play())
     m_vr.takeNextStep();
 
-  m_vboLoadedAll = true;
+  //m_vboLoadedAll = true;
 }
 
 void
@@ -2615,6 +2621,8 @@ Viewer::genDrawNodeList()
 //    m_minNodePixelSize = 150;
 
 
+  QList<OctreeNode*> oldLoadNodes = m_loadNodes;
+
   orderTilesForCamera();
   
 
@@ -2673,6 +2681,27 @@ Viewer::genDrawNodeList()
     {
       QList<OctreeNode*> values = mmTiles.values(keys[k]);
       m_loadNodes += values;
+    }
+  //-------------------------------
+
+  //-------------------------------
+  if (Global::playFrames())
+      //oldLoadNodes.count() == m_loadNodes.count())
+    {
+      bool allok = true;
+      for(int i=0; i<m_loadNodes.count(); i++)
+	{
+	  if (!oldLoadNodes.contains(m_loadNodes[i]))
+	    {
+	      allok = false;
+	      break;
+	    }
+	}
+      if (allok)
+	{
+	  m_vboLoadedAll = true;
+	  return;
+	}
     }
   //-------------------------------
   
@@ -3301,4 +3330,17 @@ Viewer::updateLookFrom(Vec pos, Quaternion rot)
 {
   camera()->setPosition(pos);
   camera()->setOrientation(rot);
+
+  m_vboLoadedAll = false;
+  QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
+			 QPointF(0,0),
+			 Qt::LeftButton,
+			 Qt::LeftButton,
+			 Qt::NoModifier);
+  mouseReleaseEvent(&dummyEvent);
+
+//  genDrawNodeList();
+//
+//  if (m_vboLoadedAll)
+//    emit updateGL();
 }

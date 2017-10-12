@@ -207,7 +207,10 @@ KeyFrameEditor::setPlayFrames(bool flag)
   if (m_playFrames)
     emit startPlay();
   else
-    emit endPlay();
+    {
+      Global::setPlayFrames(false);
+      emit endPlay();
+    }
 
   qApp->processEvents();
 }
@@ -237,34 +240,71 @@ KeyFrameEditor::playKeyFrames(int start, int end, int step)
       return;
     }
 
-
-  int startFrame = start;
-  int endFrame = end;
-  for (int i=startFrame; i<=endFrame; i+=step)
-    {
-      if (!m_playFrames)
-	return;
-
-      //----------------------------
-      // update current frame and display
-      m_currFrame = i;
-      if (m_currFrame > m_maxFrame)
-	{
-	  m_minFrame = qMax(1, m_currFrame-1);
-	  calcMaxFrame();
-	}
-      update();
-      //----------------------------
-
-      emit playFrameNumber(m_currFrame);
-      qApp->processEvents();
-    }
-
-  setPlayFrames(false);  
-  Global::statusBar()->showMessage("Done");
+  Global::setPlayFrames(true);
+  m_currFrame = start;
+  m_endFrame = end;
+  m_stepFrame = step;
+  
+  Global::statusBar()->showMessage(QString("%1").arg(m_currFrame));
+  emit playFrameNumber(m_currFrame);
   qApp->processEvents();
+
+
+//  int startFrame = start;
+//  int endFrame = end;
+//  for (int i=startFrame; i<=endFrame; i+=step)
+//    {
+//      if (!m_playFrames)
+//	return;
+//
+//      //----------------------------
+//      // update current frame and display
+//      m_currFrame = i;
+//      if (m_currFrame > m_maxFrame)
+//	{
+//	  m_minFrame = qMax(1, m_currFrame-1);
+//	  calcMaxFrame();
+//	}
+//      update();
+//      //----------------------------
+//
+//      emit playFrameNumber(m_currFrame);
+//      qApp->processEvents();
+//    }
+//
+//  setPlayFrames(false);  
+//  Global::statusBar()->showMessage("Done");
+//  qApp->processEvents();
 }
 
+void
+KeyFrameEditor::nextFrame()
+{
+  if (!m_playFrames)
+    return;
+
+  if (m_currFrame >= m_endFrame)
+    {
+      setPlayFrames(false);  
+      Global::statusBar()->showMessage("Done");
+      qApp->processEvents();
+      return;
+    }
+
+  // update current frame and display
+  m_currFrame += m_stepFrame;
+
+  if (m_currFrame > m_maxFrame)
+    {
+      m_minFrame = qMax(1, m_currFrame-1);
+      calcMaxFrame();
+    }
+  update();
+
+  Global::statusBar()->showMessage(QString("%1").arg(m_currFrame));
+  emit playFrameNumber(m_currFrame);
+  qApp->processEvents();
+}
 
 void
 KeyFrameEditor::playKeyFrames()

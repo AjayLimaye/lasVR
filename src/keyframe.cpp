@@ -216,7 +216,7 @@ KeyFrame::playSavedKeyFrame()
 
   emit updateLookFrom(pos, rot);
 
-  emit updateGL();
+  //emit updateGL();
   qApp->processEvents();  
 }
 
@@ -246,7 +246,7 @@ KeyFrame::playFrameNumber(int fno)
 	  rot = m_keyFrameInfo[kf]->orientation();
 	  emit updateLookFrom(pos, rot);
 
-	  emit updateGL();
+	  //emit updateGL();
 	  qApp->processEvents();
   
 	  return;
@@ -285,7 +285,7 @@ KeyFrame::playFrameNumber(int fno)
 
   emit updateLookFrom(pos, rot);
 
-  emit updateGL();
+  //emit updateGL();
   qApp->processEvents();
 }
 
@@ -429,14 +429,14 @@ KeyFrame::interpolatePosition(int kf1, int kf2, float frc)
   if (len > 0.1)
     {
 //      if (Global::interpolationType(Global::CameraPositionInterpolation))
-	{ // spline interpolation of position
-	  Vec v1 = 3*diff - 2*m_tgP[kf1] - m_tgP[kf2];
-	  Vec v2 = -2*diff + m_tgP[kf1] + m_tgP[kf2];
-	  
-	  pos += frc*(m_tgP[kf1] + frc*(v1+frc*v2));
-	}
+//	{ // spline interpolation of position
+//	  Vec v1 = 3*diff - 2*m_tgP[kf1] - m_tgP[kf2];
+//	  Vec v2 = -2*diff + m_tgP[kf1] + m_tgP[kf2];
+//	  
+//	  pos += frc*(m_tgP[kf1] + frc*(v1+frc*v2));
+//	}
 //      else // linear interpolation of position
-//	pos += frc*diff;
+	pos += frc*diff;
     }
 
   return pos;

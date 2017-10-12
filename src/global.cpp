@@ -1,5 +1,9 @@
 #include "global.h"
 
+bool Global::m_playFrames = false;
+bool Global::playFrames() { return m_playFrames; }
+void Global::setPlayFrames(bool pf) { m_playFrames = pf; }
+
 GLuint Global::m_circleSpriteTexture = 0;
 void Global::removeCircleSpriteTexture()
 {
