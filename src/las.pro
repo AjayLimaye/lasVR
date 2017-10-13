@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = shristi
+TARGET = srishti
 DEPENDPATH += .
 
 QT += opengl widgets core gui xml

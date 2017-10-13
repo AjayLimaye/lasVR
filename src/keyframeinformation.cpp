@@ -8,6 +8,7 @@ void KeyFrameInformation::setFrameNumber(int fn) { m_frameNumber = fn; }
 void KeyFrameInformation::setPosition(Vec pos) { m_position = pos; }
 void KeyFrameInformation::setOrientation(Quaternion rot) { m_rotation = rot; }
 void KeyFrameInformation::setImage(QImage pix) { m_image = pix; }
+void KeyFrameInformation::setCurrTime(int ct) { m_currTime = ct; }
 
 
 QString KeyFrameInformation::title() { return m_title; }
@@ -15,6 +16,7 @@ int KeyFrameInformation::frameNumber() { return m_frameNumber; }
 Vec KeyFrameInformation::position() { return m_position; }
 Quaternion KeyFrameInformation::orientation() { return m_rotation; }
 QImage KeyFrameInformation::image() { return m_image; }
+int KeyFrameInformation::currTime() { return m_currTime; }
 
 
 // -- keyframe interpolation parameters
@@ -32,6 +34,7 @@ KeyFrameInformation::KeyFrameInformation()
   m_position = Vec(0,0,0);
   m_rotation = Quaternion(Vec(1,0,0), 0);
   m_image = QImage(100, 100, QImage::Format_RGB32);
+  m_currTime = -1;
 
   //m_interpCameraPosition = Enums::KFIT_Linear;
   //m_interpCameraOrientation = Enums::KFIT_Linear;
@@ -47,6 +50,7 @@ KeyFrameInformation::clear()
   m_position = Vec(0,0,0);
   m_rotation = Quaternion(Vec(1,0,0), 0);
   m_image = QImage(100, 100, QImage::Format_RGB32);
+  m_currTime = -1;
 
   m_interpCameraPosition = 0;
   m_interpCameraOrientation = 0;
@@ -61,6 +65,7 @@ KeyFrameInformation::KeyFrameInformation(const KeyFrameInformation& kfi)
   m_position = kfi.m_position;
   m_rotation = kfi.m_rotation;
   m_image = kfi.m_image;
+  m_currTime = kfi.m_currTime;
   m_interpCameraPosition = kfi.m_interpCameraPosition;
   m_interpCameraOrientation = kfi.m_interpCameraOrientation;
 }
@@ -78,6 +83,7 @@ KeyFrameInformation::operator=(const KeyFrameInformation& kfi)
   m_position = kfi.m_position;
   m_rotation = kfi.m_rotation;
   m_image = kfi.m_image;
+  m_currTime = kfi.m_currTime;
   m_interpCameraPosition = kfi.m_interpCameraPosition;
   m_interpCameraOrientation = kfi.m_interpCameraOrientation;
 
@@ -109,6 +115,8 @@ KeyFrameInformation::load(fstream &fin)
 	done = true;
       else if (strcmp(keyword, "framenumber") == 0)
 	fin.read((char*)&m_frameNumber, sizeof(int));
+      else if (strcmp(keyword, "currtime") == 0)
+	fin.read((char*)&m_currTime, sizeof(int));
       else if (strcmp(keyword, "title") == 0)
 	{
 	  int len;
@@ -171,6 +179,11 @@ KeyFrameInformation::save(fstream &fout)
   sprintf(keyword, "framenumber");
   fout.write((char*)keyword, strlen(keyword)+1);
   fout.write((char*)&m_frameNumber, sizeof(int));
+
+  memset(keyword, 0, 100);
+  sprintf(keyword, "currtime");
+  fout.write((char*)keyword, strlen(keyword)+1);
+  fout.write((char*)&m_currTime, sizeof(int));
 
   memset(keyword, 0, 100);
   sprintf(keyword, "position");

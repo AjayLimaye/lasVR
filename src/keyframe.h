@@ -25,10 +25,11 @@ class KeyFrame : public QObject
 
   int searchCaption(QStringList);
 
-  void saveProject(Vec, Quaternion, QImage);
+  void saveProject(Vec, Quaternion, QImage, int);
 
   void interpolateAt(int, float,
 		     Vec&, Quaternion&,
+		     int&,
 		     KeyFrameInformation&,
 		     float&);
 
@@ -50,11 +51,11 @@ class KeyFrame : public QObject
   void replaceKeyFrameImage(int, QImage);
   void playSavedKeyFrame();
   void checkKeyFrameNumbers();
-  void setKeyFrame(Vec, Quaternion, int, QImage);
+  void setKeyFrame(Vec, Quaternion, int, QImage, int);
 
  signals :
   void loadKeyframes(QList<int>, QList<QImage>);
-  void updateLookFrom(Vec, Quaternion);
+  void updateLookFrom(Vec, Quaternion, int);
   void updateGL();
   void setImage(int, QImage);
   void currentFrameChanged(int);

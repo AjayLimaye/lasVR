@@ -94,22 +94,24 @@ KeyFrame::reorder(QList<int> sorted)
 
 void
 KeyFrame::saveProject(Vec pos, Quaternion rot,
-		      QImage image)
+		      QImage image, int currTime)
 {
   m_savedKeyFrame.clear();
   m_savedKeyFrame.setFrameNumber(-1);
   m_savedKeyFrame.setPosition(pos);
   m_savedKeyFrame.setOrientation(rot);
   m_savedKeyFrame.setImage(image);
+  m_savedKeyFrame.setCurrTime(currTime);
 }
 
 void
 KeyFrame::setKeyFrame(Vec pos, Quaternion rot,
 		      int frameNumber,
-		      QImage image)
+		      QImage image,
+		      int currTime)
 {
   // -- save keyframe first into a m_savedKeyFrame
-  saveProject(pos, rot, image);
+  saveProject(pos, rot, image, currTime);
 
   bool found = false;
   int kfn = -1;
@@ -141,6 +143,7 @@ KeyFrame::setKeyFrame(Vec pos, Quaternion rot,
   kfi->setFrameNumber(frameNumber);
   kfi->setPosition(pos);
   kfi->setOrientation(rot);
+  kfi->setCurrTime(currTime);
 
   emit setImage(kfn, image);  
   
@@ -182,6 +185,7 @@ KeyFrame::removeKeyFrames(int f0, int f1)
 void
 KeyFrame::interpolateAt(int kf, float frc,
 			Vec &pos, Quaternion &rot,
+			int &ct,
 			KeyFrameInformation &kfi,
 			float &volInterp)
 {
@@ -198,23 +202,25 @@ KeyFrame::interpolateAt(int kf, float frc,
       //rfrc = StaticFunctions::remapKeyframe(m_keyFrameInfo[kf]->interpCameraOrientation(), frc);
       rfrc = frc;
       rot = interpolateOrientation(kf, kf+1, rfrc);
+
+      ct = (1-rfrc)*m_keyFrameInfo[kf]->currTime() + rfrc*m_keyFrameInfo[kf+1]->currTime();
     }
   else
     {
       pos = m_keyFrameInfo[kf]->position();
       rot = m_keyFrameInfo[kf]->orientation();
-    }
+      ct =  m_keyFrameInfo[kf]->currTime();
+    }  
 }
 
 void
 KeyFrame::playSavedKeyFrame()
 {
-  Vec pos;
-  Quaternion rot;
-  pos = m_savedKeyFrame.position();
-  rot = m_savedKeyFrame.orientation();
+  Vec pos = m_savedKeyFrame.position();
+  Quaternion rot = m_savedKeyFrame.orientation();
+  int ct = m_savedKeyFrame.currTime();
 
-  emit updateLookFrom(pos, rot);
+  emit updateLookFrom(pos, rot, ct);
 
   //emit updateGL();
   qApp->processEvents();  
@@ -240,11 +246,10 @@ KeyFrame::playFrameNumber(int fno)
     {
       if (fno == m_keyFrameInfo[kf]->frameNumber())
 	{
-	  Vec pos;
-	  Quaternion rot;
-	  pos = m_keyFrameInfo[kf]->position();
-	  rot = m_keyFrameInfo[kf]->orientation();
-	  emit updateLookFrom(pos, rot);
+	  Vec pos = m_keyFrameInfo[kf]->position();
+	  Quaternion rot = m_keyFrameInfo[kf]->orientation();
+	  int ct = m_keyFrameInfo[kf]->currTime();
+	  emit updateLookFrom(pos, rot, ct);
 
 	  //emit updateGL();
 	  qApp->processEvents();
@@ -276,14 +281,15 @@ KeyFrame::playFrameNumber(int fno)
 
   Vec pos;
   Quaternion rot;
+  int ct;
   KeyFrameInformation keyFrameInfo;
   float volInterp;
   interpolateAt(i, frc,
-		pos, rot,
+		pos, rot, ct,
 		keyFrameInfo,
 		volInterp);
 
-  emit updateLookFrom(pos, rot);
+  emit updateLookFrom(pos, rot, ct);
 
   //emit updateGL();
   qApp->processEvents();
@@ -430,13 +436,13 @@ KeyFrame::interpolatePosition(int kf1, int kf2, float frc)
     {
 //      if (Global::interpolationType(Global::CameraPositionInterpolation))
 //	{ // spline interpolation of position
-//	  Vec v1 = 3*diff - 2*m_tgP[kf1] - m_tgP[kf2];
-//	  Vec v2 = -2*diff + m_tgP[kf1] + m_tgP[kf2];
-//	  
-//	  pos += frc*(m_tgP[kf1] + frc*(v1+frc*v2));
+	  Vec v1 = 3*diff - 2*m_tgP[kf1] - m_tgP[kf2];
+	  Vec v2 = -2*diff + m_tgP[kf1] + m_tgP[kf2];
+	  
+	  pos += frc*(m_tgP[kf1] + frc*(v1+frc*v2));
 //	}
 //      else // linear interpolation of position
-	pos += frc*diff;
+//	pos += frc*diff;
     }
 
   return pos;

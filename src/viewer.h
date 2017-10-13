@@ -110,7 +110,7 @@ class Viewer : public QGLViewer
     bool vrMode() { return m_vrMode; }
 
     void setKeyFrame(int);
-    void updateLookFrom(Vec, Quaternion);
+    void updateLookFrom(Vec, Quaternion, int);
 
     void setCurrentFrame(int);
     void endPlay();
@@ -129,7 +129,7 @@ class Viewer : public QGLViewer
     void message(QString);
     void updateView();
     void removeEditedNodes();
-    void setKeyFrame(Vec, Quaternion, int, QImage);
+    void setKeyFrame(Vec, Quaternion, int, QImage, int);
 
  private :
     VR m_vr;

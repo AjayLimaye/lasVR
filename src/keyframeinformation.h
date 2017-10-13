@@ -29,12 +29,14 @@ class KeyFrameInformation
   void setPosition(Vec);
   void setOrientation(Quaternion);
   void setImage(QImage);
+  void setCurrTime(int);
   
   QString title();
   int frameNumber();
   Vec position();
   Quaternion orientation();
   QImage image();
+  int currTime();
 
   // -- keyframe interpolation parameters
   void setInterpCameraPosition(int);
@@ -49,6 +51,7 @@ class KeyFrameInformation
   Vec m_position;
   Quaternion m_rotation;
   QImage m_image;
+  int m_currTime;
 
   //-- keyframe interpolation parameters
   int m_interpCameraPosition;

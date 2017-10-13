@@ -56,8 +56,8 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_viewer, SIGNAL(nextFrame()),
 	  m_keyFrameEditor, SLOT(nextFrame()));
 
-  connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion)),
-	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion)));
+  connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion, int)),
+	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion, int)));
 
   connect(m_keyFrame, SIGNAL(currentFrameChanged(int)),
 	  m_viewer, SLOT(setCurrentFrame(int)));
@@ -88,8 +88,8 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_keyFrameEditor, SIGNAL(endPlay()),
 	  m_viewer, SLOT(endPlay()));
 
-  connect(m_viewer, SIGNAL(setKeyFrame(Vec, Quaternion, int, QImage)),
-	  m_keyFrame, SLOT(setKeyFrame(Vec, Quaternion, int, QImage)));
+  connect(m_viewer, SIGNAL(setKeyFrame(Vec, Quaternion, int, QImage, int)),
+	  m_keyFrame, SLOT(setKeyFrame(Vec, Quaternion, int, QImage, int)));
 
   connect(m_keyFrameEditor, SIGNAL(checkKeyFrameNumbers()),
 	  m_keyFrame, SLOT(checkKeyFrameNumbers()));
@@ -371,7 +371,7 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("SHRISTI");
+      setWindowTitle("SRISHTI");
     }
   else
     setWindowTitle(mesg);

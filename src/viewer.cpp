@@ -3349,14 +3349,17 @@ Viewer::setKeyFrame(int fno)
   QImage image = grabFrameBuffer();
   image = image.scaled(100, 100);
 
-  emit setKeyFrame(pos, rot, fno, image);
+  emit setKeyFrame(pos, rot, fno, image, m_currTime);
 }
 
 void
-Viewer::updateLookFrom(Vec pos, Quaternion rot)
+Viewer::updateLookFrom(Vec pos, Quaternion rot, int ct)
 {
   camera()->setPosition(pos);
   camera()->setOrientation(rot);
+  m_currTime = ct;
+  m_currTime = qMin(m_maxTime, m_currTime);
+  m_currTime = qMax(m_currTime, 0);
 
   m_vboLoadedAll = false;
   QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
