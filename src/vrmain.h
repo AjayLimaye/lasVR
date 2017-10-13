@@ -20,6 +20,9 @@ class VrMain : public QMainWindow
  public :
   VrMain(QWidget *parent=0);
 
+ signals :
+  void playKeyFrames(int, int, int);
+
  protected :
   void dragEnterEvent(QDragEnterEvent*);
   void dropEvent(QDropEvent*);
@@ -39,6 +42,9 @@ class VrMain : public QMainWindow
    void on_actionUndo_triggered();
    void on_actionSaveInfo_triggered();
    void on_actionVRMode_triggered();
+
+   void on_actionSave_ImageSequence_triggered();
+   void on_actionSave_Movie_triggered();
 
  private :
   Ui::VrMain ui;

@@ -14,8 +14,41 @@ using namespace qglviewer;
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QInputDialog>
+#include <QLineEdit>
 
 #define VECDIVIDE(a, b) Vec(a.x/b.x, a.y/b.y, a.z/b.z)
+
+void Viewer::setImageMode(int im) { m_imageMode = im; }
+void Viewer::setCurrentFrame(int fno)
+{
+  m_currFrame = fno;
+}
+void Viewer::setImageFileName(QString imgfl)
+{
+  m_imageFileName = imgfl;
+  QFileInfo f(m_imageFileName);
+  setSnapshotFormat(f.completeSuffix());
+}
+void Viewer::setSaveSnapshots(bool flag) { m_saveSnapshots = flag; }
+void Viewer::setSaveMovie(bool flag) { m_saveMovie = flag; }
+void
+Viewer::setImageSize(int wd, int ht)
+{
+  m_imageWidth = wd;
+  m_imageHeight = ht;
+
+  resize(wd, ht);
+}
+void
+Viewer::endPlay()
+{
+  if (m_saveMovie)
+    endMovie();
+
+  m_saveMovie = false;
+  m_saveSnapshots = false;
+}
 
 Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   QGLViewer(glfmt, parent)
@@ -84,6 +117,11 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   m_backButtonPos = QPoint(10, 100);
 
   m_vrMode = false;
+
+#ifdef USE_GLMEDIA
+  m_movieWriter = 0;
+#endif // USE_GLMEDIA
+  m_movieFrame = 0;
 
   reset();
 
@@ -197,6 +235,12 @@ Viewer::reset()
 
   m_nearDist = 0;
   m_farDist = 1;
+
+  m_saveSnapshots = false;
+  m_saveMovie = false;
+  m_currFrame = 0;
+  m_imageFileName.clear();
+  m_imageMode = 0;
 }
 
 void
@@ -244,33 +288,6 @@ Viewer::setVRMode(bool b)
   m_volume->postLoad(false);
 
   start();
-
-//  if (m_vrMode)
-//    {
-//      if (m_maxTime > 0)
-//	m_vr.setShowTimeseriesMenu(true);
-//      else
-//	m_vr.setShowTimeseriesMenu(false);
-//
-//      QVector3D cmin = QVector3D(m_coordMin.x,m_coordMin.y,m_coordMin.z);
-//      QVector3D cmax = QVector3D(m_coordMax.x,m_coordMax.y,m_coordMax.z);
-//      m_vr.initModel(cmin, cmax);
-//      m_vr.setShowMap(m_pointClouds[0]->showMap());
-//      m_vr.setGravity(m_pointClouds[0]->gravity());
-//      m_vr.setSkybox(m_pointClouds[0]->skybox());
-//      m_vr.setPlayButton(m_pointClouds[0]->playButton());
-//      m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
-//      m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
-//
-//      m_menuCam.setScreenWidthAndHeight(m_vr.screenWidth(), m_vr.screenHeight());
-//      m_menuCam.setSceneBoundingBox(m_coordMin, m_coordMax);
-//      m_menuCam.setType(Camera::ORTHOGRAPHIC);
-//      m_menuCam.showEntireScene();
-//
-//      Global::setScreenSize(m_vr.screenWidth(),
-//			    m_vr.screenHeight());
-//      Global::setMenuCam(m_menuCam);
-//    }
 
   resizeGL(size().width(), size().height());
 }
@@ -1337,7 +1354,14 @@ Viewer::draw()
   drawInfo();
 
   if (Global::playFrames() && m_vboLoadedAll)
-    emit nextFrame();
+    {
+      if (m_saveSnapshots)
+	saveImage();
+      else if (m_saveMovie)
+	saveMovie();
+
+      emit nextFrame();
+    }
 }
 
 void
@@ -1376,14 +1400,16 @@ Viewer::fastDraw()
 void
 Viewer::drawInfo()
 {
+  if (m_saveSnapshots ||
+      m_saveMovie)
+    return;
+
   if (!m_showInfo &&
       m_volumeFactory->stackSize() == 0)
     return;
   
 
   glDisable(GL_DEPTH_TEST);
-
-  int ptsz = m_pointSize;
 
   QString mesg;
 
@@ -1398,6 +1424,7 @@ Viewer::drawInfo()
 	mesg += QString("Time : %1    ").arg(m_currTime);
       
       //mesg += QString("Fps : %1    ").arg(currentFPS());
+      //int ptsz = m_pointSize;
       //mesg += QString("PtSz : %1    ").arg(ptsz);
       mesg += QString("Points : %1 (%2)  ").arg(m_pointBudget).arg(m_vbPoints);
       mesg += QString("%1").arg(m_vboLoadedAll);
@@ -3343,4 +3370,144 @@ Viewer::updateLookFrom(Vec pos, Quaternion rot)
 //
 //  if (m_vboLoadedAll)
 //    emit updateGL();
+}
+
+void
+Viewer::saveImage()
+{
+  QString localImageFileName = m_imageFileName;
+  QChar fillChar = '0';
+  int fieldWidth = 0;
+  QRegExp rx("\\$[0-9]*[f|F]");
+  if (rx.indexIn(m_imageFileName) > -1)
+    {
+      localImageFileName.remove(rx);
+      
+      QString txt = rx.cap();
+      if (txt.length() > 2)
+	{
+	  txt.remove(0,1);
+	  txt.chop(1);
+	  fieldWidth = txt.toInt();
+	}
+    }
+
+  saveMonoImage(localImageFileName, fillChar, fieldWidth);
+}
+
+void
+Viewer::saveMonoImage(QString localImageFileName,
+		      QChar fillChar, int fieldWidth)
+{
+  QFileInfo f(localImageFileName);	  
+
+  //---------------------------------------------------------
+  QString imgFile = f.absolutePath() + QDir::separator() +
+	            f.baseName();
+  if (m_currFrame >= 0)
+    imgFile += QString("%1").arg((int)m_currFrame, fieldWidth, 10, fillChar);
+  imgFile += ".";
+  imgFile += f.completeSuffix();
+  //---------------------------------------------------------
+
+  saveSnapshot(imgFile);
+}
+
+void
+Viewer::saveSnapshot(QString imgFile)
+{
+  QImage image = grabFrameBuffer();
+  image.save(imgFile);      
+}
+
+
+bool
+Viewer::startMovie(QString flnm,
+		   int ofps, int quality,
+		   bool checkfps)
+{
+#ifdef USE_GLMEDIA
+  int fps = ofps;
+
+  if (checkfps)
+    {
+      bool ok;
+      QString text;
+      text = QInputDialog::getText(this,
+				   "Set Frame Rate",
+				   "Frame Rate",
+				   QLineEdit::Normal,
+				   "25",
+				   &ok);
+      
+      if (ok && !text.isEmpty())
+	fps = text.toInt();
+      
+      if (fps <=0 || fps >= 100)
+	fps = 25;
+    }
+
+  //---------------------------------------------------------
+  // mono movie or left-eye movie
+  m_movieWriter = glmedia_movie_writer_create();
+  if (m_movieWriter == NULL) {
+    QMessageBox::critical(0, "Movie",
+			  "Failed to create writer");
+    return false;
+  }
+
+  if (glmedia_movie_writer_start(m_movieWriter,
+				 flnm.toLatin1().data(),
+				 m_imageWidth,
+				 m_imageHeight,
+				 fps,
+				 quality) < 0) {
+    QMessageBox::critical(0, "Movie",
+			  "Failed to start movie");
+    return false;
+  }
+  //---------------------------------------------------------
+
+
+  if (m_movieFrame)
+    delete [] m_movieFrame;
+  m_movieFrame = new unsigned char[4*m_imageWidth*m_imageHeight];
+
+  // change the widget size
+  QWidget::resize(m_imageWidth, m_imageHeight);
+  //setWidgetSizeToImageSize();
+
+#endif // USE_GLMEDIA
+  return true;
+}
+
+bool
+Viewer::endMovie()
+{
+#ifdef USE_GLMEDIA
+  if (glmedia_movie_writer_end(m_movieWriter) < 0)
+    {
+      QMessageBox::critical(0, "Movie",
+			       "Failed to end movie");
+      return false;
+    }
+  glmedia_movie_writer_free(m_movieWriter);
+#endif // USE_GLMEDIA
+  return true;
+}
+
+void
+Viewer::saveMovie()
+{
+#ifdef USE_GLMEDIA
+
+  QImage image = grabFrameBuffer();
+  StaticFunctions::convertFromGLImage(image);
+
+  uchar *p = (uchar*)image.bits();
+  memcpy(m_movieFrame, p, 4*image.width()*image.height());
+
+  glmedia_movie_writer_add(m_movieWriter, m_movieFrame);
+
+#endif // USE_GLMEDIA
 }

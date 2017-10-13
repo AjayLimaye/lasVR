@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = las
+TARGET = shristi
 DEPENDPATH += .
 
 QT += opengl widgets core gui xml
@@ -19,9 +19,20 @@ QMAKE_LIBDIR += c:\Qt\libQGLViewer-2.6.1\lib \
 	        LASzip \
 	        c:/cygwin64/home/acl900/VR/openvr-1.0.10/lib/win64
 
+win32 {
+  DEFINES += USE_GLMEDIA
+  INCLUDEPATH += glmedia-64
+  QMAKE_LIBDIR += glmedia-64
+  LIBS += glmedia.lib
+}
+
 LIBS += QGLViewer2.lib glew32.lib LASzip.lib openvr_api.lib 
 
-FORMS += vrmain.ui
+FORMS += vrmain.ui \
+	 saveimgseq.ui \
+	 savemovie.ui \
+	 propertyeditor.ui
+
 
 INCLUDEPATH +=	laszip_dll.h
 
@@ -51,7 +62,11 @@ HEADERS += vrmain.h \
 	popupslider.h \
 	keyframe.h \
 	keyframeinformation.h \
-	keyframeeditor.h
+	keyframeeditor.h \
+	saveimageseqdialog.h \
+	savemoviedialog.h \
+	propertyeditor.h
+
 
 SOURCES += main.cpp \
 	vrmain.cpp \
@@ -79,4 +94,7 @@ SOURCES += main.cpp \
 	popupslider.cpp \
 	keyframe.cpp \
 	keyframeinformation.cpp \
-	keyframeeditor.cpp
+	keyframeeditor.cpp \
+	saveimageseqdialog.cpp \
+	savemoviedialog.cpp \
+	propertyeditor.cpp

@@ -31,7 +31,7 @@ class StaticFunctions
   static QSize getImageSize(int, int);
 
 
-  static void convertFromGLImage(QImage&, int, int);
+  static void convertFromGLImage(QImage&);
 
   static void pushOrthoView(float, float, float, float);
   static void popOrthoView();

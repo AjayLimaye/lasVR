@@ -1,5 +1,9 @@
 #include "vrmain.h"
 #include "global.h"
+#include "staticfunctions.h"
+#include "saveimageseqdialog.h"
+#include "savemoviedialog.h"
+
 #include <QtGui>
 #include <QMessageBox>
 #include <QScrollArea>
@@ -7,7 +11,6 @@
 #include <QFileDialog>
 #include <QPushButton>
 #include <QWidgetAction>
-
 
 VrMain::VrMain(QWidget *parent) :
   QMainWindow(parent)
@@ -48,13 +51,16 @@ VrMain::VrMain(QWidget *parent) :
 
   addDockWidget(Qt::BottomDockWidgetArea,m_dockKeyframe);
 
-  ui.menuView->addAction(m_dockKeyframe->toggleViewAction());
+  ui.menuProcess->addAction(m_dockKeyframe->toggleViewAction());
 
   connect(m_viewer, SIGNAL(nextFrame()),
 	  m_keyFrameEditor, SLOT(nextFrame()));
 
   connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion)),
 	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion)));
+
+  connect(m_keyFrame, SIGNAL(currentFrameChanged(int)),
+	  m_viewer, SLOT(setCurrentFrame(int)));
 
   connect(m_keyFrame, SIGNAL(updateGL()),
 	  m_viewer, SLOT(updateGL())); // 
@@ -78,6 +84,9 @@ VrMain::VrMain(QWidget *parent) :
 
   connect(m_keyFrameEditor, SIGNAL(setKeyFrame(int)),
 	  m_viewer, SLOT(setKeyFrame(int)));
+
+  connect(m_keyFrameEditor, SIGNAL(endPlay()),
+	  m_viewer, SLOT(endPlay()));
 
   connect(m_viewer, SIGNAL(setKeyFrame(Vec, Quaternion, int, QImage)),
 	  m_keyFrame, SLOT(setKeyFrame(Vec, Quaternion, int, QImage)));
@@ -303,7 +312,12 @@ void
 VrMain::loadTiles(QStringList flnms)
 {
   if (flnms.count() == 1)
-    m_viewer->loadLink(flnms[0]);
+    {
+      m_viewer->loadLink(flnms[0]);
+
+      QFileInfo f(flnms[0]);
+      Global::setPreviousDirectory(f.absolutePath());
+    }
   else
     {
       QMessageBox::information(0, "", "Only single directory allowed");
@@ -357,7 +371,7 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("Start");
+      setWindowTitle("SHRISTI");
     }
   else
     setWindowTitle(mesg);
@@ -391,4 +405,97 @@ VrMain::on_actionVRMode_triggered()
     }
   else
     ui.toolBar->show();
+}
+
+void
+VrMain::on_actionSave_ImageSequence_triggered()
+{
+  QSize imgSize = StaticFunctions::getImageSize(m_viewer->size().width(),
+						m_viewer->size().height());
+  SaveImageSeqDialog saveImg(0,
+			     Global::previousDirectory(),
+			     m_keyFrameEditor->startFrame(),
+			     m_keyFrameEditor->endFrame(),
+			     1);
+
+  saveImg.move(QCursor::pos());
+
+  if (saveImg.exec() == QDialog::Accepted)
+    {
+      QString flnm = saveImg.fileName();
+      int imgMode = saveImg.imageMode();
+
+
+      QFileInfo f(flnm);
+      Global::setPreviousDirectory(f.absolutePath());
+
+      m_viewer->setImageMode(imgMode);
+      m_viewer->setImageFileName(flnm);
+      m_viewer->setSaveSnapshots(true);
+      
+      m_viewer->setImageSize(imgSize.width(), imgSize.height());
+
+      //m_viewer->dummydraw();
+
+      connect(this, SIGNAL(playKeyFrames(int,int,int)),
+	      m_keyFrameEditor, SLOT(playKeyFrames(int,int,int)));
+      emit playKeyFrames(saveImg.startFrame(),
+			 saveImg.endFrame(),
+			 saveImg.stepFrame());
+      qApp->processEvents();
+      disconnect(this, SIGNAL(playKeyFrames(int,int,int)),
+		 m_keyFrameEditor, SLOT(playKeyFrames(int,int,int)));
+    }
+}
+
+void
+VrMain::on_actionSave_Movie_triggered()
+{
+  QSize imgSize = StaticFunctions::getImageSize(m_viewer->size().width(),
+						m_viewer->size().height());
+
+  m_viewer->setImageSize(imgSize.width(), imgSize.height());
+
+#if defined(Q_OS_WIN32)
+  if (imgSize.width()%16 > 0 ||
+      imgSize.height()%16 > 0)
+    {
+      QMessageBox::information(0, "",
+		       QString("For wmv movies, the image size must be multiple of 16. Current size is %1 x %2"). \
+		       arg(imgSize.width()).
+			       arg(imgSize.height()));
+      return;
+    }
+#endif
+
+  SaveMovieDialog saveImg(0,
+			  Global::previousDirectory(),
+			  m_keyFrameEditor->startFrame(),
+			  m_keyFrameEditor->endFrame(),
+			  1);
+
+  saveImg.move(QCursor::pos());
+
+  if (saveImg.exec() == QDialog::Accepted)
+    {
+      QString flnm = saveImg.fileName();
+      bool movieMode = saveImg.movieMode();
+      QFileInfo f(flnm);
+      Global::setPreviousDirectory(f.absolutePath());
+
+      if (m_viewer->startMovie(flnm, 25, 100, true) == false)
+	return;
+
+      m_viewer->setSaveSnapshots(false);
+      m_viewer->setSaveMovie(true);
+
+      connect(this, SIGNAL(playKeyFrames(int,int,int)),
+	      m_keyFrameEditor, SLOT(playKeyFrames(int,int,int)));
+      emit playKeyFrames(saveImg.startFrame(),
+			 saveImg.endFrame(),
+			 saveImg.stepFrame());
+      qApp->processEvents();
+      disconnect(this, SIGNAL(playKeyFrames(int,int,int)),
+		 m_keyFrameEditor, SLOT(playKeyFrames(int,int,int)));
+    }
 }

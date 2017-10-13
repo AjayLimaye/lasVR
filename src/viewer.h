@@ -15,6 +15,10 @@ using namespace qglviewer;
 
 #include "volumefactory.h"
 
+#ifdef USE_GLMEDIA
+#include "glmedia.h"
+#endif // USE_GLMEDIA
+
 //-------------------------------
 // VR
 //-------------------------------
@@ -79,6 +83,14 @@ class Viewer : public QGLViewer
   void undo();
   void saveModInfo();
 
+  void setImageMode(int);
+  void setImageFileName(QString);
+  void setSaveSnapshots(bool);
+  void setSaveMovie(bool);
+  void setImageSize(int, int);
+
+  bool startMovie(QString, int, int, bool);
+
   public slots :
     void GlewInit();
     void showBox(bool);
@@ -99,6 +111,9 @@ class Viewer : public QGLViewer
 
     void setKeyFrame(int);
     void updateLookFrom(Vec, Quaternion);
+
+    void setCurrentFrame(int);
+    void endPlay();
 
  signals :
     void nextFrame();
@@ -230,6 +245,18 @@ class Viewer : public QGLViewer
     bool m_deltaChanged;
     QList<QVector4D> m_undoXform;
 
+    int m_imageWidth, m_imageHeight;
+    int m_currFrame;
+    int m_imageMode;
+    bool m_saveSnapshots;
+    bool m_saveMovie;
+    QString m_imageFileName;
+
+#ifdef USE_GLMEDIA
+    glmedia_movie_writer_t m_movieWriter;
+#endif // USE_GLMEDIA
+    unsigned char *m_movieFrame;
+
     void createFBO();
 
     void genColorMap();
@@ -293,6 +320,13 @@ class Viewer : public QGLViewer
 
     void movePointCloud(QPoint);
     void scalePointCloud(QPoint);
+
+    void saveImage();
+    void saveMonoImage(QString, QChar, int);
+    void saveSnapshot(QString);
+
+    void saveMovie();
+    bool endMovie();
 };
 
 #endif

@@ -197,8 +197,11 @@ StaticFunctions::getImageSize(int width, int height)
 }
 
 void // Qt version
-StaticFunctions::convertFromGLImage(QImage &img, int w, int h)
+StaticFunctions::convertFromGLImage(QImage &img)
 {
+  int w = img.width();
+  int h = img.height();
+
   if (QSysInfo::ByteOrder == QSysInfo::BigEndian)
     {
       // OpenGL gives RGBA; Qt wants ARGB

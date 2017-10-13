@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>VR</string>
+   <string>Shristi</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout"/>
@@ -31,6 +31,9 @@
     </property>
     <addaction name="actionLoad_LAS"/>
     <addaction name="separator"/>
+    <addaction name="actionSave_ImageSequence"/>
+    <addaction name="actionSave_Movie"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuOptions">
@@ -41,14 +44,14 @@
     <addaction name="separator"/>
     <addaction name="actionVRMode"/>
    </widget>
-   <widget class="QMenu" name="menuView">
+   <widget class="QMenu" name="menuProcess">
     <property name="title">
-     <string>View</string>
+     <string>Process</string>
     </property>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
-   <addaction name="menuView"/>
+   <addaction name="menuProcess"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -148,6 +151,16 @@
    </property>
    <property name="toolTip">
     <string>VR Mode</string>
+   </property>
+  </action>
+  <action name="actionSave_ImageSequence">
+   <property name="text">
+    <string>Save Image Sequence</string>
+   </property>
+  </action>
+  <action name="actionSave_Movie">
+   <property name="text">
+    <string>Save Movie</string>
    </property>
   </action>
  </widget>

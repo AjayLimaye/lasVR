@@ -52,6 +52,9 @@ class Global
   static bool playFrames();
   static void setPlayFrames(bool);
 
+  static QString previousDirectory();
+  static void setPreviousDirectory(QString);
+
 
  private :
   static GLuint m_circleSpriteTexture;
@@ -68,6 +71,8 @@ class Global
   static QStatusBar *m_statusBar;
 
   static bool m_playFrames;
+
+  static QString m_previousDirectory;
 };
 
 #endif
