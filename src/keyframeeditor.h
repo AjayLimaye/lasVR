@@ -37,6 +37,8 @@ class KeyFrameEditor : public QWidget
   int endFrame();
   int currentFrame();
 
+  int currenKeyFrame() {return m_currFNO; }
+
  signals :
   void showMessage(QString, bool);
   void setKeyFrame(int);
@@ -69,6 +71,9 @@ class KeyFrameEditor : public QWidget
   void moveTo(int);
   void setKeyFrame();
 
+  void nextKeyFrame();
+  void playKeyFramesForImages();
+
  private slots :
   void increaseFrameStep();
   void decreaseFrameStep();
@@ -91,6 +96,7 @@ class KeyFrameEditor : public QWidget
   int m_editorHeight;
   int m_prevX;
   bool m_reordered;
+  int m_currFNO;
   int m_currFrame;
   bool m_draggingCurrFrame;
   int m_selected;

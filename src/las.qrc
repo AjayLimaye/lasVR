@@ -10,5 +10,6 @@
   <file>images/animation-start.png</file>
   <file>images/zoomin.png</file>
   <file>images/zoomout.png</file>
+  <file>keyframeeditor.help</file>
 </qresource>
 </RCC>

@@ -449,7 +449,7 @@ Viewer::start()
   float flyspeed = sceneRadius()*0.001;
   camera()->setFlySpeed(flyspeed);
 
-  camera()->setZNearCoefficient(0.01);
+  camera()->setZNearCoefficient(0.001);
   camera()->setZClippingCoefficient(1);
 
 
@@ -1329,6 +1329,15 @@ Viewer::paintGL()
 }
 
 void
+Viewer::captureKeyFrameImage(int kfn)
+{
+  QImage image = grabFrameBuffer();
+  image = image.scaled(100, 100);
+
+  emit replaceKeyFrameImage(kfn, image);
+}
+
+void
 Viewer::draw()
 {
   glClearColor(0,0,0,0);
@@ -1360,7 +1369,13 @@ Viewer::draw()
       else if (m_saveMovie)
 	saveMovie();
 
-      emit nextFrame();
+      if (Global::currentKeyFrame() > -1)
+	{
+	  captureKeyFrameImage(Global::currentKeyFrame());
+	  emit nextKeyFrame();
+	}
+      else
+	emit nextFrame();
     }
 }
 

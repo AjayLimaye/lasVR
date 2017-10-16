@@ -4,6 +4,10 @@ bool Global::m_playFrames = false;
 bool Global::playFrames() { return m_playFrames; }
 void Global::setPlayFrames(bool pf) { m_playFrames = pf; }
 
+int Global::m_keyFrameNumber = -1;
+void Global::setCurrentKeyFrame(int k) { m_keyFrameNumber = k; }
+int Global::currentKeyFrame() { return m_keyFrameNumber; }
+
 QString Global::m_previousDirectory = "";
 QString Global::previousDirectory() {return m_previousDirectory;}
 void Global::setPreviousDirectory(QString d) {m_previousDirectory = d;}

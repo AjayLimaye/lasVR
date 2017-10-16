@@ -430,3 +430,16 @@ StaticFunctions::intersectRayBox(QVector3D bmin, QVector3D bmax,
   else
     return -100000;
 }
+
+bool
+StaticFunctions::checkExtension(QString flnm, const char *ext)
+{
+  bool ok = true;
+  int extlen = strlen(ext);
+
+  QByteArray exten = flnm.toLatin1().right(extlen);
+  if (exten != ext)
+    ok = false;
+
+  return ok;
+}

@@ -52,6 +52,9 @@ class Global
   static bool playFrames();
   static void setPlayFrames(bool);
 
+  static void setCurrentKeyFrame(int);
+  static int currentKeyFrame();
+
   static QString previousDirectory();
   static void setPreviousDirectory(QString);
 
@@ -71,6 +74,7 @@ class Global
   static QStatusBar *m_statusBar;
 
   static bool m_playFrames;
+  static int m_keyFrameNumber;
 
   static QString m_previousDirectory;
 };

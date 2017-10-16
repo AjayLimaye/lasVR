@@ -7,8 +7,7 @@
 #include <QGLViewer/qglviewer.h>
 using namespace qglviewer;
 
-#include <fstream>
-using namespace std;
+#include <QJsonDocument>
 
 class KeyFrameInformation
 {
@@ -21,8 +20,8 @@ class KeyFrameInformation
 
   void clear();
 
-  void load(fstream&);
-  void save(fstream&);
+  void load(QJsonObject);
+  QJsonObject save();
 
   void setTitle(QString);
   void setFrameNumber(int);
@@ -56,6 +55,10 @@ class KeyFrameInformation
   //-- keyframe interpolation parameters
   int m_interpCameraPosition;
   int m_interpCameraOrientation;
+
+
+  QJsonValue jsonValFromPixmap(QImage);
+  QImage pixmapFrom(QJsonValue);
 };
 
 #endif

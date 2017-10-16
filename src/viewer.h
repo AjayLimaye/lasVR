@@ -115,8 +115,11 @@ class Viewer : public QGLViewer
     void setCurrentFrame(int);
     void endPlay();
 
+    void captureKeyFrameImage(int);
+
  signals :
     void nextFrame();
+    void nextKeyFrame();
     void loadLinkedData(QString);
     void loadLinkedData(QStringList);
     void switchVolume();
@@ -130,6 +133,7 @@ class Viewer : public QGLViewer
     void updateView();
     void removeEditedNodes();
     void setKeyFrame(Vec, Quaternion, int, QImage, int);
+    void replaceKeyFrameImage(int, QImage);
 
  private :
     VR m_vr;

@@ -30,9 +30,11 @@
      <string>File</string>
     </property>
     <addaction name="actionLoad_LAS"/>
+    <addaction name="actionLoad_Keyframes"/>
     <addaction name="separator"/>
     <addaction name="actionSave_ImageSequence"/>
     <addaction name="actionSave_Movie"/>
+    <addaction name="actionSave_Keyframes"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -161,6 +163,16 @@
   <action name="actionSave_Movie">
    <property name="text">
     <string>Save Movie</string>
+   </property>
+  </action>
+  <action name="actionSave_Keyframes">
+   <property name="text">
+    <string>Save Keyframes</string>
+   </property>
+  </action>
+  <action name="actionLoad_Keyframes">
+   <property name="text">
+    <string>Load Keyframes</string>
    </property>
   </action>
  </widget>

@@ -1,0 +1,43 @@
+#begin
+General Help
+Keyframe Editor allows users to save keyframes for creating animations.
+
+Once saved, keyframes can be moved to change the frame number. Users can overwrite the keyframes. Select a keyframe by clicking on the keyframe image. Once selected, a keyframe can be deleted. 
+
+Srishti interpolates camera parameters between keyframes.
+
+Press Hotkey + Mouse checkbox to get more help.
+#end
+
+#begin
+keyboard
+Start Keyboard Help
+#end
+
+#begin
+Left Click
+If clicked on a keyframe image, that keyframe is selected.  If clicked on the ruler and lies within the animation range, interpolate the frame.
+#end
+
+#begin
+Left Mouse Drag
+Move selected keyframe.
+
+If keyframe is from a selected range all the keyframes in the range are moved relatively.  Can be used for scaling the animation sequence.
+#end
+
+#begin
+Shift+Left Mouse Drag
+Press and drag to select a portion on the keyframe range.  Once a portion on the keyframe range is selected, select and drag keyframe within the selected range to shrink/expand the animation.
+Keyframes within the selected range can be deleted by pressing "Remove Keyframe" button.
+#end
+
+#begin
+Middle Mouse
+Drag to move the selected sequence.  If nothing is selected the entire animation sequence is moved.
+#end
+
+#begin
+Right Click
+Reset the selection.
+#end

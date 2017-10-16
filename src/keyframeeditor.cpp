@@ -1,12 +1,12 @@
 #include "keyframeeditor.h"
 #include "global.h"
-//#include "propertyeditor.h"
+#include "propertyeditor.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QApplication>
-
+#include <QTextStream>
 
 #include <algorithm>
 using namespace std;
@@ -121,6 +121,7 @@ KeyFrameEditor::KeyFrameEditor(QWidget *parent):
 
   m_playFrames = false;
   m_currFrame = 1;
+  m_currFNO = -1;
 
   m_lineHeight = 70;
   m_tickStep = 50;
@@ -167,6 +168,8 @@ KeyFrameEditor::KeyFrameEditor(QWidget *parent):
   setMinimumSize(400, 150);
   setMaximumSize(5000, m_editorHeight);
   setBaseSize(400, m_editorHeight);
+
+  Global::setCurrentKeyFrame(-1);
 }
 
 void
@@ -215,6 +218,56 @@ KeyFrameEditor::setPlayFrames(bool flag)
   qApp->processEvents();
 }
 
+//-------------------------------
+void
+KeyFrameEditor::playKeyFramesForImages()
+{
+  // ---- set play on ----
+  m_play->setIcon(QPixmap(":/images/animation-pause.png"));
+  m_playFrames = true;
+  // ---------------------
+
+  if (m_fno.count() <= 1)
+    {
+      setPlayFrames(false);
+      return;
+    }
+
+  Global::setPlayFrames(true);
+  m_currFNO = 0;
+  Global::setCurrentKeyFrame(m_currFNO);
+  
+  Global::statusBar()->showMessage(QString("%1").arg(m_currFrame));
+  emit playFrameNumber(m_fno[m_currFNO]);
+  qApp->processEvents();
+}
+void
+KeyFrameEditor::nextKeyFrame()
+{
+  if (!m_playFrames)
+    return;
+
+  if (m_currFNO >= m_fno.count()-1)
+    {
+      m_currFNO = -1;
+      Global::setCurrentKeyFrame(-1);
+      setPlayFrames(false);  
+      Global::statusBar()->showMessage("Done");
+      qApp->processEvents();
+      return;
+    }
+
+  // update current frame and display
+  m_currFNO ++;
+  Global::setCurrentKeyFrame(m_currFNO);
+
+  Global::statusBar()->showMessage(QString("%1").arg(m_fno[m_currFNO]));
+  emit playFrameNumber(m_fno[m_currFNO]);
+  qApp->processEvents();
+}
+//-------------------------------
+
+
 void
 KeyFrameEditor::playKeyFrames(int start, int end, int step)
 {
@@ -248,33 +301,6 @@ KeyFrameEditor::playKeyFrames(int start, int end, int step)
   Global::statusBar()->showMessage(QString("%1").arg(m_currFrame));
   emit playFrameNumber(m_currFrame);
   qApp->processEvents();
-
-
-//  int startFrame = start;
-//  int endFrame = end;
-//  for (int i=startFrame; i<=endFrame; i+=step)
-//    {
-//      if (!m_playFrames)
-//	return;
-//
-//      //----------------------------
-//      // update current frame and display
-//      m_currFrame = i;
-//      if (m_currFrame > m_maxFrame)
-//	{
-//	  m_minFrame = qMax(1, m_currFrame-1);
-//	  calcMaxFrame();
-//	}
-//      update();
-//      //----------------------------
-//
-//      emit playFrameNumber(m_currFrame);
-//      qApp->processEvents();
-//    }
-//
-//  setPlayFrames(false);  
-//  Global::statusBar()->showMessage("Done");
-//  qApp->processEvents();
 }
 
 void
@@ -1498,40 +1524,40 @@ KeyFrameEditor::moveTo(int fno)
 void
 KeyFrameEditor::showHelp()
 {
-//  PropertyEditor propertyEditor;
-//  QMap<QString, QVariantList> plist;
-//  QVariantList vlist;
-//
-//  vlist.clear();
-//  QFile helpFile(":/keyframeeditor.help");
-//  if (helpFile.open(QFile::ReadOnly))
-//    {
-//      QTextStream in(&helpFile);
-//      QString line = in.readLine();
-//      while (!line.isNull())
-//	{
-//	  if (line == "#begin")
-//	    {
-//	      QString keyword = in.readLine();
-//	      QString helptext;
-//	      line = in.readLine();
-//	      while (!line.isNull())
-//		{
-//		  helptext += line;
-//		  helptext += "\n";
-//		  line = in.readLine();
-//		  if (line == "#end") break;
-//		}
-//	      vlist << keyword << helptext;
-//	    }
-//	  line = in.readLine();
-//	}
-//    }  
-//  plist["commandhelp"] = vlist;
-//
-//  QStringList keys;
-//  keys << "commandhelp";
-//  
-//  propertyEditor.set("Keyframe Editor Help", plist, keys);
-//  propertyEditor.exec();
+  PropertyEditor propertyEditor;
+  QMap<QString, QVariantList> plist;
+  QVariantList vlist;
+
+  vlist.clear();
+  QFile helpFile(":/keyframeeditor.help");
+  if (helpFile.open(QFile::ReadOnly))
+    {
+      QTextStream in(&helpFile);
+      QString line = in.readLine();
+      while (!line.isNull())
+	{
+	  if (line == "#begin")
+	    {
+	      QString keyword = in.readLine();
+	      QString helptext;
+	      line = in.readLine();
+	      while (!line.isNull())
+		{
+		  helptext += line;
+		  helptext += "\n";
+		  line = in.readLine();
+		  if (line == "#end") break;
+		}
+	      vlist << keyword << helptext;
+	    }
+	  line = in.readLine();
+	}
+    }  
+  plist["commandhelp"] = vlist;
+
+  QStringList keys;
+  keys << "commandhelp";
+  
+  propertyEditor.set("Keyframe Editor Help", plist, keys);
+  propertyEditor.exec();
 }

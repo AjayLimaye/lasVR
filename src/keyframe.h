@@ -13,9 +13,9 @@ class KeyFrame : public QObject
 
   void clear();
 
-  void load(fstream&);
+  void load(QJsonArray);
 
-  void save(fstream&);
+  QJsonArray save();
 
   void draw(float);
 

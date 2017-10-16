@@ -46,6 +46,9 @@ class VrMain : public QMainWindow
    void on_actionSave_ImageSequence_triggered();
    void on_actionSave_Movie_triggered();
 
+   void on_actionSave_Keyframes_triggered();
+   void on_actionLoad_Keyframes_triggered();
+
  private :
   Ui::VrMain ui;
 

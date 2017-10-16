@@ -178,7 +178,10 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
 			      QDirIterator::NoIteratorFlags);
       
       while(topDirIter.hasNext())
-	dirnames << topDirIter.next();
+	{
+	  dirnames << topDirIter.next();
+	  
+	}
     }
   
   loadMultipleTiles(dirnames);
@@ -207,7 +210,7 @@ PointCloud::setLevelsBelow()
   for(int d=0; d<m_tiles.count(); d++)
     {
       OctreeNode *oNode = m_tiles[d];
-      setLevel(oNode, 0);      
+      setLevel(oNode, 0); 
     }
 }
 
@@ -233,7 +236,7 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
 }
 
 bool
-PointCloud::loadTileOctree(QString dirname)
+PointCloud::loadTileOctree(QString dirnameO)
 {  
   OctreeNode *oNode = new OctreeNode();
   oNode->setParent(0);
@@ -243,11 +246,36 @@ PointCloud::loadTileOctree(QString dirname)
   m_allNodes << oNode;
 
 
+  //-----------------------
+  QString dirname = dirnameO;
+  if (!QDir(dirname).exists("cloud.js"))
+    {
+      // drill down till you hit directory containing cloud.js
+      QDirIterator topDirIter(dirname,
+			      QDir::Dirs | QDir::Readable |
+			      QDir::NoDotAndDotDot | QDir::NoSymLinks,
+			      QDirIterator::Subdirectories);
+      
+      while(topDirIter.hasNext())
+	{
+	  QString dnm = topDirIter.next();	  
+	  if (QDir(dnm).exists("cloud.js"))
+	    {
+	      dirname = dnm;
+	      break;
+	    }	  
+	}
+    }
+  //-----------------------
+
+
   QDir jsondir(dirname);
 
   //-----------------------
   if (jsondir.exists("cloud.js"))
     loadCloudJson(dirname);
+  else
+    return false;
   //-----------------------
 
 

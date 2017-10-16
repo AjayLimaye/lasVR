@@ -6,6 +6,8 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QApplication>
+#include <QJsonArray>
+#include <QJsonObject>
 
 int KeyFrame::numberOfKeyFrames() { return m_keyFrameInfo.count(); }
 
@@ -299,38 +301,27 @@ KeyFrame::playFrameNumber(int fno)
 //---- load and save -------------
 //--------------------------------
 void
-KeyFrame::load(fstream &fin)
+KeyFrame::load(QJsonArray keyframes)
 {
-  char keyword[100];
-
   clear();
 
-  int n;
-  fin.read((char*)&n, sizeof(int));
-
   bool savedFirst = false;
-  while (!fin.eof())
+
+  for (int i=0; i<keyframes.count(); i++)
     {
-      fin.getline(keyword, 100, 0);
+      QJsonObject jsonNode = keyframes[i].toObject();
+      QJsonObject jsonInfo = jsonNode["node"].toObject();
 
-      if (strcmp(keyword, "done") == 0)
-	break;
-
-      if (strcmp(keyword, "keyframestart") == 0)
+      if (!savedFirst)
 	{
 	  // the zeroeth keyframe should be moved to m_savedKeyFrame
-	  if (!savedFirst)
-	    {
-	      m_savedKeyFrame.load(fin);
-	      savedFirst = true;
-	    }
-	  else
-	    {
-	      KeyFrameInformation *kfi = new KeyFrameInformation();
-	      kfi->load(fin);
-	      m_keyFrameInfo.append(kfi);
-	    }
+	  m_savedKeyFrame.load(jsonInfo);
+	  savedFirst = true;
 	}
+
+      KeyFrameInformation *kfi = new KeyFrameInformation();
+      kfi->load(jsonInfo);
+      m_keyFrameInfo.append(kfi);
     }
 
   // --- build list for keyframe editor
@@ -344,31 +335,23 @@ KeyFrame::load(fstream &fin)
 
   emit loadKeyframes(framenumbers, images);
   qApp->processEvents();
-
-
-  //playSavedKeyFrame();
-  // ----------------------------------
 }
 
-void
-KeyFrame::save(fstream& fout)
+QJsonArray
+KeyFrame::save()
 {
-  char keyword[100];
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "keyframes");
-  fout.write((char*)keyword, strlen(keyword)+1);
-
-  int n = numberOfKeyFrames();
-  fout.write((char*)&n, sizeof(int));
-
-  m_savedKeyFrame.save(fout);
+  QJsonArray keyframes;
 
   for(int kf=0; kf<numberOfKeyFrames(); kf++)
-    m_keyFrameInfo[kf]->save(fout);
+    {
+      QJsonObject jsonNode;
 
-  sprintf(keyword, "done");
-  fout.write((char*)keyword, strlen(keyword)+1);
+      jsonNode["node"] = m_keyFrameInfo[kf]->save();
+
+      keyframes << jsonNode;
+    }
+
+  return keyframes;
 }
 
 

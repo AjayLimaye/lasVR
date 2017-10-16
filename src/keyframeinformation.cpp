@@ -2,6 +2,8 @@
 #include "global.h"
 
 #include <QBuffer>
+#include <QJsonObject>
+#include <QMessageBox>
 
 void KeyFrameInformation::setTitle(QString s) { m_title = s; }
 void KeyFrameInformation::setFrameNumber(int fn) { m_frameNumber = fn; }
@@ -95,144 +97,85 @@ KeyFrameInformation::operator=(const KeyFrameInformation& kfi)
 //--------------------------------
 
 void
-KeyFrameInformation::load(fstream &fin)
+KeyFrameInformation::load(QJsonObject keyframeNode)
 {
-  bool done = false;
-  char keyword[100];
-  float f[3];
-
   m_title.clear();
   m_interpCameraPosition = 0;
   m_interpCameraOrientation = 0;
-  //m_interpCameraPosition = Enums::KFIT_Linear;
-  //m_interpCameraOrientation = Enums::KFIT_Linear;
 
-  while (!done)
-    {
-      fin.getline(keyword, 100, 0);
+  m_title = keyframeNode["title"].toString();
+  m_frameNumber = keyframeNode["framenumber"].toInt();
+  m_currTime = keyframeNode["currtime"].toInt();
 
-      if (strcmp(keyword, "keyframeend") == 0)
-	done = true;
-      else if (strcmp(keyword, "framenumber") == 0)
-	fin.read((char*)&m_frameNumber, sizeof(int));
-      else if (strcmp(keyword, "currtime") == 0)
-	fin.read((char*)&m_currTime, sizeof(int));
-      else if (strcmp(keyword, "title") == 0)
-	{
-	  int len;
-	  fin.read((char*)&len, sizeof(int));
-	  char *str = new char[len];
-	  fin.read((char*)str, len*sizeof(char));
-	  m_title = QString(str);
-	  delete [] str;
-	}
-      else if (strcmp(keyword, "position") == 0)
-	{
-	  fin.read((char*)&f, 3*sizeof(float));
-	  m_position = Vec(f[0], f[1], f[2]);
-	}
-      else if (strcmp(keyword, "rotation") == 0)
-	{
-	  Vec axis;
-	  float angle;
-	  fin.read((char*)&f, 3*sizeof(float));
-	  axis = Vec(f[0], f[1], f[2]);	
-	  fin.read((char*)&angle, sizeof(float));
-	  m_rotation.setAxisAngle(axis, angle);
-	}
-      else if (strcmp(keyword, "image") == 0)
-	{
-	  int n;
-	  fin.read((char*)&n, sizeof(int));
-	  unsigned char *tmp = new unsigned char[n+1];
-	  fin.read((char*)tmp, n);
-	  m_image = QImage::fromData(tmp, n);	 
-	  delete [] tmp;
-	}
-      else if (strcmp(keyword, "interpcamerapos") == 0)
-	fin.read((char*)&m_interpCameraPosition, sizeof(int));
-      else if (strcmp(keyword, "interpcamerarot") == 0)
-	fin.read((char*)&m_interpCameraOrientation, sizeof(int));
-    }
+  QString str;
+  QStringList words;
+
+  str = keyframeNode["position"].toString();
+  words = str.split(" ");
+  m_position = Vec(words[0].toFloat(),
+		   words[1].toFloat(),
+		   words[2].toFloat());
+
+  str = keyframeNode["rotation"].toString();
+  words = str.split(" ");
+  m_rotation = Quaternion(words[0].toFloat(),
+			  words[1].toFloat(),
+			  words[2].toFloat(),
+			  words[3].toFloat());
+
+  m_interpCameraPosition = keyframeNode["interpcamerapos"].toInt();
+  m_interpCameraOrientation = keyframeNode["interpcamerarot"].toInt();
+
+//  m_image = pixmapFrom(keyframeNode["image"]);
 }
 
-void
-KeyFrameInformation::save(fstream &fout)
+QJsonObject
+KeyFrameInformation::save()
 {
-  char keyword[100];
-  float f[3];
-  int len;
+  QJsonObject keyframeNode;
 
-  memset(keyword, 0, 100);
-  sprintf(keyword, "keyframestart");
-  fout.write((char*)keyword, strlen(keyword)+1);
+  keyframeNode["title"] = m_title;
+  keyframeNode["framenumber"] = m_frameNumber;
+  keyframeNode["currtime"] = m_currTime;
 
+  QString str;
+  str = QString("%1 %2 %3").\
+    arg(m_position.x).\
+    arg(m_position.y).\
+    arg(m_position.z);
+  keyframeNode["position"] = str;
 
-  memset(keyword, 0, 100);
-  sprintf(keyword, "title");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  len = m_title.size()+1;
-  fout.write((char*)&len, sizeof(int));
-  fout.write((char*)m_title.toLatin1().data(), len*sizeof(char));
+  str = QString("%1 %2 %3 %4").\
+    arg(m_rotation[0]).\
+    arg(m_rotation[1]).\
+    arg(m_rotation[2]).\
+    arg(m_rotation[3]);
+  keyframeNode["rotation"] = str;
+  
+  keyframeNode["interpcamerapos"] = m_interpCameraPosition;
+  keyframeNode["interpcamerarot"] = m_interpCameraOrientation;
 
-  memset(keyword, 0, 100);
-  sprintf(keyword, "framenumber");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  fout.write((char*)&m_frameNumber, sizeof(int));
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "currtime");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  fout.write((char*)&m_currTime, sizeof(int));
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "position");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  f[0] = m_position.x;
-  f[1] = m_position.y;
-  f[2] = m_position.z;
-  fout.write((char*)&f, 3*sizeof(float));
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "rotation");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  Vec axis;
-  qreal angle;
-  float fangle;
-  m_rotation.getAxisAngle(axis, angle);
-  f[0] = axis.x;
-  f[1] = axis.y;
-  f[2] = axis.z;
-  fangle = angle;
-  fout.write((char*)&f, 3*sizeof(float));
-  fout.write((char*)&fangle, sizeof(float));
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "image");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  QByteArray bytes;
-  QBuffer buffer(&bytes);
-  buffer.open(QIODevice::WriteOnly);
-  m_image.save(&buffer, "PNG");
-  int n = bytes.size();
-  fout.write((char*)&n, sizeof(int));
-  fout.write((char*)bytes.data(), n);
+//  auto val = jsonValFromPixmap(m_image);
+//  keyframeNode["image"] = val;
 
 
-  memset(keyword, 0, 100);
-  sprintf(keyword, "interpcamerapos");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  fout.write((char*)&m_interpCameraPosition, sizeof(int));
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "interpcamerarot");
-  fout.write((char*)keyword, strlen(keyword)+1);
-  fout.write((char*)&m_interpCameraOrientation, sizeof(int));
-
-
-
-  memset(keyword, 0, 100);
-  sprintf(keyword, "keyframeend");
-  fout.write((char*)keyword, strlen(keyword)+1);
+  return keyframeNode;
 }
 
+QJsonValue
+KeyFrameInformation::jsonValFromPixmap(QImage p) {
+  QByteArray data;
+  QBuffer buffer { &data };
+  buffer.open(QIODevice::WriteOnly);
+  p.save(&buffer, "PNG");
+  auto encoded = buffer.data().toBase64();
+  return QJsonValue(QString::fromLatin1(encoded));
+}
+
+QImage
+KeyFrameInformation::pixmapFrom(QJsonValue val) {
+  QByteArray encoded = val.toString().toLatin1();
+  QImage p;
+  p = QImage::fromData(QByteArray::fromBase64(encoded), "PNG");
+  return p;
+}

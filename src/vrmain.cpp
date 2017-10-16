@@ -55,6 +55,8 @@ VrMain::VrMain(QWidget *parent) :
 
   connect(m_viewer, SIGNAL(nextFrame()),
 	  m_keyFrameEditor, SLOT(nextFrame()));
+  connect(m_viewer, SIGNAL(nextKeyFrame()),
+	  m_keyFrameEditor, SLOT(nextKeyFrame()));
 
   connect(m_keyFrame, SIGNAL(updateLookFrom(Vec, Quaternion, int)),
 	  m_viewer, SLOT(updateLookFrom(Vec, Quaternion, int)));
@@ -71,12 +73,13 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_keyFrame, SIGNAL(loadKeyframes(QList<int>, QList<QImage>)),
 	  m_keyFrameEditor, SLOT(loadKeyframes(QList<int>, QList<QImage>)));  
 
-//  connect(m_keyFrame, SIGNAL(replaceKeyFrameImage(int)),
-//	  m_viewer, SLOT(captureKeyFrameImage(int)));
-//  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
-//	  m_keyFrameEditor, SLOT(setImage(int, QImage)));
-//  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
-//	  m_keyFrame, SLOT(replaceKeyFrameImage(int, QImage)));
+
+  connect(m_keyFrame, SIGNAL(replaceKeyFrameImage(int)),
+	  m_viewer, SLOT(captureKeyFrameImage(int)));
+  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
+	  m_keyFrameEditor, SLOT(setImage(int, QImage)));
+  connect(m_viewer, SIGNAL(replaceKeyFrameImage(int, QImage)),
+	  m_keyFrame, SLOT(replaceKeyFrameImage(int, QImage)));
 
 
   connect(m_keyFrameEditor, SIGNAL(updateGL),
@@ -265,6 +268,8 @@ VrMain::keyPressEvent(QKeyEvent*)
 void
 VrMain::on_actionQuit_triggered()
 {
+  m_keyFrameEditor->setPlayFrames(false);
+
   m_thread->quit();
 
   delete m_keyFrameEditor;
@@ -479,7 +484,7 @@ VrMain::on_actionSave_Movie_triggered()
   if (saveImg.exec() == QDialog::Accepted)
     {
       QString flnm = saveImg.fileName();
-      bool movieMode = saveImg.movieMode();
+      //bool movieMode = saveImg.movieMode();
       QFileInfo f(flnm);
       Global::setPreviousDirectory(f.absolutePath());
 
@@ -498,4 +503,59 @@ VrMain::on_actionSave_Movie_triggered()
       disconnect(this, SIGNAL(playKeyFrames(int,int,int)),
 		 m_keyFrameEditor, SLOT(playKeyFrames(int,int,int)));
     }
+}
+
+void
+VrMain::on_actionLoad_Keyframes_triggered()
+{
+  QString flnm;
+  flnm = QFileDialog::getOpenFileName(0,
+				      "Load Keyframes",
+				      Global::previousDirectory(),
+				      "Srishti Files (*.json)",
+				      0,
+				      QFileDialog::DontUseNativeDialog);
+
+
+  if (flnm.isEmpty())
+    return;
+
+  QFile loadFile(flnm);
+  loadFile.open(QIODevice::ReadOnly);
+
+  QByteArray data = loadFile.readAll();
+
+  QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
+
+  QJsonArray jsonArray = jsonDoc.array();
+
+  m_keyFrame->load(jsonArray);
+
+  m_keyFrameEditor->playKeyFramesForImages();
+}
+
+void
+VrMain::on_actionSave_Keyframes_triggered()
+{
+  QString flnm;
+  flnm = QFileDialog::getSaveFileName(0,
+				      "Save Keyframes",
+				      Global::previousDirectory(),
+				      "Srishti Keyframes (*.json)",
+				      0,
+				      QFileDialog::DontUseNativeDialog);
+
+  if (flnm.isEmpty())
+    return;
+
+  if (!StaticFunctions::checkExtension(flnm, ".json"))
+    flnm += ".json";
+
+  QJsonArray keyframes = m_keyFrame->save();
+
+  QJsonDocument saveDoc(keyframes);
+  
+  QFile saveFile(flnm);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson()); 
 }
