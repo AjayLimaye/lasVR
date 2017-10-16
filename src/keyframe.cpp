@@ -1,6 +1,6 @@
 #include "keyframe.h"
 #include "global.h"
-//#include "propertyeditor.h"
+#include "propertyeditor.h"
 #include "staticfunctions.h"
 
 #include <QInputDialog>
@@ -205,7 +205,11 @@ KeyFrame::interpolateAt(int kf, float frc,
       rfrc = frc;
       rot = interpolateOrientation(kf, kf+1, rfrc);
 
-      ct = (1-rfrc)*m_keyFrameInfo[kf]->currTime() + rfrc*m_keyFrameInfo[kf+1]->currTime();
+      int ct0 = m_keyFrameInfo[kf]->currTime();
+      int ct1 = m_keyFrameInfo[kf+1]->currTime();
+      ct = ct0;
+      if (ct0 != ct1)
+	ct = (1-rfrc)*ct0 + rfrc*ct1;
     }
   else
     {
@@ -224,7 +228,6 @@ KeyFrame::playSavedKeyFrame()
 
   emit updateLookFrom(pos, rot, ct);
 
-  //emit updateGL();
   qApp->processEvents();  
 }
 
@@ -253,7 +256,6 @@ KeyFrame::playFrameNumber(int fno)
 	  int ct = m_keyFrameInfo[kf]->currTime();
 	  emit updateLookFrom(pos, rot, ct);
 
-	  //emit updateGL();
 	  qApp->processEvents();
   
 	  return;
@@ -293,7 +295,6 @@ KeyFrame::playFrameNumber(int fno)
 
   emit updateLookFrom(pos, rot, ct);
 
-  //emit updateGL();
   qApp->processEvents();
 }
 
@@ -572,125 +573,124 @@ KeyFrame::editFrameInterpolation(int kfn)
 void
 KeyFrame::pasteFrameOnTop(int keyFrameNumber)
 {
-//  if (keyFrameNumber < 0 ||
-//      keyFrameNumber >= m_keyFrameInfo.count() ||
-//      keyFrameNumber >= m_cameraList.count())
-//    {
-//      QMessageBox::information(0, "",
-//	  QString("%1 keyframe does not exist").arg(keyFrameNumber));
-//      return;
-//    }
-//      
-//  QMap<QString, QPair<QVariant, bool> > vmap;
-//  vmap = copyProperties(QString("Paste Parameters to keyframe on %1").\
-//			arg(m_keyFrameInfo[keyFrameNumber]->frameNumber()));
-//
-//  QStringList keys = vmap.keys();
-//  if (keys.count() == 0)
-//    return;
-//  
-//	      
-//  KeyFrameInformation *kfi = m_keyFrameInfo[keyFrameNumber];
-//
-//  for(int ik=0; ik<keys.count(); ik++)
-//    {
-//      QPair<QVariant, bool> pair = vmap.value(keys[ik]);      
-//      
-//      if (pair.second)
-//	{
-//	  if (keys[ik] == "camera position")
-//	    kfi->setPosition(m_copyKeyFrame.position());
-//	  else if (keys[ik] == "camera orientation")
-//	    kfi->setOrientation(m_copyKeyFrame.orientation());  
-//	}
-//    }
-//
-//  updateKeyFrameInterpolator();
-//
-//  playFrameNumber(kfi->frameNumber());
-//
-//  emit replaceKeyFrameImage(keyFrameNumber);
+  if (keyFrameNumber < 0 ||
+      keyFrameNumber >= m_keyFrameInfo.count())
+    {
+      QMessageBox::information(0, "",
+	  QString("%1 keyframe does not exist").arg(keyFrameNumber));
+      return;
+    }
+      
+  QMap<QString, QPair<QVariant, bool> > vmap;
+  vmap = copyProperties(QString("Paste Parameters to keyframe on %1").\
+			arg(m_keyFrameInfo[keyFrameNumber]->frameNumber()));
+
+  QStringList keys = vmap.keys();
+  if (keys.count() == 0)
+    return;
+  
+	      
+  KeyFrameInformation *kfi = m_keyFrameInfo[keyFrameNumber];
+
+  for(int ik=0; ik<keys.count(); ik++)
+    {
+      QPair<QVariant, bool> pair = vmap.value(keys[ik]);      
+      
+      if (pair.second)
+	{
+	  if (keys[ik] == "camera position")
+	    kfi->setPosition(m_copyKeyFrame.position());
+	  else if (keys[ik] == "camera orientation")
+	    kfi->setOrientation(m_copyKeyFrame.orientation());  
+	}
+    }
+
+  updateKeyFrameInterpolator();
+
+  playFrameNumber(kfi->frameNumber());
+
+  emit replaceKeyFrameImage(keyFrameNumber);
 }
 
 void
 KeyFrame::pasteFrameOnTop(int startKF, int endKF)
 {
-//  QMap<QString, QPair<QVariant, bool> > vmap;
-//  vmap = copyProperties(QString("Paste Parameters to keyframes between %1 - %2").\
-//			arg(m_keyFrameInfo[startKF]->frameNumber()).\
-//			arg(m_keyFrameInfo[endKF]->frameNumber()));
-//
-//  QStringList keys = vmap.keys();
-//  if (keys.count() == 0)
-//    return;
-//  
-//
-//  for(int keyFrameNumber=startKF; keyFrameNumber<=endKF; keyFrameNumber++)
-//    {	      
-//      KeyFrameInformation *kfi = m_keyFrameInfo[keyFrameNumber];
-//
-//      for(int ik=0; ik<keys.count(); ik++)
-//	{
-//	  QPair<QVariant, bool> pair = vmap.value(keys[ik]);
-//            
-//	  if (pair.second)
-//	    {
-//	      if (keys[ik] == "camera position")
-//		kfi->setPosition(m_copyKeyFrame.position());
-//	      else if (keys[ik] == "camera orientation")
-//		kfi->setOrientation(m_copyKeyFrame.orientation());  
-//	    }
-//	}
-//      
-//      updateKeyFrameInterpolator();
-//      
-//      playFrameNumber(kfi->frameNumber());
-//      
-//      emit replaceKeyFrameImage(keyFrameNumber);
-//      qApp->processEvents();
-//    }
+  QMap<QString, QPair<QVariant, bool> > vmap;
+  vmap = copyProperties(QString("Paste Parameters to keyframes between %1 - %2").\
+			arg(m_keyFrameInfo[startKF]->frameNumber()).\
+			arg(m_keyFrameInfo[endKF]->frameNumber()));
+
+  QStringList keys = vmap.keys();
+  if (keys.count() == 0)
+    return;
+  
+
+  for(int keyFrameNumber=startKF; keyFrameNumber<=endKF; keyFrameNumber++)
+    {	      
+      KeyFrameInformation *kfi = m_keyFrameInfo[keyFrameNumber];
+
+      for(int ik=0; ik<keys.count(); ik++)
+	{
+	  QPair<QVariant, bool> pair = vmap.value(keys[ik]);
+            
+	  if (pair.second)
+	    {
+	      if (keys[ik] == "camera position")
+		kfi->setPosition(m_copyKeyFrame.position());
+	      else if (keys[ik] == "camera orientation")
+		kfi->setOrientation(m_copyKeyFrame.orientation());  
+	    }
+	}
+      
+      updateKeyFrameInterpolator();
+      
+      playFrameNumber(kfi->frameNumber());
+      
+      emit replaceKeyFrameImage(keyFrameNumber);
+      qApp->processEvents();
+    }
 }
 
 QMap<QString, QPair<QVariant, bool> >
 KeyFrame::copyProperties(QString title)
 {
-//  PropertyEditor propertyEditor;
-//  QMap<QString, QVariantList> plist;
-//  
-//  QVariantList vlist;
-//
-//  vlist.clear();
-//  vlist << QVariant("checkbox");
-//  vlist << QVariant(false);
-//  plist["camera position"] = vlist;
-//
-//  vlist.clear();
-//  vlist << QVariant("checkbox");
-//  vlist << QVariant(false);
-//  plist["camera orientation"] = vlist;
-//
-//
-//  QStringList keys;
-//  keys << "camera position";
-//  keys << "camera orientation";
-//
-//
-//  propertyEditor.set(title,
-//		     plist, keys,
-//		     false); // do not add reset buttons
-//  propertyEditor.resize(300, 500);
-//
-//	      
+  PropertyEditor propertyEditor;
+  QMap<QString, QVariantList> plist;
+  
+  QVariantList vlist;
+
+  vlist.clear();
+  vlist << QVariant("checkbox");
+  vlist << QVariant(false);
+  plist["camera position"] = vlist;
+
+  vlist.clear();
+  vlist << QVariant("checkbox");
+  vlist << QVariant(false);
+  plist["camera orientation"] = vlist;
+
+
+  QStringList keys;
+  keys << "camera position";
+  keys << "camera orientation";
+
+
+  propertyEditor.set(title,
+		     plist, keys,
+		     false); // do not add reset buttons
+  propertyEditor.resize(300, 500);
+
+	      
   QMap<QString, QPair<QVariant, bool> > vmap;
-//
-//  if (propertyEditor.exec() == QDialog::Accepted)
-//    vmap = propertyEditor.get();
-//  else
-//    {
-//      QMessageBox::information(0,
-//			       title,
-//			       "No parameters pasted");
-//    }
+
+  if (propertyEditor.exec() == QDialog::Accepted)
+    vmap = propertyEditor.get();
+  else
+    {
+      QMessageBox::information(0,
+			       title,
+			       "No parameters pasted");
+    }
 
   return vmap;
 }

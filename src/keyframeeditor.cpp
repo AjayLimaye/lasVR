@@ -1381,7 +1381,7 @@ KeyFrameEditor::setKeyFrame()
       QImage img(100,100, QImage::Format_RGB32);
       m_fImage.append(img);
       
-      m_minFrame = qMax(1, m_fno[m_fno.count()-1]-3*m_frameStep);
+      //m_minFrame = qMax(1, m_fno[m_fno.count()-1]-3*m_frameStep);
       calcMaxFrame();
       
       calcRect();

@@ -292,14 +292,27 @@ GLHiddenWidget::loadPointsToVBO()
 	  if (!m_prevNodes.contains(nodeId)) // save it to load next
 	    loadNodes << currload[i];
 	}
-  
-      // no nodes to load, so just return
+
+      // no nodes to load,
+      // check if we need to unload some nodes
       if (loadNodes.count() == 0)
 	{
-	  if (Global::playFrames())
-	    emit vboLoadedAll(m_currVBO, -1);
-	  return;
+	  if (m_prevNodes.count() == currload.count())
+	    {
+	      if (Global::playFrames())
+		emit vboLoadedAll(m_currVBO, -1);
+	      return;
+	    }
+	  // else we need to unload some nodes
 	}
+      
+//      // no nodes to load, so just return
+//      if (loadNodes.count() == 0)
+//	{
+//	  if (Global::playFrames())
+//	    emit vboLoadedAll(m_currVBO, -1);
+//	  return;
+//	}
     }
   else
     loadNodes = currload;

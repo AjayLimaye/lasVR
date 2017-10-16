@@ -63,6 +63,7 @@ class VrMain : public QMainWindow
   QString m_prevDir;
 
   PopUpSlider *m_pointBudget;
+  PopUpSlider *m_timeStep;
 
   QDockWidget *m_dockKeyframe;
   KeyFrameEditor *m_keyFrameEditor;

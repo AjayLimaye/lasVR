@@ -842,6 +842,16 @@ Viewer::saveModInfo()
 }
 
 void
+Viewer::setTimeStep(int ct)
+{
+  m_currTime = ct;
+  m_currTime = qMin(m_maxTime, m_currTime);
+  m_currTime = qMax(m_currTime, 0);
+
+  genDrawNodeList();
+}
+
+void
 Viewer::keyPressEvent(QKeyEvent *event)
 {
   if (event->key() == Qt::Key_I)
@@ -947,6 +957,7 @@ Viewer::keyPressEvent(QKeyEvent *event)
 	  m_currTime = m_currTime+1;
 	  if (m_currTime > m_maxTime)
 	    m_currTime = 0;
+	  emit timeStepChanged(m_currTime);
 
 	  genDrawNodeList();
 	  update();
@@ -962,6 +973,7 @@ Viewer::keyPressEvent(QKeyEvent *event)
 	  m_currTime = m_currTime-1;
 	  if (m_currTime < 0)
 	    m_currTime = m_maxTime;
+	  emit timeStepChanged(m_currTime);
 
 	  genDrawNodeList();
 	  update();
@@ -3375,6 +3387,8 @@ Viewer::updateLookFrom(Vec pos, Quaternion rot, int ct)
   m_currTime = ct;
   m_currTime = qMin(m_maxTime, m_currTime);
   m_currTime = qMax(m_currTime, 0);
+
+  emit timeStepChanged(m_currTime);
 
   m_vboLoadedAll = false;
   QMouseEvent dummyEvent(QEvent::MouseButtonRelease,

@@ -202,6 +202,22 @@ connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
   ui.menuOptions->addAction(ptBudget);
   //============================
   
+  //============================
+  m_timeStep = new PopUpSlider(this, Qt::Horizontal);
+  m_timeStep->setText("Time Step");
+  m_timeStep->setRange(0, 0);
+
+  m_timeStep->setValue(0);
+
+  connect(m_timeStep, SIGNAL(valueChanged(int)),
+	  m_viewer, SLOT(setTimeStep(int)));
+  connect(m_viewer, SIGNAL(timeStepChanged(int)),
+	  m_timeStep, SLOT(setValue(int)));
+
+  QWidgetAction *timeStep = new QWidgetAction(ui.menuOptions);
+  timeStep->setDefaultWidget(m_timeStep);
+  ui.menuOptions->addAction(timeStep);
+  //============================
 }
 
 void
@@ -327,6 +343,9 @@ VrMain::loadTiles(QStringList flnms)
     {
       QMessageBox::information(0, "", "Only single directory allowed");
     }
+
+  m_timeStep->setRange(0, m_viewer->maxTimeStep());
+  m_timeStep->setValue(0);
 
 //  Volume *vol = m_volumeFactory.newVolume();
 //

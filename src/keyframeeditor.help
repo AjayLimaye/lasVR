@@ -15,6 +15,20 @@ Start Keyboard Help
 #end
 
 #begin
+Ctrl+C
+If a keyframe is selected, copy that keyframe into an internal buffer.
+#end
+
+#begin
+Ctrl+V
+Paste the copied keyframe at the specified position on the range.
+
+If there is already a keyframe at the specified position, user is shown a properties page to select properties to copy.
+
+If user has selected a portion of the keyframe range using Shift+Left Mouse drag, a properties page is shown to select properties for copying.  All the keyframes in the selected range are modified.
+#end
+
+#begin
 Left Click
 If clicked on a keyframe image, that keyframe is selected.  If clicked on the ruler and lies within the animation range, interpolate the frame.
 #end

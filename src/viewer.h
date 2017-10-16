@@ -91,6 +91,9 @@ class Viewer : public QGLViewer
 
   bool startMovie(QString, int, int, bool);
 
+  int maxTimeStep() { return m_maxTime; }
+  int currentTimeStep() { return m_currTime; }
+
   public slots :
     void GlewInit();
     void showBox(bool);
@@ -117,6 +120,8 @@ class Viewer : public QGLViewer
 
     void captureKeyFrameImage(int);
 
+    void setTimeStep(int);
+
  signals :
     void nextFrame();
     void nextKeyFrame();
@@ -134,6 +139,7 @@ class Viewer : public QGLViewer
     void removeEditedNodes();
     void setKeyFrame(Vec, Quaternion, int, QImage, int);
     void replaceKeyFrameImage(int, QImage);
+    void timeStepChanged(int);
 
  private :
     VR m_vr;
