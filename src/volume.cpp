@@ -321,7 +321,8 @@ Volume::postLoad(bool showInfo)
       m_pointClouds[d]->setGlobalMinMax(Vec(0,0,0), Vec(1,1,1));
       Vec shift = m_pointClouds[d]->getShift();
       float scale = m_pointClouds[d]->getScale();
-      m_pointClouds[d]->setScaleAndShift(scale, shift);
+      Quaternion rot = m_pointClouds[d]->getRotation();
+      m_pointClouds[d]->setXform(scale, shift, rot);
     }
 
 

@@ -112,7 +112,10 @@ class PointCloud
   void setShift(Vec);
   Vec getShift() { return m_shift; }
 
-  void setScaleAndShift(float, Vec);
+  void setRotation(Quaternion);
+  Quaternion getRotation() { return m_rotation; }
+
+  void setXform(float, Vec, Quaternion);
   void undo();
 
   void saveModInfo();
@@ -136,11 +139,10 @@ class PointCloud
   float m_scale;
   float m_scaleCloudJs;
   Vec m_shift;
+  Quaternion m_rotation;
   float m_bminZ, m_bmaxZ;
   bool m_colorPresent;
   bool m_classPresent;
-  bool m_xformPresent;
-  float m_xform[16];
   int m_priority;
   int m_time;
 
@@ -190,7 +192,7 @@ class PointCloud
   void loadLabelsJson(QString);
   void loadLabelsCSV(QString);
 
-  Vec scaleAndShift(Vec, Vec);
+  Vec xform(Vec, Vec);
 };
 
 #endif

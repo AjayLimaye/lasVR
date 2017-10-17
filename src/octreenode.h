@@ -1,10 +1,10 @@
 #ifndef OCTREENODE_H
 #define OCTREENODE_H
 
-#include <QList>
-
-#include <QGLViewer/vec.h>
+#include <QGLViewer/quaternion.h>
 using namespace qglviewer;
+
+#include <QList>
 
 class OctreeNode
 {
@@ -26,6 +26,8 @@ class OctreeNode
   void setId(int);
   void setUId(int i) { m_uid = i; }
   void setScale(float, float);
+  void setShift(Vec);
+  void setRotation(Quaternion);
   void setActive(bool a) { m_active = a; }
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
@@ -43,12 +45,10 @@ class OctreeNode
   void setLevel(int l) { m_level = l; }
   void setLevelsBelow(int l) { m_levelsBelow = l; }
   void setDataPerVertex(int d) { m_dpv = d; }
-  void setShift(Vec);
   void setColorPresent(bool b) { m_colorPresent = b; }
   void setClassPresent(bool b) { m_classPresent = b; }
   void setColorMap(QList<Vec> cm) { m_colorMap = cm; }
   void setGlobalMinMax(Vec, Vec);
-  void setXform(float[16]);
   void setPointSize(float ps) { m_pointSize = ps; }
   void setPointSizeFactor(float ps) { m_pointSize *= ps; }
   void setSpacing(float s) { m_spacing = s; }
@@ -104,8 +104,12 @@ class OctreeNode
   int m_priority;
   int m_time;
   int m_id, m_uid;
+
+  Quaternion m_rotation;
+  Vec m_shift;
   float m_scale;
   float m_scaleCloudJs;
+
   float m_pointSize;
 
   bool m_active;
@@ -123,7 +127,6 @@ class OctreeNode
   uchar m_maxVisLevel;
   int m_levelsBelow;
   int m_dpv;
-  Vec m_shift;
   bool m_colorPresent;
   bool m_classPresent;
   float m_spacing;
@@ -135,9 +138,6 @@ class OctreeNode
   Vec m_globalMin;
   Vec m_globalMax;
 
-  bool m_xformPresent;
-  float m_xform[16];
-
   bool m_dataLoaded;
 
   bool m_removalFlag;
@@ -147,9 +147,7 @@ class OctreeNode
   void loadDataFromLASFile();
   void loadDataFromBINFile();
 
-  void setIdentity();
-
-  Vec scaleAndShift(Vec, Vec);
+  Vec xform(Vec, Vec);
 };
 
 #endif

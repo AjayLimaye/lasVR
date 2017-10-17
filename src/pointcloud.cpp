@@ -16,11 +16,11 @@ PointCloud::PointCloud()
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_rotation = Quaternion();
   m_bminZ = 1;
   m_bmaxZ = 0;
   m_colorPresent = true;
   m_classPresent = false;
-  m_xformPresent = false;
   m_priority = 0;
   m_time = -1;
 
@@ -79,11 +79,11 @@ PointCloud::reset()
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_rotation = Quaternion();
   m_bminZ = 1;
   m_bmaxZ = 0;
   m_colorPresent = true;
   m_classPresent = false;
-  m_xformPresent = false;
   m_priority = 0;
   m_time = -1;
 
@@ -139,10 +139,10 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_rotation = Quaternion();
   m_bminZ = 1;
   m_bmaxZ = 0;
   m_classPresent = false;
-  m_xformPresent = false;
   m_priority = 0;
   m_time = timestep;
 
@@ -360,16 +360,13 @@ PointCloud::loadTileOctree(QString dirnameO)
   float scale = m_scale;
   if (m_ignoreScaling)
     scale = 1.0;
+  Quaternion rotate = m_rotation;
   float bminZ = m_bminZ;
   float bmaxZ = m_bmaxZ;
   int priority = m_priority;
   int time = m_time;
   bool colorPresent = m_colorPresent;
   bool classPresent = m_classPresent;
-  bool xformPresent = m_xformPresent;
-  float xform[16];
-  if (m_xformPresent)
-    memcpy(xform, m_xform, 16*sizeof(float));
   //-----------------------------
 
 
@@ -405,14 +402,13 @@ PointCloud::loadTileOctree(QString dirnameO)
 	  oNode->setPriority(priority);
 	  oNode->setTime(time);
 	  oNode->setShift(shift);
+	  oNode->setRotation(rotate);
 	  oNode->setScale(scale, m_scaleCloudJs);
 	  oNode->setSpacing(m_spacing*scale);
 	  oNode->setPointAttributes(m_pointAttrib);
 	  oNode->setAttribBytes(m_attribBytes);
 	  oNode->setColorPresent(colorPresent);
 	  oNode->setClassPresent(classPresent);
-	  if (xformPresent)
-	    oNode->setXform(xform);
 	}
       else
 	{
@@ -476,20 +472,19 @@ PointCloud::loadTileOctree(QString dirnameO)
 	      tnode->setPriority(priority);
 	      tnode->setTime(time);
 	      tnode->setShift(shift);
+	      tnode->setRotation(rotate);
 	      tnode->setScale(scale, m_scaleCloudJs);
 	      tnode->setSpacing(m_spacing*scale);
 	      tnode->setPointAttributes(m_pointAttrib);
 	      tnode->setAttribBytes(m_attribBytes);
 	      tnode->setColorPresent(colorPresent);
 	      tnode->setClassPresent(classPresent);
-	      if (xformPresent)
-		tnode->setXform(xform);
 	    }
 	}
     }
 
 
-  setScaleAndShift(m_scale, m_shift);
+  setXform(m_scale, m_shift, m_rotation);
 
   saveOctreeNodeToJson(dirname, oNode);
 
@@ -614,16 +609,13 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
   float scale = m_scale;
   if (m_ignoreScaling)
     scale = 1.0;
+  Quaternion rotate = m_rotation;
   float bminZ = m_bminZ;
   float bmaxZ = m_bmaxZ;
   int priority = m_priority;
   int time = m_time;
   bool colorPresent = m_colorPresent;
   bool classPresent = m_classPresent;
-  bool xformPresent = m_xformPresent;
-  float xform[16];
-  if (m_xformPresent)
-    memcpy(xform, m_xform, 16*sizeof(float));
 
   
   if ((jsonOctreeData[0].toObject()).contains("mod"))
@@ -646,6 +638,16 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 		      xyz[2].toFloat());
 	}
 
+      if (jsonInfo.contains("rotation"))
+	{
+	  QString str = jsonInfo["rotation"].toString();
+	  QStringList xyzw = str.split(" ", QString::SkipEmptyParts);
+	  rotate = Quaternion(xyzw[0].toFloat(), 
+			      xyzw[1].toFloat(), 
+			      xyzw[2].toFloat(),
+			      xyzw[4].toFloat());
+	}
+
       if (jsonInfo.contains("scale"))
 	scale = jsonInfo["scale"].toDouble();
 
@@ -660,18 +662,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       if (jsonInfo.contains("classification"))
 	classPresent = (jsonInfo["classification"].toInt() != 0);
-
-      if (jsonInfo.contains("xform"))
-	{
-	  QString str = jsonInfo["xform"].toString();
-	  QStringList xyz = str.split(" ", QString::SkipEmptyParts);
-	  if (xyz.count() == 16)
-	    {
-	      xformPresent = true;
-	      for(int t=0; t<16; t++)
-		xform[t] = xyz[t].toFloat();
-	    }
-	}
 
       jstart = 1;
     }
@@ -770,8 +760,8 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setPriority(priority);
       tnode->setTime(time);
       tnode->setShift(shift);
-      tnode->setScale(scale, m_scaleCloudJs);
-      //tnode->setSpacing(spacing*scale);
+      tnode->setRotation(rotate);
+      tnode->setScale(scale, m_scaleCloudJs);      
       tnode->setSpacing(m_spacing*scale);
 
       tnode->setPointAttributes(m_pointAttrib);
@@ -779,28 +769,9 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       tnode->setColorPresent(colorPresent);
       tnode->setClassPresent(classPresent);
-      if (xformPresent)
-	tnode->setXform(xform);
     }
 
-  setScaleAndShift(m_scale, m_shift);
-
-//  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
-//
-//  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
-//  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
-//  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
-//  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
-
-//  m_octreeMin = m_octreeMinO + m_shift;
-//  m_octreeMax = m_octreeMaxO + m_shift;
-//  m_octreeMin = m_octreeMin * m_scale;
-//  m_octreeMax = m_octreeMax * m_scale;
-//
-//  m_tightOctreeMin = m_tightOctreeMinO + m_shift;
-//  m_tightOctreeMax = m_tightOctreeMaxO + m_shift;
-//  m_tightOctreeMin = m_tightOctreeMin * m_scale;
-//  m_tightOctreeMax = m_tightOctreeMax * m_scale;
+  setXform(m_scale, m_shift, m_rotation);
 }
 
 void
@@ -947,6 +918,17 @@ PointCloud::loadModJson(QString jsonfile)
 			xyz[2].toFloat());
 	}
 
+      if (jsonInfo.contains("rotation"))
+	{
+	  QString str = jsonInfo["rotation"].toString();
+	  QStringList xyzw = str.split(" ", QString::SkipEmptyParts);
+	  m_rotation = Quaternion(xyzw[0].toFloat(), 
+				  xyzw[1].toFloat(), 
+				  xyzw[2].toFloat(),
+				  xyzw[3].toFloat());
+	  m_rotation.normalize();
+	}
+
       if (jsonInfo.contains("scale"))
 	m_scale = jsonInfo["scale"].toDouble();
 
@@ -961,18 +943,6 @@ PointCloud::loadModJson(QString jsonfile)
 
       if (jsonInfo.contains("classification"))
 	m_classPresent = (jsonInfo["classification"].toInt() != 0);
-
-      if (jsonInfo.contains("xform"))
-	{
-	  QString str = jsonInfo["xform"].toString();
-	  QStringList xyz = str.split(" ", QString::SkipEmptyParts);
-	  if (xyz.count() == 16)
-	    {
-	      m_xformPresent = true;
-	      for(int t=0; t<16; t++)
-		m_xform[t] = xyz[t].toFloat();
-	    }
-	}
     }
 }
 
@@ -1485,10 +1455,14 @@ PointCloud::updateVisibilityData()
 }
 
 Vec
-PointCloud::scaleAndShift(Vec v, Vec tomid)
+PointCloud::xform(Vec v, Vec tomid)
 {
   Vec ov = v-tomid;
+
+  ov = m_rotation.rotate(ov);
+
   ov *= m_scale;
+
   ov += tomid;
   
   ov += m_shift;
@@ -1527,10 +1501,10 @@ PointCloud::setScale(float scl)
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
 
-  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
-  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
-  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xform(m_octreeMinO, tomid);
+  m_octreeMax = xform(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
@@ -1546,10 +1520,10 @@ PointCloud::setShift(Vec shift)
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
 
-  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
-  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
-  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xform(m_octreeMinO, tomid);
+  m_octreeMax = xform(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
 
   for(int d=0; d<m_allNodes.count(); d++)
     {
@@ -1560,25 +1534,28 @@ PointCloud::setShift(Vec shift)
 }
 
 void
-PointCloud::setScaleAndShift(float scale, Vec shift)
+PointCloud::setXform(float scale, Vec shift, Quaternion rotate)
 {
   m_undo << QVector4D(m_shift.x, m_shift.y, m_shift.z, m_scale);
+  m_undo << QVector4D(m_rotation[0], m_rotation[1], m_rotation[2], m_rotation[3]);
 
   m_scale = scale;
   m_shift = shift;
-  
+  m_rotation = rotate.normalized();
+
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
   
-  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
-  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
-  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xform(m_octreeMinO, tomid);
+  m_octreeMax = xform(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
       node->setShift(m_shift);
       node->setScale(m_scale, m_scaleCloudJs);
+      node->setRotation(m_rotation);
       node->reloadData();
     } 
 }
@@ -1589,30 +1566,35 @@ PointCloud::undo()
   if (m_undo.count() == 0)
     return;
 
+  QVector4D rot = m_undo.takeLast();
   QVector4D u = m_undo.takeLast();
 
   //-------
   // always keep the first one
   if (m_undo.count() == 0)
-    m_undo << u;
+    {
+      m_undo << u;
+      m_undo << rot;
+    }
   //-------
 
-  
+  m_rotation = Quaternion(rot[0],rot[1],rot[2],rot[3]);
   m_shift = Vec(u.x(), u.y(), u.z());
   m_scale = u.w();
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
   
-  m_octreeMin = scaleAndShift(m_octreeMinO, tomid);
-  m_octreeMax = scaleAndShift(m_octreeMaxO, tomid);
-  m_tightOctreeMin = scaleAndShift(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = scaleAndShift(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xform(m_octreeMinO, tomid);
+  m_octreeMax = xform(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
       node->setShift(m_shift);
       node->setScale(m_scale, m_scaleCloudJs);
+      node->setRotation(m_rotation);
       node->reloadData();
     } 
   
@@ -1625,6 +1607,12 @@ PointCloud::saveModInfo()
 
   QJsonObject jsonInfo;
   
+  jsonInfo["time"] = m_time;
+
+  if (m_colorPresent)
+    jsonInfo["color"] = 1;
+  else
+    jsonInfo["color"] = 0;
 
   QString str = QString("%1  %2  %3").\
     arg(m_shift.x, 12, 'f', 2).\
@@ -1633,6 +1621,13 @@ PointCloud::saveModInfo()
   jsonInfo["shift"] = str.simplified();
 
   jsonInfo["scale"] = m_scale;
+
+  str = QString("%1  %2  %3  %4"). \
+    arg(m_rotation[0], 12, 'f', 8).\
+    arg(m_rotation[1], 12, 'f', 8).\
+    arg(m_rotation[2], 12, 'f', 8).\
+    arg(m_rotation[3], 12, 'f', 8); 
+  jsonInfo["rotation"] = str.simplified();
 
   jsonMod["mod"] = jsonInfo;
 

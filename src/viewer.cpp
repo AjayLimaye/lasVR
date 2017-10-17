@@ -731,6 +731,7 @@ Viewer::createShaders()
   m_depthParm[22] = glGetUniformLocation(m_depthShader, "xformShift");
   m_depthParm[23] = glGetUniformLocation(m_depthShader, "xformCen");
   m_depthParm[24] = glGetUniformLocation(m_depthShader, "xformScale");
+  m_depthParm[25] = glGetUniformLocation(m_depthShader, "xformRot");
   //--------------------------
 }
 
@@ -774,6 +775,7 @@ Viewer::toggleEditMode()
   
   if (m_editMode)
     {
+      m_deltaRot = m_pointClouds[1]->getRotation();
       m_deltaShift = m_pointClouds[1]->getShift();
       m_deltaScale = m_pointClouds[1]->getScale();
     }
@@ -812,9 +814,10 @@ Viewer::centerPointClouds()
   
   Vec shift = cmid0 - cmin1;
   float scale = m_pointClouds[1]->getScale();
+  Quaternion rot = m_pointClouds[1]->getRotation();
   QMessageBox::information(0, "", QString("%1 %2 %3").\
 			   arg(shift.x).arg(shift.y).arg(shift.z));
-  m_pointClouds[1]->setScaleAndShift(scale, shift);
+  m_pointClouds[1]->setXform(scale, shift, rot);
   
   m_coordMin = cmin0;
   m_coordMax = cmax0;
@@ -860,11 +863,13 @@ Viewer::keyPressEvent(QKeyEvent *event)
 	return;
 
       QString mesg;
+      Quaternion rot = m_pointClouds[1]->getRotation();
       Vec shift = m_pointClouds[1]->getShift();
       float scale = m_pointClouds[1]->getScale();
-      mesg = QString("Shift : %1 %2 %3\nScale : %4").\
+      mesg = QString("Shift : %1 %2 %3\nScale : %4\nRotation : %5 %6 %7 %8").\
 	arg(shift.x).arg(shift.y).arg(shift.z).\
-	arg(scale);
+	arg(scale).\
+	arg(rot[0]).arg(rot[1]).arg(rot[2]).arg(rot[3]);
       QMessageBox::information(0, "", mesg.simplified());
 
       return;
@@ -1032,11 +1037,13 @@ Viewer::mousePressEvent(QMouseEvent *event)
     return;
   
   m_prevPos = event->pos();
+  m_deltaRot = Quaternion();
   m_deltaShift = Vec(0,0,0);
   m_deltaScale = 1.0;
   m_deltaChanged = false;
   if (m_pointClouds.count() == 2)
     {
+      m_deltaRot = m_pointClouds[1]->getRotation();
       m_deltaShift = m_pointClouds[1]->getShift();
       m_deltaScale = m_pointClouds[1]->getScale();
     }
@@ -1109,8 +1116,9 @@ Viewer::mouseReleaseEvent(QMouseEvent *event)
   // generate new node list only when mouse released
   if (m_editMode && m_deltaChanged)
     {
-      m_pointClouds[1]->setScaleAndShift(m_deltaScale,m_deltaShift);
+      m_pointClouds[1]->setXform(m_deltaScale,m_deltaShift,m_deltaRot);
 
+      m_deltaRot = Quaternion();
       m_deltaShift = Vec(0,0,0);
       m_deltaScale = 1.0;      
       m_deltaChanged = false;
@@ -1138,8 +1146,9 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
       m_deltaChanged = true;
       QPoint delta = event->pos() - m_prevPos;
 
-      if (event->buttons() == Qt::LeftButton ||
-	  event->buttons() == Qt::RightButton)
+      if (event->buttons() == Qt::LeftButton)
+	rotatePointCloud(event, delta);
+      if (event->buttons() == Qt::RightButton)
 	movePointCloud(delta);
       else if (event->buttons() == Qt::MiddleButton)
 	scalePointCloud(delta);
@@ -1162,6 +1171,40 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
 }
 
 void
+Viewer::rotatePointCloud(QMouseEvent *event, QPoint delta)
+{
+  Vec axis;
+  float angle;
+  if (event->modifiers() & Qt::AltModifier)
+    {
+      Vec cmin = m_pointClouds[1]->tightOctreeMin();
+      Vec cmax = m_pointClouds[1]->tightOctreeMax();
+      Vec cmid = (cmax+cmin)/2;
+
+      Vec trans = camera()->projectedCoordinatesOf(cmid);
+
+      float prev_angle = atan2(m_prevPos.y()-trans[1], m_prevPos.x()-trans[0]);
+      angle = atan2(event->y()-trans[1], event->x()-trans[0]);
+      axis = camera()->viewDirection();
+      angle = angle-prev_angle;
+    }
+  else
+    {
+      Vec upVec = camera()->upVector();
+      Vec rtVec = camera()->rightVector();
+      
+      axis = delta.y()*rtVec + delta.x()*upVec;
+      angle = qSqrt(delta.x()*delta.x() + 
+		    delta.y()*delta.y());
+      angle = qDegreesToRadians(angle);
+    }
+
+  Quaternion q(axis, angle);
+
+  m_deltaRot = q * m_deltaRot;
+}
+
+void
 Viewer::movePointCloud(QPoint delta)
 {
   Vec cmin = m_pointClouds[0]->tightOctreeMin();
@@ -1172,6 +1215,8 @@ Viewer::movePointCloud(QPoint delta)
   Vec moveScrPt = scrPt + Vec(delta.x(), delta.y(), 0);
   Vec move = camera()->unprojectedCoordinatesOf(moveScrPt) - cmid;
 
+  move *= 0.5; // reduce the movement for finer control
+
   m_deltaShift += move;
 }
 
@@ -1179,9 +1224,9 @@ void
 Viewer::scalePointCloud(QPoint delta)
 {
   if (qAbs(delta.x()) > qAbs(delta.y()))
-    m_deltaScale += 0.01*delta.x();
+    m_deltaScale += 0.005*delta.x();
   else
-    m_deltaScale += 0.01*delta.y();
+    m_deltaScale += 0.005*delta.y();
 }
 
 
@@ -2216,8 +2261,7 @@ Viewer::drawPointsWithReload()
       glUniform3f(m_depthParm[22], m_deltaShift.x, m_deltaShift.y, m_deltaShift.z);
       glUniform3f(m_depthParm[23], cmid.x, cmid.y, cmid.z);
       glUniform1f(m_depthParm[24], m_deltaScale);
-      //glUniform3f(m_depthParm[22], 0,0,0);
-      //glUniform1f(m_depthParm[24], 1);
+      glUniform4f(m_depthParm[25], m_deltaRot[0], m_deltaRot[1], m_deltaRot[2], m_deltaRot[3]);
     }
 
 
@@ -2608,8 +2652,14 @@ Viewer::orderTilesForCamera()
 
   for(int d=0; d<m_pointClouds.count(); d++)
     {
-      if (m_pointClouds[d]->time() != -1 &&
-	  m_pointClouds[d]->time() != m_currTime)
+      if (m_editMode ||
+	  m_pointClouds.count() == 1)
+	{
+	  m_pointClouds[d]->setVisible(true);
+	  m_tiles += m_pointClouds[d]->tiles();
+	}
+      else if (m_pointClouds[d]->time() != -1 &&
+	       m_pointClouds[d]->time() != m_currTime)
 	{
 	  m_pointClouds[d]->setVisible(false);
 	}

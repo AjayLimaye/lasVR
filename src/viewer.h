@@ -252,6 +252,7 @@ class Viewer : public QGLViewer
     int m_moveAxis;
     Vec m_deltaShift;
     float m_deltaScale;
+    Quaternion m_deltaRot;
     bool m_deltaChanged;
     QList<QVector4D> m_undoXform;
 
@@ -328,6 +329,7 @@ class Viewer : public QGLViewer
 
     void stickLabelsToGround();
 
+    void rotatePointCloud(QMouseEvent*, QPoint);
     void movePointCloud(QPoint);
     void scalePointCloud(QPoint);
 

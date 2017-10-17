@@ -8,16 +8,6 @@
 
 #include "laszip_dll.h"
 
-void
-OctreeNode::setIdentity()
-{
-  m_xformPresent = false;
-  memset(m_xform, 0, 16*sizeof(float));
-  m_xform[0] = 1;
-  m_xform[5] = 1;
-  m_xform[10] = 1;
-  m_xform[15] = 1;
-}
 
 OctreeNode::OctreeNode()
 {
@@ -27,8 +17,6 @@ OctreeNode::OctreeNode()
   m_time = -1;
   m_id = -1;
   m_uid = -1;
-  m_scale = 1.0;
-  m_scaleCloudJs = 1.0;
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
@@ -44,6 +32,10 @@ OctreeNode::OctreeNode()
   m_dataLoaded = false;
   m_levelString.clear();
   m_dpv = 3;
+
+  m_rotation = Quaternion();
+  m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
 
   m_pointSize = 1.0;
@@ -56,8 +48,6 @@ OctreeNode::OctreeNode()
   m_attribBytes = 0;
 
   m_editMode = false;
-
-  setIdentity();
 }
 
 OctreeNode::~OctreeNode()
@@ -67,8 +57,6 @@ OctreeNode::~OctreeNode()
   m_priority = 0;
   m_time = -1;
   m_id = -1;
-  m_scale = 1.0;
-  m_scaleCloudJs = 1.0;
   m_active = false;
   m_fileName.clear();
   m_bmin = m_bmax = Vec(0,0,0);
@@ -87,6 +75,10 @@ OctreeNode::~OctreeNode()
   m_maxVisLevel = 0;
   m_dataLoaded = false;
   m_levelString.clear();
+
+  m_rotation = Quaternion();
+  m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
 
   m_pointSize = 1.0;
@@ -96,8 +88,6 @@ OctreeNode::~OctreeNode()
   m_attribBytes = 0;
 
   m_editMode = false;
-
-  setIdentity();
 }
 
 void
@@ -114,10 +104,14 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
 }
 
 Vec
-OctreeNode::scaleAndShift(Vec v, Vec tomid)
+OctreeNode::xform(Vec v, Vec tomid)
 {
   Vec ov = v-tomid;
+
+  ov = m_rotation.rotate(ov);
+
   ov *= m_scale;
+
   ov += tomid;
   
   ov += m_shift;
@@ -135,20 +129,10 @@ OctreeNode::setScale(float scl, float sclCloudJs)
 
   Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
 
-  m_bmin = scaleAndShift(m_bminO, tomid);
-  m_bmax = scaleAndShift(m_bmaxO, tomid);
-  m_tightMin = scaleAndShift(m_tightMinO, tomid);
-  m_tightMax = scaleAndShift(m_tightMaxO, tomid);
-
-//  m_bmin = m_bminO + m_shift;
-//  m_bmax = m_bmaxO + m_shift;
-//  m_bmin = m_bmin * m_scale;
-//  m_bmax = m_bmax * m_scale;
-//
-//  m_tightMin = m_tightMinO + m_shift;
-//  m_tightMax = m_tightMaxO + m_shift;
-//  m_tightMin = m_tightMin * m_scale;
-//  m_tightMax = m_tightMax * m_scale;
+  m_bmin = xform(m_bminO, tomid);
+  m_bmax = xform(m_bmaxO, tomid);
+  m_tightMin = xform(m_tightMinO, tomid);
+  m_tightMax = xform(m_tightMaxO, tomid);
 }
 
 void
@@ -160,10 +144,11 @@ OctreeNode::setShift(Vec s)
 }
 
 void
-OctreeNode::setXform(float xf[16])
+OctreeNode::setRotation(Quaternion q)
 {
-  m_xformPresent = true;
-  memcpy(m_xform, xf, 16*sizeof(float));
+  m_rotation = q;
+  
+  setScale(m_scale, m_scaleCloudJs);
 }
 
 bool
@@ -334,7 +319,7 @@ OctreeNode::loadDataFromBINFile()
       if (!m_editMode)
 	{
 	  Vec ve = Vec(x,y,z);
-	  ve = scaleAndShift(ve, tomid);
+	  ve = xform(ve, tomid);
 	  x = ve.x;
 	  y = ve.y;
 	  z = ve.z;
@@ -473,7 +458,7 @@ OctreeNode::loadDataFromLASFile()
 	  if (!m_editMode)
 	    {
 	      Vec ve = Vec(x,y,z);
-	      ve = scaleAndShift(ve, tomid);
+	      ve = xform(ve, tomid);
 	      x = ve.x;
 	      y = ve.y;
 	      z = ve.z;
@@ -487,17 +472,6 @@ OctreeNode::loadDataFromLASFile()
 //	  y *= m_scale;
 //	  z *= m_scale;
 	  
-//	  if (m_xformPresent)
-//	    {
-//	      float x1 = x*m_xform[0] + y*m_xform[1] + z*m_xform[2] + m_xform[3];
-//	      float y1 = x*m_xform[4] + y*m_xform[5] + z*m_xform[6] + m_xform[7];
-//	      float z1 = x*m_xform[8] + y*m_xform[9] + z*m_xform[10]+ m_xform[11];
-//
-//	      x = x1;
-//	      y = y1;
-//	      z = z1;
-//	    }
-
 
 	  if (m_dpv == 3)
 	    {
@@ -663,7 +637,7 @@ OctreeNode::computeBB()
 	  if (!m_editMode)
 	    {
 	      Vec ve = Vec(x,y,z);
-	      ve = scaleAndShift(ve, tomid);
+	      ve = xform(ve, tomid);
 	      x = ve.x;
 	      y = ve.y;
 	      z = ve.z;

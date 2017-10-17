@@ -42,6 +42,7 @@ uniform int xformTileId;
 uniform vec3 xformShift;
 uniform vec3 xformCen;
 uniform float xformScale;
+uniform vec4 xformRot;
 
 //-----------------------
 float numberOfOnes(float number, float index)
@@ -113,6 +114,12 @@ float getLOD(float tile, vec3 omin, vec3 omax, vec3 opos)
 }
 //-----------------------
 
+vec3
+qtransform(vec4 q, vec3 v)
+{ 
+  //return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
+  return v + 2.0*cross(q.xyz, cross(q.xyz,v) + q.w*v);
+}
 
 void main()
 {
@@ -126,9 +133,15 @@ void main()
    if (applyXform && vertexColor.a >= xformTileId)
      {
        pointPos -= xformCen;
+
+       //rotate
+       pointPos = qtransform(xformRot, pointPos);
+       //scale
        pointPos *= xformScale;
+
        pointPos += xformCen;
 
+       //translate
        pointPos += xformShift;
      }
    //----------------------------------

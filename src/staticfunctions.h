@@ -58,6 +58,7 @@ class StaticFunctions
 			       QVector3D, QVector3D);
 
   static bool checkExtension(QString, const char*);
+
 };
 
 #endif
