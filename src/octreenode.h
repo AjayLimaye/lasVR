@@ -28,6 +28,7 @@ class OctreeNode
   void setScale(float, float);
   void setShift(Vec);
   void setRotation(Quaternion);
+  void setXform(float, Vec, Quaternion);
   void setActive(bool a) { m_active = a; }
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
@@ -147,7 +148,7 @@ class OctreeNode
   void loadDataFromLASFile();
   void loadDataFromBINFile();
 
-  Vec xform(Vec, Vec);
+  Vec xformPoint(Vec);
 };
 
 #endif

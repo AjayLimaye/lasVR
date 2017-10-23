@@ -116,7 +116,7 @@ class PointCloud
   Quaternion getRotation() { return m_rotation; }
 
   void setXform(float, Vec, Quaternion);
-  Vec xformPoint(Vec, Vec);
+  Vec xformPoint(Vec);
 
   void undo();
 

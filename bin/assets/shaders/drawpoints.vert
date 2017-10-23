@@ -117,7 +117,6 @@ float getLOD(float tile, vec3 omin, vec3 omax, vec3 opos)
 vec3
 qtransform(vec4 q, vec3 v)
 { 
-  //return v + 2.0*cross(cross(v, q.xyz ) + q.w*v, q.xyz);
   return v + 2.0*cross(q.xyz, cross(q.xyz,v) + q.w*v);
 }
 

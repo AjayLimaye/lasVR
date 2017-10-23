@@ -246,6 +246,7 @@ GLHiddenWidget::removeEditedNodes()
 	  if (keys[i] < xid)
 	    newLoad[keys[i]] = m_prevNodes[keys[i]];
 	}
+
       m_prevNodes = newLoad;
     }
 }

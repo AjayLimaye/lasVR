@@ -1124,9 +1124,9 @@ Viewer::mouseReleaseEvent(QMouseEvent *event)
       m_deltaChanged = false;
     }
 
-  genDrawNodeList();
-
   QGLViewer::mouseReleaseEvent(event);
+
+  genDrawNodeList();
 }
 
 void
@@ -2573,22 +2573,6 @@ Viewer::drawAABB()
 		}
 	      
 	      StaticFunctions::drawBox(v);
-
-
-	      
-//
-//	      // scale
-//	      cmin -= cmid;
-//	      cmin *= m_deltaScale;
-//	      cmin += cmid;
-//
-//	      cmax -= cmid;
-//	      cmax *= m_deltaScale;
-//	      cmax += cmid;
-//
-//	      // shift
-//	      cmin += m_deltaShift;
-//	      cmax += m_deltaShift;
 	    }
 	  else
 	    StaticFunctions::drawBox(cmin, cmax);
@@ -2921,8 +2905,8 @@ Viewer::genDrawNodeList(float mnfrc, float zfar)
     {
       OctreeNode *node = m_orderedTiles[d];
       
-      Vec bmin = node->bmin();
-      Vec bmax = node->bmax();			  
+      Vec bmin = node->bmin(); 
+      Vec bmax = node->bmax(); 
 
 //      bool addNode = isVisible(bmin, bmax);
       bool addNode = true;

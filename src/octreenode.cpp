@@ -104,11 +104,14 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
 }
 
 Vec
-OctreeNode::xform(Vec v, Vec tomid)
+OctreeNode::xformPoint(Vec v)
 {
+  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
   Vec ov = v-tomid;
 
   ov = m_rotation.rotate(ov);
+  //Vec q = Vec(m_rotation[0],m_rotation[1],m_rotation[2]);
+  //ov = ov + 2.0*cross(q, cross(q,ov) + m_rotation[3]*ov);
 
   ov *= m_scale;
 
@@ -127,12 +130,10 @@ OctreeNode::setScale(float scl, float sclCloudJs)
   m_scale = scl;
   m_scaleCloudJs = sclCloudJs;
 
-  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
-
-  m_bmin = xform(m_bminO, tomid);
-  m_bmax = xform(m_bmaxO, tomid);
-  m_tightMin = xform(m_tightMinO, tomid);
-  m_tightMax = xform(m_tightMaxO, tomid);
+  m_bmin = xformPoint(m_bminO);
+  m_bmax = xformPoint(m_bmaxO);
+  m_tightMin = xformPoint(m_tightMinO);
+  m_tightMax = xformPoint(m_tightMaxO);
 }
 
 void
@@ -149,6 +150,19 @@ OctreeNode::setRotation(Quaternion q)
   m_rotation = q;
   
   setScale(m_scale, m_scaleCloudJs);
+}
+
+void
+OctreeNode::setXform(float scale, Vec shift, Quaternion rotate)
+{
+  m_scale = scale;
+  m_shift = shift;
+  m_rotation = rotate;
+
+  m_bmin = xformPoint(m_bminO);
+  m_bmax = xformPoint(m_bmaxO);
+  m_tightMin = xformPoint(m_tightMinO);
+  m_tightMax = xformPoint(m_tightMaxO);
 }
 
 bool
@@ -226,13 +240,13 @@ OctreeNode::loadData()
       return;
     }
 
-  if (m_bmin.x >= m_bmax.x ||
-      m_bmin.y >= m_bmax.y ||
-      m_bmin.z >= m_bmax.z)
-    {
-      m_numpoints = 0;
-      return;      
-    }
+//  if (m_bmin.x >= m_bmax.x ||
+//      m_bmin.y >= m_bmax.y ||
+//      m_bmin.z >= m_bmax.z)
+//    {
+//      m_numpoints = 0;
+//      return;      
+//    }
 
   if (m_dataLoaded)
     return;
@@ -304,8 +318,6 @@ OctreeNode::loadDataFromBINFile()
   binfl.close();
 
 
-  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
-
   for(qint64 np = 0; np < m_numpoints; np++)
     {
       int *crd = (int*)(data + m_attribBytes*np);
@@ -319,7 +331,7 @@ OctreeNode::loadDataFromBINFile()
       if (!m_editMode)
 	{
 	  Vec ve = Vec(x,y,z);
-	  ve = xform(ve, tomid);
+	  ve = xformPoint(ve);
 	  x = ve.x;
 	  y = ve.y;
 	  z = ve.z;
@@ -427,8 +439,6 @@ OctreeNode::loadDataFromLASFile()
 
   int clim = m_colorMap.count()-1;
 
-  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
-
   qint64 np = 0;
   for(qint64 i = 0; i < npts; i++)
     {
@@ -458,7 +468,7 @@ OctreeNode::loadDataFromLASFile()
 	  if (!m_editMode)
 	    {
 	      Vec ve = Vec(x,y,z);
-	      ve = xform(ve, tomid);
+	      ve = xformPoint(ve);
 	      x = ve.x;
 	      y = ve.y;
 	      z = ve.z;
@@ -615,8 +625,6 @@ OctreeNode::computeBB()
   Vec bbmin;
   Vec bbmax;
 
-  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
-
   for(qint64 i = 0; i < npts; i++)
     {
       // read a point
@@ -637,7 +645,7 @@ OctreeNode::computeBB()
 	  if (!m_editMode)
 	    {
 	      Vec ve = Vec(x,y,z);
-	      ve = xform(ve, tomid);
+	      ve = xformPoint(ve);
 	      x = ve.x;
 	      y = ve.y;
 	      z = ve.z;
