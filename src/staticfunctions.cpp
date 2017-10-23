@@ -4,38 +4,67 @@
 #include <QMessageBox>
 
 void
-StaticFunctions::drawBox(Vec subvolmin, Vec subvolmax)
+StaticFunctions::drawBox(QList<Vec> v)
 {
   glBegin(GL_QUADS);  
-  glVertex3f(subvolmin.x, subvolmin.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmin.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmax.y, subvolmin.z);
-  glVertex3f(subvolmin.x, subvolmax.y, subvolmin.z);
+  for(int i=0; i<16; i++)
+    glVertex3f(v[i].x, v[i].y, v[i].z);
   glEnd();
-  
-  // FRONT 
-  glBegin(GL_QUADS);  
-  glVertex3f(subvolmin.x, subvolmin.y, subvolmax.z);
-  glVertex3f(subvolmax.x, subvolmin.y, subvolmax.z);
-  glVertex3f(subvolmax.x, subvolmax.y, subvolmax.z);
-  glVertex3f(subvolmin.x, subvolmax.y, subvolmax.z);
-  glEnd();
-  
-  // TOP
-  glBegin(GL_QUADS);  
-  glVertex3f(subvolmin.x, subvolmax.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmax.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmax.y, subvolmax.z);
-  glVertex3f(subvolmin.x, subvolmax.y, subvolmax.z);
-  glEnd();
-  
-  // BOTTOM
-  glBegin(GL_QUADS);  
-  glVertex3f(subvolmin.x, subvolmin.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmin.y, subvolmin.z);
-  glVertex3f(subvolmax.x, subvolmin.y, subvolmax.z);
-  glVertex3f(subvolmin.x, subvolmin.y, subvolmax.z);  
-  glEnd();  
+}
+
+void
+StaticFunctions::drawBox(Vec subvolmin, Vec subvolmax)
+{
+  QList<Vec> v;
+  v << Vec(subvolmin.x, subvolmin.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmin.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmax.y, subvolmin.z);
+  v << Vec(subvolmin.x, subvolmax.y, subvolmin.z);
+  v << Vec(subvolmin.x, subvolmin.y, subvolmax.z);
+  v << Vec(subvolmax.x, subvolmin.y, subvolmax.z);
+  v << Vec(subvolmax.x, subvolmax.y, subvolmax.z);
+  v << Vec(subvolmin.x, subvolmax.y, subvolmax.z);
+  v << Vec(subvolmin.x, subvolmax.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmax.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmax.y, subvolmax.z);
+  v << Vec(subvolmin.x, subvolmax.y, subvolmax.z);
+  v << Vec(subvolmin.x, subvolmin.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmin.y, subvolmin.z);
+  v << Vec(subvolmax.x, subvolmin.y, subvolmax.z);
+  v << Vec(subvolmin.x, subvolmin.y, subvolmax.z);  
+  drawBox(v);
+
+////---------------------
+//  glBegin(GL_QUADS);  
+//  glVertex3f(subvolmin.x, subvolmin.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmin.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmax.y, subvolmin.z);
+//  glVertex3f(subvolmin.x, subvolmax.y, subvolmin.z);
+//  glEnd();
+//  
+//  // FRONT 
+//  glBegin(GL_QUADS);  
+//  glVertex3f(subvolmin.x, subvolmin.y, subvolmax.z);
+//  glVertex3f(subvolmax.x, subvolmin.y, subvolmax.z);
+//  glVertex3f(subvolmax.x, subvolmax.y, subvolmax.z);
+//  glVertex3f(subvolmin.x, subvolmax.y, subvolmax.z);
+//  glEnd();
+//  
+//  // TOP
+//  glBegin(GL_QUADS);  
+//  glVertex3f(subvolmin.x, subvolmax.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmax.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmax.y, subvolmax.z);
+//  glVertex3f(subvolmin.x, subvolmax.y, subvolmax.z);
+//  glEnd();
+//  
+//  // BOTTOM
+//  glBegin(GL_QUADS);  
+//  glVertex3f(subvolmin.x, subvolmin.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmin.y, subvolmin.z);
+//  glVertex3f(subvolmax.x, subvolmin.y, subvolmax.z);
+//  glVertex3f(subvolmin.x, subvolmin.y, subvolmax.z);  
+//  glEnd();  
 }
 
 float

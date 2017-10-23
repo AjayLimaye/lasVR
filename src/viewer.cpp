@@ -2534,30 +2534,64 @@ Viewer::drawAABB()
 	  Vec cmax = m_pointClouds[d]->tightOctreeMax();
 	  if (d == 1)
 	    { 
-	      cmin = m_pointClouds[1]->tightOctreeMinO();
-	      cmax = m_pointClouds[1]->tightOctreeMaxO();
-	      Vec cmid = (cmax+cmin)*0.5;	      
-
 	      if (m_editMode && m_deltaChanged)
 		{
 		  glLineWidth(2.0);
 		  glColor3f(0.5,1.0,0.7);
 		}
 	      
-	      // scale
-	      cmin -= cmid;
-	      cmin *= m_deltaScale;
-	      cmin += cmid;
+	      cmin = m_pointClouds[1]->tightOctreeMinO();
+	      cmax = m_pointClouds[1]->tightOctreeMaxO();
+	      Vec cmid = (cmax+cmin)*0.5;	      
 
-	      cmax -= cmid;
-	      cmax *= m_deltaScale;
-	      cmax += cmid;
+	      QList<Vec> v;
+	      v << Vec(cmin.x, cmin.y, cmin.z);
+	      v << Vec(cmax.x, cmin.y, cmin.z);
+	      v << Vec(cmax.x, cmax.y, cmin.z);
+	      v << Vec(cmin.x, cmax.y, cmin.z);
+	      v << Vec(cmin.x, cmin.y, cmax.z);
+	      v << Vec(cmax.x, cmin.y, cmax.z);
+	      v << Vec(cmax.x, cmax.y, cmax.z);
+	      v << Vec(cmin.x, cmax.y, cmax.z);
+	      v << Vec(cmin.x, cmax.y, cmin.z);
+	      v << Vec(cmax.x, cmax.y, cmin.z);
+	      v << Vec(cmax.x, cmax.y, cmax.z);
+	      v << Vec(cmin.x, cmax.y, cmax.z);
+	      v << Vec(cmin.x, cmin.y, cmin.z);
+	      v << Vec(cmax.x, cmin.y, cmin.z);
+	      v << Vec(cmax.x, cmin.y, cmax.z);
+	      v << Vec(cmin.x, cmin.y, cmax.z);  
 
-	      // shift
-	      cmin += m_deltaShift;
-	      cmax += m_deltaShift;
+	      for(int ip=0; ip<v.count(); ip++)
+		{
+		  Vec ov = v[ip]-cmid;
+		  ov = m_deltaRot.rotate(ov);		  
+		  ov *= m_deltaScale;
+		  ov += cmid;  
+		  ov += m_deltaShift;
+		  v[ip] = ov;
+		}
+	      
+	      StaticFunctions::drawBox(v);
+
+
+	      
+//
+//	      // scale
+//	      cmin -= cmid;
+//	      cmin *= m_deltaScale;
+//	      cmin += cmid;
+//
+//	      cmax -= cmid;
+//	      cmax *= m_deltaScale;
+//	      cmax += cmid;
+//
+//	      // shift
+//	      cmin += m_deltaShift;
+//	      cmax += m_deltaShift;
 	    }
-	  StaticFunctions::drawBox(cmin, cmax);
+	  else
+	    StaticFunctions::drawBox(cmin, cmax);
 	}
     }
   else

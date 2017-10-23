@@ -1455,7 +1455,7 @@ PointCloud::updateVisibilityData()
 }
 
 Vec
-PointCloud::xform(Vec v, Vec tomid)
+PointCloud::xformPoint(Vec v, Vec tomid)
 {
   Vec ov = v-tomid;
 
@@ -1501,10 +1501,10 @@ PointCloud::setScale(float scl)
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
 
-  m_octreeMin = xform(m_octreeMinO, tomid);
-  m_octreeMax = xform(m_octreeMaxO, tomid);
-  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xformPoint(m_octreeMinO, tomid);
+  m_octreeMax = xformPoint(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO, tomid);
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
@@ -1520,10 +1520,10 @@ PointCloud::setShift(Vec shift)
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
 
-  m_octreeMin = xform(m_octreeMinO, tomid);
-  m_octreeMax = xform(m_octreeMaxO, tomid);
-  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xformPoint(m_octreeMinO, tomid);
+  m_octreeMax = xformPoint(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO, tomid);
 
   for(int d=0; d<m_allNodes.count(); d++)
     {
@@ -1545,10 +1545,10 @@ PointCloud::setXform(float scale, Vec shift, Quaternion rotate)
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
   
-  m_octreeMin = xform(m_octreeMinO, tomid);
-  m_octreeMax = xform(m_octreeMaxO, tomid);
-  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xformPoint(m_octreeMinO, tomid);
+  m_octreeMax = xformPoint(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO, tomid);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {
@@ -1584,10 +1584,10 @@ PointCloud::undo()
 
   Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
   
-  m_octreeMin = xform(m_octreeMinO, tomid);
-  m_octreeMax = xform(m_octreeMaxO, tomid);
-  m_tightOctreeMin = xform(m_tightOctreeMinO, tomid);
-  m_tightOctreeMax = xform(m_tightOctreeMaxO, tomid);
+  m_octreeMin = xformPoint(m_octreeMinO, tomid);
+  m_octreeMax = xformPoint(m_octreeMaxO, tomid);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinO, tomid);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO, tomid);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {

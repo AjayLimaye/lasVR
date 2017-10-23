@@ -116,6 +116,8 @@ class PointCloud
   Quaternion getRotation() { return m_rotation; }
 
   void setXform(float, Vec, Quaternion);
+  Vec xformPoint(Vec, Vec);
+
   void undo();
 
   void saveModInfo();
@@ -191,8 +193,6 @@ class PointCloud
 
   void loadLabelsJson(QString);
   void loadLabelsCSV(QString);
-
-  Vec xform(Vec, Vec);
 };
 
 #endif

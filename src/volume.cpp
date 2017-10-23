@@ -343,7 +343,6 @@ Volume::postLoad(bool showInfo)
       m_coordMax.z = qMax(cmax.z, m_coordMax.z);
     }
 
-
   int uid = 0;
   for(int d=0; d<m_pointClouds.count(); d++)
     {

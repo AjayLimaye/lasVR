@@ -12,6 +12,7 @@ class StaticFunctions
 {
  public :
   static void drawBox(Vec, Vec);
+  static void drawBox(QList<Vec>);
 
   static float projectionSize(Vec, Vec, Vec, float);
 
