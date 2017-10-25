@@ -322,7 +322,8 @@ Volume::postLoad(bool showInfo)
       Vec shift = m_pointClouds[d]->getShift();
       float scale = m_pointClouds[d]->getScale();
       Quaternion rot = m_pointClouds[d]->getRotation();
-      m_pointClouds[d]->setXform(scale, shift, rot);
+      Vec xformCen = m_pointClouds[d]->getXformCen();
+      m_pointClouds[d]->setXform(scale, shift, rot, xformCen);
     }
 
 

@@ -37,6 +37,7 @@ OctreeNode::OctreeNode()
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_xformCen = Vec(0,0,0);
 
   m_pointSize = 1.0;
   m_spacing = 1.0;
@@ -80,6 +81,7 @@ OctreeNode::~OctreeNode()
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_xformCen = Vec(0,0,0);
 
   m_pointSize = 1.0;
   m_spacing = 1.0;
@@ -106,8 +108,8 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
 Vec
 OctreeNode::xformPoint(Vec v)
 {
-  Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
-  Vec ov = v-tomid;
+  //Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
+  Vec ov = v-m_xformCen;
 
   ov = m_rotation.rotate(ov);
   //Vec q = Vec(m_rotation[0],m_rotation[1],m_rotation[2]);
@@ -115,7 +117,7 @@ OctreeNode::xformPoint(Vec v)
 
   ov *= m_scale;
 
-  ov += tomid;
+  ov += m_xformCen;
   
   ov += m_shift;
 
@@ -153,11 +155,12 @@ OctreeNode::setRotation(Quaternion q)
 }
 
 void
-OctreeNode::setXform(float scale, Vec shift, Quaternion rotate)
+OctreeNode::setXform(float scale, Vec shift, Quaternion rotate, Vec xformCen)
 {
   m_scale = scale;
   m_shift = shift;
   m_rotation = rotate;
+  m_xformCen = xformCen;
 
   m_bmin = xformPoint(m_bminO);
   m_bmax = xformPoint(m_bmaxO);

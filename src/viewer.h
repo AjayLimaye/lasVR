@@ -79,7 +79,10 @@ class Viewer : public QGLViewer
 
   void toggleEditMode();
   void toggleCamMode();
+
   void centerPointClouds();
+  void alignUsingPointPairs();
+
   void undo();
   void saveModInfo();
 
@@ -268,6 +271,10 @@ class Viewer : public QGLViewer
 #endif // USE_GLMEDIA
     unsigned char *m_movieFrame;
 
+    
+    QList<Vec> m_pointPairs;
+
+
     void createFBO();
 
     void genColorMap();
@@ -339,6 +346,8 @@ class Viewer : public QGLViewer
 
     void saveMovie();
     bool endMovie();
+
+    void drawPointPairs();
 };
 
 #endif

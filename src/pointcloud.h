@@ -115,8 +115,13 @@ class PointCloud
   void setRotation(Quaternion);
   Quaternion getRotation() { return m_rotation; }
 
-  void setXform(float, Vec, Quaternion);
+  void setXformCen(Vec);
+  Vec getXformCen() { return m_xformCen; }
+
+  void setXform(float, Vec, Quaternion, Vec);
   Vec xformPoint(Vec);
+
+  Vec xformPointInverse(Vec);
 
   void undo();
 
@@ -147,6 +152,7 @@ class PointCloud
   bool m_classPresent;
   int m_priority;
   int m_time;
+  Vec m_xformCen;
 
   bool m_ignoreScaling;
 

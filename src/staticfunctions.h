@@ -42,6 +42,7 @@ class StaticFunctions
   static QQuaternion lnQuat(QQuaternion);
   static QQuaternion scaleQuat(QQuaternion, float);
 
+  static Quaternion getRotationBetweenVectors(Vec, Vec);
   static QQuaternion getRotationBetweenVectors(QVector3D, QVector3D);
   static float getAngleBetweenVectors(QVector3D, QVector3D);
 

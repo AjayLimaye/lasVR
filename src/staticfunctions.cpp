@@ -107,7 +107,7 @@ StaticFunctions::renderText(int x, int y,
 
   QImage mimg = img.mirrored();
   if (!left)
-    glRasterPos2i(x-wd/2, y-ht/2);
+    glRasterPos2i(x-wd/2, y+ht/2);
   else
     glRasterPos2i(x, y);
 
@@ -354,6 +354,28 @@ StaticFunctions::scaleQuat(QQuaternion q0, float scale)
   return QQuaternion(w, x, y, z);
 }
 //------------------------
+
+Quaternion
+StaticFunctions::getRotationBetweenVectors(Vec p, Vec q)
+{
+  Vec axis = p ^ q;
+  float angle = 0;
+
+  if (axis.squaredNorm() == 0) // parallel vectors
+    {
+      axis = p;
+      angle = 0;
+      return Quaternion(p,0);
+    }
+
+  axis.normalize();
+
+  float cost = (p*q)/(p.norm()*q.norm());
+  cost = qMax(-1.0f, qMin(1.0f, cost));
+  angle = acos(cost);
+
+  return Quaternion(axis, angle);
+}
 
 QQuaternion
 StaticFunctions::getRotationBetweenVectors(QVector3D p, QVector3D q)

@@ -403,7 +403,8 @@ VrMain::showMessage(QString mesg)
 
 void VrMain::on_actionEditMode_triggered() { m_viewer->toggleEditMode(); }
 void VrMain::on_actionCamMode_triggered() { m_viewer->toggleCamMode(); }
-void VrMain::on_actionAlign_triggered() { m_viewer->centerPointClouds(); }
+void VrMain::on_actionAlign_triggered() { m_viewer->alignUsingPointPairs(); }
+void VrMain::on_actionCenter_triggered() { m_viewer->centerPointClouds(); }
 void VrMain::on_actionUndo_triggered() { m_viewer->undo(); }
 void VrMain::on_actionSaveInfo_triggered() { m_viewer->saveModInfo(); }
 void

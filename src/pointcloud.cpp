@@ -23,6 +23,7 @@ PointCloud::PointCloud()
   m_classPresent = false;
   m_priority = 0;
   m_time = -1;
+  m_xformCen = Vec(0,0,0);
 
   m_spacing = 1.0;
   m_octreeMin = Vec(0,0,0);
@@ -86,6 +87,7 @@ PointCloud::reset()
   m_classPresent = false;
   m_priority = 0;
   m_time = -1;
+  m_xformCen = Vec(0,0,0);
 
   m_spacing = 1.0;
 
@@ -139,6 +141,7 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
+  m_xformCen = Vec(0,0,0);
   m_rotation = Quaternion();
   m_bminZ = 1;
   m_bmaxZ = 0;
@@ -357,6 +360,7 @@ PointCloud::loadTileOctree(QString dirnameO)
   //-----------------------------
   qint64 npts;
   Vec shift = m_shift;
+  Vec xformCen = m_xformCen;
   float scale = m_scale;
   if (m_ignoreScaling)
     scale = 1.0;
@@ -401,8 +405,9 @@ PointCloud::loadTileOctree(QString dirnameO)
 	  oNode->setTightMax(m_tightOctreeMaxO);
 	  oNode->setPriority(priority);
 	  oNode->setTime(time);
-	  oNode->setShift(shift);
-	  oNode->setRotation(rotate);
+	  //oNode->setShift(shift);
+	  //oNode->setXformCen(xformCen);
+	  //oNode->setRotation(rotate);
 	  oNode->setScale(scale, m_scaleCloudJs);
 	  oNode->setSpacing(m_spacing*scale);
 	  oNode->setPointAttributes(m_pointAttrib);
@@ -471,8 +476,9 @@ PointCloud::loadTileOctree(QString dirnameO)
 	      tnode->setTightMax(m_tightOctreeMaxO);
 	      tnode->setPriority(priority);
 	      tnode->setTime(time);
-	      tnode->setShift(shift);
-	      tnode->setRotation(rotate);
+	      //tnode->setShift(shift);
+	      //tnode->setXformCen(xformCen);
+	      //tnode->setRotation(rotate);
 	      tnode->setScale(scale, m_scaleCloudJs);
 	      tnode->setSpacing(m_spacing*scale);
 	      tnode->setPointAttributes(m_pointAttrib);
@@ -484,7 +490,7 @@ PointCloud::loadTileOctree(QString dirnameO)
     }
 
 
-  setXform(m_scale, m_shift, m_rotation);
+  setXform(m_scale, m_shift, m_rotation, m_xformCen);
 
   saveOctreeNodeToJson(dirname, oNode);
 
@@ -544,6 +550,8 @@ PointCloud::loadCloudJson(QString dirname)
 
     m_tightOctreeMinO = m_tightOctreeMin;
     m_tightOctreeMaxO = m_tightOctreeMax;
+    
+    m_xformCen = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
   }
 
   if (jsonCloudData.contains("pointAttributes"))
@@ -759,8 +767,9 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       tnode->setPriority(priority);
       tnode->setTime(time);
-      tnode->setShift(shift);
-      tnode->setRotation(rotate);
+      //tnode->setShift(shift);
+      //tnode->setXformCen(xformCen);
+      //tnode->setRotation(rotate);
       tnode->setScale(scale, m_scaleCloudJs);      
       tnode->setSpacing(m_spacing*scale);
 
@@ -771,7 +780,7 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setClassPresent(classPresent);
     }
 
-  setXform(m_scale, m_shift, m_rotation);
+  setXform(m_scale, m_shift, m_rotation, m_xformCen);
 }
 
 void
@@ -916,6 +925,15 @@ PointCloud::loadModJson(QString jsonfile)
 	  m_shift = Vec(xyz[0].toFloat(),
 			xyz[1].toFloat(),
 			xyz[2].toFloat());
+	}
+
+      if (jsonInfo.contains("xformcen"))
+	{
+	  QString str = jsonInfo["xformcen"].toString();
+	  QStringList xyz = str.split(" ", QString::SkipEmptyParts);
+	  m_xformCen = Vec(xyz[0].toFloat(),
+			   xyz[1].toFloat(),
+			   xyz[2].toFloat());
 	}
 
       if (jsonInfo.contains("rotation"))
@@ -1455,16 +1473,28 @@ PointCloud::updateVisibilityData()
 }
 
 Vec
+PointCloud::xformPointInverse(Vec v)
+{
+  Vec ov = v + m_gmin;
+  ov -= m_shift;
+  ov -= m_xformCen;
+  ov /= m_scale;
+  ov = m_rotation.inverseRotate(ov);
+  ov += m_xformCen;
+
+  return ov;
+}
+
+Vec
 PointCloud::xformPoint(Vec v)
 {
-  Vec tomid = (m_tightOctreeMinO+m_tightOctreeMaxO)*0.5;
-  Vec ov = v-tomid;
+  Vec ov = v-m_xformCen;
 
   ov = m_rotation.rotate(ov);
 
   ov *= m_scale;
 
-  ov += tomid;
+  ov += m_xformCen;
   
   ov += m_shift;
 
@@ -1513,6 +1543,19 @@ PointCloud::setScale(float scl)
 }
 
 void
+PointCloud::setRotation(Quaternion rotate)
+{
+  m_rotation = rotate;
+  setShift(m_shift);
+}
+void
+PointCloud::setXformCen(Vec xformcen)
+{
+  m_xformCen = xformcen;
+  setShift(m_shift);
+}
+
+void
 PointCloud::setShift(Vec shift)
 {
   m_shift = shift;
@@ -1531,14 +1574,16 @@ PointCloud::setShift(Vec shift)
 }
 
 void
-PointCloud::setXform(float scale, Vec shift, Quaternion rotate)
+PointCloud::setXform(float scale, Vec shift, Quaternion rotate, Vec xformCen)
 {
   m_undo << QVector4D(m_shift.x, m_shift.y, m_shift.z, m_scale);
   m_undo << QVector4D(m_rotation[0], m_rotation[1], m_rotation[2], m_rotation[3]);
+  m_undo << QVector4D(m_xformCen.x, m_xformCen.y, m_xformCen.z, 1);
 
   m_scale = scale;
   m_shift = shift;
   m_rotation = rotate.normalized();
+  m_xformCen = xformCen;
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
@@ -1548,7 +1593,7 @@ PointCloud::setXform(float scale, Vec shift, Quaternion rotate)
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
-      node->setXform(m_scale, m_shift, m_rotation);
+      node->setXform(m_scale, m_shift, m_rotation, m_xformCen);
       node->reloadData();
     } 
 }
@@ -1559,6 +1604,7 @@ PointCloud::undo()
   if (m_undo.count() == 0)
     return;
 
+  QVector4D xc = m_undo.takeLast();
   QVector4D rot = m_undo.takeLast();
   QVector4D u = m_undo.takeLast();
 
@@ -1568,12 +1614,14 @@ PointCloud::undo()
     {
       m_undo << u;
       m_undo << rot;
+      m_undo << xc;
     }
   //-------
 
   m_rotation = Quaternion(rot[0],rot[1],rot[2],rot[3]);
   m_shift = Vec(u.x(), u.y(), u.z());
   m_scale = u.w();
+  m_xformCen = Vec(xc.x(), xc.y(), xc.z());
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
@@ -1583,9 +1631,7 @@ PointCloud::undo()
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
-      node->setShift(m_shift);
-      node->setScale(m_scale, m_scaleCloudJs);
-      node->setRotation(m_rotation);
+      node->setXform(m_scale, m_shift, m_rotation, m_xformCen);
       node->reloadData();
     } 
   
@@ -1610,6 +1656,12 @@ PointCloud::saveModInfo()
     arg(m_shift.y, 12, 'f', 2).\
     arg(m_shift.z, 12, 'f', 2); 
   jsonInfo["shift"] = str.simplified();
+
+  str = QString("%1  %2  %3").\
+    arg(m_xformCen.x, 12, 'f', 2).\
+    arg(m_xformCen.y, 12, 'f', 2).\
+    arg(m_xformCen.z, 12, 'f', 2); 
+  jsonInfo["xformcen"] = str.simplified();
 
   jsonInfo["scale"] = m_scale;
 

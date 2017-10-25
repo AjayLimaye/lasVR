@@ -761,12 +761,14 @@ void
 Viewer::setEditMode(bool b)
 {
   m_editMode = b;
+  m_pointPairs.clear();
 }
 
 void
 Viewer::toggleEditMode()
 {
   m_editMode = !m_editMode;
+  m_pointPairs.clear();
 
   if (m_pointClouds.count() != 2)
     return;
@@ -817,7 +819,7 @@ Viewer::centerPointClouds()
   Quaternion rot = m_pointClouds[1]->getRotation();
   QMessageBox::information(0, "", QString("%1 %2 %3").\
 			   arg(shift.x).arg(shift.y).arg(shift.z));
-  m_pointClouds[1]->setXform(scale, shift, rot);
+  m_pointClouds[1]->setXform(scale, shift, rot, cmid1);
   
   m_coordMin = cmin0;
   m_coordMax = cmax0;
@@ -1067,28 +1069,32 @@ Viewer::mousePressEvent(QMouseEvent *event)
       updateGL();
       bool found = false;
       Vec newp = camera()->pointUnderPixel(event->pos(), found);
-      if (found)
+      if (m_editMode && found)
 	{
-	  if (!m_savePointsToFile)
-	    {
-	      QFileInfo fi(m_volume->filenames()[0]);
-	      QString flnmOut = QFileDialog::getSaveFileName(0,
-							     "Save CSV",
-							     fi.absolutePath(),
-							     "Files (*.csv)",
-							     0,
-							     QFileDialog::DontUseNativeDialog);
-	      
-	      if (!flnmOut.isEmpty())
-		{
-		  m_savePointsToFile = true;
-		  m_pFile.setFileName(flnmOut);
-		}
-	    }
-
-	  if (m_savePointsToFile)
-	    savePointsToFile(newp);
+	  m_pointPairs << newp;
 	}
+//      if (found)
+//	{
+//	  if (!m_savePointsToFile)
+//	    {
+//	      QFileInfo fi(m_volume->filenames()[0]);
+//	      QString flnmOut = QFileDialog::getSaveFileName(0,
+//							     "Save CSV",
+//							     fi.absolutePath(),
+//							     "Files (*.csv)",
+//							     0,
+//							     QFileDialog::DontUseNativeDialog);
+//	      
+//	      if (!flnmOut.isEmpty())
+//		{
+//		  m_savePointsToFile = true;
+//		  m_pFile.setFileName(flnmOut);
+//		}
+//	    }
+//
+//	  if (m_savePointsToFile)
+//	    savePointsToFile(newp);
+//	}
       m_selectActive = false;
     }
   //------------------------------------------
@@ -1116,7 +1122,8 @@ Viewer::mouseReleaseEvent(QMouseEvent *event)
   // generate new node list only when mouse released
   if (m_editMode && m_deltaChanged)
     {
-      m_pointClouds[1]->setXform(m_deltaScale,m_deltaShift,m_deltaRot);
+      Vec xformcen = m_pointClouds[1]->getXformCen();
+      m_pointClouds[1]->setXform(m_deltaScale,m_deltaShift,m_deltaRot, xformcen);
 
       m_deltaRot = Quaternion();
       m_deltaShift = Vec(0,0,0);
@@ -1175,6 +1182,13 @@ Viewer::rotatePointCloud(QMouseEvent *event, QPoint delta)
 {
   Vec axis;
   float angle;
+
+  
+  Vec cminO = m_pointClouds[1]->tightOctreeMinO();
+  Vec cmaxO = m_pointClouds[1]->tightOctreeMaxO();
+  Vec cmidO = (cmaxO+cminO)*0.5;	      
+  m_pointClouds[1]->setXformCen(cmidO);
+
   if (event->modifiers() & Qt::AltModifier)
     {
       Vec cmin = m_pointClouds[1]->tightOctreeMin();
@@ -1413,9 +1427,12 @@ Viewer::draw()
   drawPointsWithReload();
 
   drawLabels();
-
+  
   if (m_showBox || m_editMode)
     drawAABB();
+
+  if (m_editMode)
+    drawPointPairs();
 
   drawInfo();
 
@@ -1451,6 +1468,9 @@ Viewer::fastDraw()
 
   if (m_showBox || m_editMode)
     drawAABB();
+
+  if (m_editMode)
+    drawPointPairs();
 
   drawInfo();
 
@@ -2254,9 +2274,10 @@ Viewer::drawPointsWithReload()
   glUniform1i(m_depthParm[20], m_editMode); // applyXform
   if (m_editMode)
     {
-      Vec cmin = m_pointClouds[1]->tightOctreeMinO();
-      Vec cmax = m_pointClouds[1]->tightOctreeMaxO();
-      Vec cmid = (cmax+cmin)*0.5;	      
+      //Vec cmin = m_pointClouds[1]->tightOctreeMinO();
+      //Vec cmax = m_pointClouds[1]->tightOctreeMaxO();
+      //Vec cmid = (cmax+cmin)*0.5;	      
+      Vec cmid = m_pointClouds[1]->getXformCen();
       glUniform1i(m_depthParm[21], m_volume->xformTileId());
       glUniform3f(m_depthParm[22], m_deltaShift.x, m_deltaShift.y, m_deltaShift.z);
       glUniform3f(m_depthParm[23], cmid.x, cmid.y, cmid.z);
@@ -2517,6 +2538,29 @@ Viewer::stickLabelsToGround()
 }
 
 void
+Viewer::drawPointPairs()
+{
+  if (!m_editMode || m_pointPairs.count() == 0)
+    return;
+
+  glDisable(GL_DEPTH_TEST);
+  startScreenCoordinatesSystem();
+  for(int i=0; i<m_pointPairs.count(); i++)
+    {
+      Vec v = m_pointPairs[i];
+
+      Vec scr = camera()->projectedCoordinatesOf(v);
+      int x = scr.x;
+      int y = scr.y;
+      QFont font = QFont("Helvetica", 10);
+      QString text = QString("%1").arg(i);
+      StaticFunctions::renderText(x, y, text, font, Qt::black, Qt::white);
+    }
+  stopScreenCoordinatesSystem();
+  glEnable(GL_DEPTH_TEST);
+}
+
+void
 Viewer::drawAABB()
 {
   //glDisable(GL_DEPTH_TEST);
@@ -2542,7 +2586,8 @@ Viewer::drawAABB()
 	      
 	      cmin = m_pointClouds[1]->tightOctreeMinO();
 	      cmax = m_pointClouds[1]->tightOctreeMaxO();
-	      Vec cmid = (cmax+cmin)*0.5;	      
+	      //Vec cmid = (cmax+cmin)*0.5;	      
+	      Vec cmid = m_pointClouds[1]->getXformCen();
 
 	      QList<Vec> v;
 	      v << Vec(cmin.x, cmin.y, cmin.z);
@@ -3610,4 +3655,60 @@ Viewer::saveMovie()
   glmedia_movie_writer_add(m_movieWriter, m_movieFrame);
 
 #endif // USE_GLMEDIA
+}
+
+void
+Viewer::alignUsingPointPairs()
+{
+  if (!m_editMode || m_pointPairs.count() == 0)
+    {
+      QMessageBox::information(0, "Error",
+			       "To use point-pair alignment you need to be in Edit Mode.\nYou also need to select 3 points in each of the two point clouds");
+      return;
+    }
+
+  QList<Vec> pointPair1;
+  QList<Vec> pointPair2;
+
+  pointPair1 << m_pointPairs[0];
+  pointPair1 << m_pointPairs[1];
+  pointPair1 << m_pointPairs[2];
+
+  pointPair2 << m_pointPairs[3];
+  pointPair2 << m_pointPairs[4];
+  pointPair2 << m_pointPairs[5];
+
+  Vec v1 = pointPair1[1]-pointPair1[0];
+  Vec w1 = pointPair1[2]-pointPair1[0];
+
+  // get original point coordinates
+  Vec x0 = m_pointClouds[1]->xformPointInverse(pointPair2[0]);
+  Vec x1 = m_pointClouds[1]->xformPointInverse(pointPair2[1]);
+  Vec x2 = m_pointClouds[1]->xformPointInverse(pointPair2[2]);
+
+  Vec shift = pointPair1[0]-x0;
+
+  Vec v2 = x1 - x0;
+  Vec w2 = x2 - x0;
+
+  Quaternion r1 = StaticFunctions::getRotationBetweenVectors(v2, v1);
+  w2 = r1.rotate(w2);
+  Quaternion r2 = StaticFunctions::getRotationBetweenVectors(w2, w1);
+  
+  Quaternion q = r2*r1;
+
+  Vec xformCen = x0;
+  float scale = m_pointClouds[1]->getScale();
+
+  m_pointClouds[1]->setXform(scale, shift, q, xformCen);
+  
+
+  m_pointPairs.clear();
+  m_deltaRot = Quaternion();
+  m_deltaShift = Vec(0,0,0);
+  m_deltaScale = 1.0;
+  m_deltaChanged = false;
+
+  genDrawNodeList();
+  update();
 }

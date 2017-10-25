@@ -28,7 +28,7 @@ class OctreeNode
   void setScale(float, float);
   void setShift(Vec);
   void setRotation(Quaternion);
-  void setXform(float, Vec, Quaternion);
+  void setXform(float, Vec, Quaternion, Vec);
   void setActive(bool a) { m_active = a; }
   void setFileName(QString flnm) { m_fileName = flnm; }
   void setLevelString(QString l) { m_levelString = l; }
@@ -110,6 +110,7 @@ class OctreeNode
   Vec m_shift;
   float m_scale;
   float m_scaleCloudJs;
+  Vec m_xformCen;
 
   float m_pointSize;
 

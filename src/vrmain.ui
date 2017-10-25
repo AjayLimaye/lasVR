@@ -68,6 +68,7 @@
    </attribute>
    <addaction name="actionEditMode"/>
    <addaction name="actionAlign"/>
+   <addaction name="actionCenter"/>
    <addaction name="actionUndo"/>
    <addaction name="actionSaveInfo"/>
    <addaction name="actionCamMode"/>
@@ -114,7 +115,7 @@
     <string>Align</string>
    </property>
    <property name="toolTip">
-    <string>Center Pointclouds</string>
+    <string>Apply point-pair alignment</string>
    </property>
   </action>
   <action name="actionUndo">
@@ -173,6 +174,14 @@
   <action name="actionLoad_Keyframes">
    <property name="text">
     <string>Load Keyframes</string>
+   </property>
+  </action>
+  <action name="actionCenter">
+   <property name="text">
+    <string>Center</string>
+   </property>
+   <property name="toolTip">
+    <string>Center the two point clouds</string>
    </property>
   </action>
  </widget>
