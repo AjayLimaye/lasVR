@@ -97,6 +97,10 @@ class Viewer : public QGLViewer
   int maxTimeStep() { return m_maxTime; }
   int currentTimeStep() { return m_currTime; }
 
+  void setEdges(bool b) { m_showEdges = b; update(); }
+  void setSoftShadows(bool b) { m_softShadows = b; update(); }
+  void setSpheres(bool b) { m_showSphere = b; update(); }
+
   public slots :
     void GlewInit();
     void showBox(bool);

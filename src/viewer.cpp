@@ -903,33 +903,33 @@ Viewer::keyPressEvent(QKeyEvent *event)
       return;
     }  
 
-  if (event->key() == Qt::Key_1)
-    {
-      m_showEdges = !m_showEdges;
-      update();
-      return;
-    }  
-
-  if (event->key() == Qt::Key_2)
-    {
-      m_softShadows = !m_softShadows;
-      update();
-      return;
-    }  
-
-  if (event->key() == Qt::Key_3)
-    {
-      m_smoothDepth = !m_smoothDepth;
-      update();
-      return;
-    }  
-
-  if (event->key() == Qt::Key_4)
-    {
-      m_showSphere = !m_showSphere;
-      update();
-      return;
-    }  
+//  if (event->key() == Qt::Key_1)
+//    {
+//      m_showEdges = !m_showEdges;
+//      update();
+//      return;
+//    }  
+//
+//  if (event->key() == Qt::Key_2)
+//    {
+//      m_softShadows = !m_softShadows;
+//      update();
+//      return;
+//    }  
+//
+//  if (event->key() == Qt::Key_3)
+//    {
+//      m_smoothDepth = !m_smoothDepth;
+//      update();
+//      return;
+//    }  
+//
+//  if (event->key() == Qt::Key_4)
+//    {
+//      m_showSphere = !m_showSphere;
+//      update();
+//      return;
+//    }  
 
   if (event->key() == Qt::Key_B)
     {
@@ -1247,7 +1247,7 @@ Viewer::scalePointCloud(QPoint delta)
 void
 Viewer::dummydraw()
 {
-  glClearColor(0,0,0,0);
+  glClearColor(0.2,0.2,0.2,0.2);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   drawAABB();
@@ -1256,7 +1256,7 @@ Viewer::dummydraw()
 void
 Viewer::paintGL()
 {
-  glClearColor(0,0,0,0);
+  glClearColor(0.2,0.2,0.2,0.2);
 
   if (!m_vrMode ||
       !m_vr.vrEnabled() ||
@@ -1411,7 +1411,7 @@ Viewer::captureKeyFrameImage(int kfn)
 void
 Viewer::draw()
 {
-  glClearColor(0,0,0,0);
+  glClearColor(0.2,0.2,0.2,0.2);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_npoints <= 0)
@@ -1456,7 +1456,7 @@ Viewer::draw()
 void
 Viewer::fastDraw()
 {
-  glClearColor(0,0,0,0);
+  glClearColor(0.2,0.2,0.2,0.2);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_npoints <= 0)

@@ -44,6 +44,10 @@ class VrMain : public QMainWindow
    void on_actionSaveInfo_triggered();
    void on_actionVRMode_triggered();
 
+   void on_actionSoftShadow_triggered();
+   void on_actionEdges_triggered();
+   void on_actionSpheres_triggered();
+
    void on_actionSave_ImageSequence_triggered();
    void on_actionSave_Movie_triggered();
 

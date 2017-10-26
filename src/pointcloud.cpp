@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QInputDialog>
 
 #include "laszip_dll.h"
 
@@ -666,10 +667,20 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 	bmaxZ = jsonInfo["bmax.z"].toDouble();
 
       if (jsonInfo.contains("color"))
-	colorPresent = (jsonInfo["color"].toInt() != 0);
+	{
+	  if (jsonInfo["color"].isBool())
+	    colorPresent = jsonInfo["color"].toBool();
+	  else
+	    colorPresent = (jsonInfo["color"].toInt() != 0);
+	}
 
       if (jsonInfo.contains("classification"))
-	classPresent = (jsonInfo["classification"].toInt() != 0);
+	{
+	  if (jsonInfo["classification"].isBool())
+	    classPresent = jsonInfo["classification"].toBool();
+	  else
+	    classPresent = (jsonInfo["classification"].toInt() != 0);
+	}
 
       jstart = 1;
     }
@@ -957,7 +968,12 @@ PointCloud::loadModJson(QString jsonfile)
 	m_bmaxZ = jsonInfo["bmax.z"].toDouble();
 
       if (jsonInfo.contains("color"))
-	m_colorPresent = (jsonInfo["color"].toInt() != 0);
+	{
+	  if (jsonInfo["color"].isBool())
+	    m_colorPresent = jsonInfo["color"].toBool();
+	  else
+	    m_colorPresent = (jsonInfo["color"].toInt() != 0);
+	}
 
       if (jsonInfo.contains("classification"))
 	m_classPresent = (jsonInfo["classification"].toInt() != 0);
@@ -1643,13 +1659,19 @@ PointCloud::saveModInfo()
   QJsonObject jsonMod;
 
   QJsonObject jsonInfo;
+
+  bool ok;
+  int tm = QInputDialog::getInt(0,
+				"Pointcloud time step",
+				"Set Time Step",
+				m_time, -1, 10000, 1, &ok);
+  if (ok)
+    m_time = tm;
+
   
   jsonInfo["time"] = m_time;
 
-  if (m_colorPresent)
-    jsonInfo["color"] = 1;
-  else
-    jsonInfo["color"] = 0;
+  jsonInfo["color"] = m_colorPresent;
 
   QString str = QString("%1  %2  %3").\
     arg(m_shift.x, 12, 'f', 2).\

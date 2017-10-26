@@ -42,6 +42,9 @@
     <property name="title">
      <string>Options</string>
     </property>
+    <addaction name="actionSoftShadow"/>
+    <addaction name="actionEdges"/>
+    <addaction name="actionSpheres"/>
     <addaction name="actionFly"/>
     <addaction name="separator"/>
     <addaction name="actionVRMode"/>
@@ -182,6 +185,36 @@
    </property>
    <property name="toolTip">
     <string>Center the two point clouds</string>
+   </property>
+  </action>
+  <action name="actionEdges">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Edges</string>
+   </property>
+  </action>
+  <action name="actionSoftShadow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Soft Shadow</string>
+   </property>
+  </action>
+  <action name="actionSpheres">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Spheres</string>
    </property>
   </action>
  </widget>

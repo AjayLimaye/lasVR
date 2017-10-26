@@ -407,6 +407,11 @@ void VrMain::on_actionAlign_triggered() { m_viewer->alignUsingPointPairs(); }
 void VrMain::on_actionCenter_triggered() { m_viewer->centerPointClouds(); }
 void VrMain::on_actionUndo_triggered() { m_viewer->undo(); }
 void VrMain::on_actionSaveInfo_triggered() { m_viewer->saveModInfo(); }
+void VrMain::on_actionSoftShadow_triggered() { m_viewer->setSoftShadows(ui.actionSoftShadow->isChecked()); }
+void VrMain::on_actionEdges_triggered() { m_viewer->setEdges(ui.actionEdges->isChecked()); }
+void VrMain::on_actionSpheres_triggered() { m_viewer->setSpheres(ui.actionSpheres->isChecked()); }
+
+
 void
 VrMain::on_actionVRMode_triggered()
 {

@@ -73,6 +73,9 @@ void main()
     fcol += col[i];
   color = fcol/tdst;
 
+  if (showsphere)
+    color.rgb *= color.a;
+
 //  //------------------------
 //  // apply color smoothing
 //  {
