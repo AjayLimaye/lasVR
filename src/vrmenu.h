@@ -46,6 +46,7 @@ class VrMenu : public QObject
   QStringList menuList() { return m_menus.keys(); }
 
   void setTimeStep(QString);
+  void setDataShown(QString);
 
   bool pointingToMenu();
 

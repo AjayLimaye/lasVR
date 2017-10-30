@@ -11,6 +11,7 @@
 Menu01::Menu01() : QObject()
 {
   m_stepTexture = 0;
+  m_dataNameTexture = 0;
   m_glTexture = 0;
   m_glVertBuffer = 0;
   m_glIndexBuffer = 0;
@@ -66,8 +67,13 @@ Menu01::setTimeStep(QString stpStr)
   int twd = img.width();
   int tht = img.height();
 
-  int szh = qMax(twd, tht);
-  int szw = 1.333*szh;
+  int szh = tht;
+  int szw = 1.333*szh; // 120/90=aspect ration of final image
+  if (szw < twd)
+    {
+      szw = twd;
+      szh = szw/1.333;
+    }
   QImage bimg = QImage(szw, szh, QImage::Format_ARGB32);
   bimg.fill(Qt::transparent);
   QPainter p(&bimg);
@@ -97,10 +103,60 @@ Menu01::setTimeStep(QString stpStr)
 }
 
 void
+Menu01::setDataShown(QString dataStr)
+{
+  QFont font = QFont("Helvetica", 48);
+  QColor color(250, 230, 210); 
+  QImage img = StaticFunctions::renderText(dataStr,
+					   font,
+					   Qt::transparent, color, false);
+
+  int twd = img.width();
+  int tht = img.height();
+
+  int szh = tht;
+  int szw = 5*szh; // 450/90=aspect ratio of final image
+  if (szw < twd)
+    {
+      szw = twd;
+      szh = szw/5.0;
+    }
+  QImage bimg = QImage(szw, szh, QImage::Format_ARGB32);
+  bimg.fill(Qt::transparent);
+  QPainter p(&bimg);
+  p.drawImage((szw-twd)/2, (szh-tht)/2, img.mirrored(false, true));
+
+
+  if (!m_dataNameTexture)
+    glGenTextures(1, &m_dataNameTexture);
+
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, m_dataNameTexture);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D,
+	       0,
+	       4,
+	       szw,
+	       szh,
+	       0,
+	       GL_RGBA,
+	       GL_UNSIGNED_BYTE,
+	       bimg.bits());
+  
+  glDisable(GL_TEXTURE_2D);
+}
+
+void
 Menu01::genVertData()
 {
   if (m_playMenu && !m_stepTexture)
     setTimeStep("0");
+
+  if (!m_dataNameTexture)
+    setDataShown("...");
   
 
   m_vertData = new float[32];
@@ -231,6 +287,13 @@ Menu01::genVertData()
 
   m_menuDim << QRect(0, 0, m_texWd, 500); // default menu
   m_menuDim << QRect(0, 500, m_texWd, 100); // play menu
+
+
+  //data name
+  m_dataGeom << QRectF(25/(float)m_texWd, 510/(float)m_texHt,
+		       450/(float)m_texWd, 90/(float)m_texHt);
+  m_dataGeom << QRectF(25/(float)m_texWd, 610/(float)m_texHt,
+		       450/(float)m_texWd, 90/(float)m_texHt);
 }
 
 void
@@ -522,6 +585,54 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	}
     }
   
+
+  // ---- 
+  // show data name
+  glBindTexture(GL_TEXTURE_2D, m_dataNameTexture);
+  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+  int dg = 0;
+  if (m_playMenu)
+    dg = 1;
+  float cx =  m_dataGeom[dg].x();
+  float cy =  m_dataGeom[dg].y();
+  float cwd = m_dataGeom[dg].width();
+  float cht = m_dataGeom[dg].height();
+  v[0] = vleft + cx*vright - cy*vfrontActual + 0.01*up; // slightly raised
+  v[1] = v[0] - cht*vfrontActual;
+  v[2] = v[1] + cwd*vright;
+  v[3] = v[2] + cht*vfrontActual;
+  
+  for(int i=0; i<4; i++)
+    {
+      m_vertData[8*i + 0] = v[i].x();
+      m_vertData[8*i + 1] = v[i].y();
+      m_vertData[8*i + 2] = v[i].z();
+      m_vertData[8*i+3] = 0;
+      m_vertData[8*i+4] = 0;
+      m_vertData[8*i+5] = 0;
+    }
+  
+  float tx0 = 0;
+  float ty0 = 0;
+  float tx1 = 1;
+  float ty1 = 1;  
+  float texD[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
+	  
+  m_vertData[6] =  texD[0];  m_vertData[7] =  texD[1];
+  m_vertData[14] = texD[2];  m_vertData[15] = texD[3];
+  m_vertData[22] = texD[4];  m_vertData[23] = texD[5];
+  m_vertData[30] = texD[6];  m_vertData[31] = texD[7];
+  
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  0,
+		  sizeof(float)*8*4,
+		  &m_vertData[0]);
+  
+  
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+  // ----
+
+
   glBindVertexArray(0);
   glDisable(GL_TEXTURE_2D);
   

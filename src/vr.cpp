@@ -2480,6 +2480,12 @@ VR::setTimeStep(QString stpStr)
   m_leftMenu.setTimeStep(stpStr);
 }
 
+void
+VR::setDataShown(QString stpStr)
+{
+  m_leftMenu.setDataShown(stpStr);
+}
+
 
 bool
 VR::buildTeleport()

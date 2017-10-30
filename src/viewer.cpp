@@ -435,6 +435,12 @@ Viewer::start()
       m_vr.setPlayButton(m_pointClouds[0]->playButton());
       m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
       m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
+
+      //----------------
+      QString dataShown;
+      dataShown = m_pointClouds[0]->name();
+      m_vr.setDataShown(dataShown);
+      //----------------
     }
 
   if (!m_shadowShader)
@@ -1333,6 +1339,16 @@ Viewer::paintGL()
 
 	  m_vr.setTimeStep(QString("%1").arg(m_currTime));
 
+	  //----------------
+	  QString dataShown;
+	  for(int d=0; d<m_pointClouds.count(); d++)
+	    if (m_pointClouds[d]->visible())
+	      dataShown = dataShown + " " + m_pointClouds[d]->name();
+
+	  m_vr.setDataShown(dataShown);
+	  //----------------
+	  
+
 	  if (m_pointClouds[0]->showMap())
 	    m_firstImageDone = 0;
 	}
@@ -1432,6 +1448,15 @@ Viewer::paintGL()
 	  m_moveViewerToCenter = false;
 	}
       //--------------
+
+      //----------------
+      QString dataShown;
+      for(int d=0; d<m_pointClouds.count(); d++)
+	if (m_pointClouds[d]->visible())
+	  dataShown = dataShown + " " + m_pointClouds[d]->name();
+      
+      m_vr.setDataShown(dataShown);
+      //----------------
     }  
   //---------------------------
 

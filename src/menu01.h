@@ -42,6 +42,7 @@ class Menu01 : public QObject
   void setShowMap(bool);
 
   void setTimeStep(QString);
+  void setDataShown(QString);
 
  signals :
   void resetModel();
@@ -65,7 +66,7 @@ class Menu01 : public QObject
   QImage m_image;
 
   GLuint m_stepTexture;
-
+  GLuint m_dataNameTexture;
   GLuint m_glTexture;
   GLuint m_glVertBuffer;
   GLuint m_glIndexBuffer;
@@ -83,6 +84,8 @@ class Menu01 : public QObject
   QList<QString> m_menuList;
   QList<QRect> m_relGeom;
   QList<QRectF> m_optionsGeom;
+
+  QList<QRectF> m_dataGeom;
 
   float m_mapScale;
   QQuaternion m_mapRot;

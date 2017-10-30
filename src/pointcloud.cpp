@@ -14,6 +14,7 @@ PointCloud::PointCloud()
 {
   m_filenames.clear(); 
 
+  m_name.clear();
   m_scale = 1.0;
   m_scaleCloudJs = 1.0;
   m_shift = Vec(0,0,0);
@@ -153,6 +154,8 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_classPresent = false;
   m_priority = 0;
   m_time = timestep;
+  m_name = QFileInfo(dirname).fileName();
+
 
   m_ignoreScaling = ignoreScaling;
   
@@ -955,6 +958,9 @@ PointCloud::loadModJson(QString jsonfile)
 
       if (jsonInfo.contains("time"))
 	m_time = jsonInfo["time"].toDouble();
+
+      if (jsonInfo.contains("name"))
+	m_name = jsonInfo["name"].toString();
 
       if (jsonInfo.contains("shift"))
 	{

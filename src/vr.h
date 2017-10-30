@@ -71,7 +71,7 @@ class VR : public QObject
   }
 
   void setTimeStep(QString);
-
+  void setDataShown(QString);
 
   QVector3D hmdPosition()
   { return getModelSpacePosition(vr::k_unTrackedDeviceIndex_Hmd); }

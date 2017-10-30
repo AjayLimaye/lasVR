@@ -52,6 +52,12 @@ VrMenu::setTimeStep(QString stpStr)
   ((Menu01*)(m_menus["01"]))->setTimeStep(stpStr);
 }
 
+void
+VrMenu::setDataShown(QString stpStr)
+{
+  ((Menu01*)(m_menus["01"]))->setDataShown(stpStr);
+}
+
 QVector2D
 VrMenu::pinPoint2D()
 {

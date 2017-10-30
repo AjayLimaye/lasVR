@@ -45,6 +45,7 @@ class PointCloud
 
   int maxTime();
 
+  QString name() { return m_name; }
   int priority() { return m_priority; }
   int time() { return m_time; }
 
@@ -144,6 +145,7 @@ class PointCloud
   Vec m_tightOctreeMinAllTiles, m_tightOctreeMaxAllTiles;
   Vec m_gmin, m_gmax;
 
+  QString m_name;
   float m_scale;
   float m_scaleCloudJs;
   Vec m_shift;
