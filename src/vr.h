@@ -386,6 +386,15 @@ class VR : public QObject
   void rightGripMove();
   void rightGripReleased();
   
+  bool m_xActive;
+  bool m_yActive;
+  bool isXTriggered(vr::VRControllerState_t&);
+  bool isYTriggered(vr::VRControllerState_t&);
+  void xButtonPressed();
+  void xButtonReleased();
+  void yButtonPressed();
+  void yButtonReleased();
+
   QMatrix4x4 quatToMat(QQuaternion); 
 
 

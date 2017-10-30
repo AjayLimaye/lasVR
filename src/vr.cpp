@@ -30,7 +30,10 @@ VR::VR() : QObject()
   m_triggerActiveRight = false;
   m_triggerActiveLeft = false;
   m_triggerActiveBoth = false;
-  
+
+  m_xActive = false;
+  m_yActive = false;
+
   m_showLeft = true;
   m_showRight = true;
   
@@ -421,6 +424,10 @@ VR::updateInput()
 					       &m_stateRight,
 					       sizeof(m_stateRight));
 
+  bool xActive = isXTriggered(m_stateLeft);
+  bool yActive = isYTriggered(m_stateLeft);
+
+
   bool leftTriggerActive = isTriggered(m_stateLeft);
   bool rightTriggerActive = isTriggered(m_stateRight);
 
@@ -432,6 +439,19 @@ VR::updateInput()
 
   bool leftGripActive = isGripped(m_stateLeft);
   bool rightGripActive = isGripped(m_stateRight);
+
+// -----------------------
+// left X/Y events
+  if (!m_xActive && xActive)
+    xButtonPressed();
+  if (m_xActive && !xActive)
+    xButtonReleased();
+
+  if (!m_yActive && yActive)
+    yButtonPressed();
+  if (m_yActive && !yActive)
+    yButtonReleased();
+// -----------------------
 
 
 // -----------------------
@@ -563,6 +583,37 @@ VR::updateInput()
 // -----------------------
 
 }
+//---------------------------------------
+
+
+
+//---------------------------------------
+//---------------------------------------
+void
+VR::xButtonPressed()
+{
+  m_xActive = true;
+  gotoPreviousStep();
+}
+void
+VR::xButtonReleased()
+{
+  m_xActive = false;
+}
+
+
+void
+VR::yButtonPressed()
+{
+  m_yActive = true;
+  gotoNextStep();
+}
+void
+VR::yButtonReleased()
+{
+  m_yActive = false;
+}
+//---------------------------------------
 //---------------------------------------
 
 
@@ -967,9 +1018,9 @@ VR::leftTouchPressed()
   m_startTouchX = m_stateLeft.rAxis[0].x;
   m_startTouchY = m_stateLeft.rAxis[0].y;
 
-  // save teleport when both touchpads pressed
-  if (m_touchPressActiveRight)
-    saveTeleportNode();
+//  // save teleport when both touchpads pressed
+//  if (m_touchPressActiveRight)
+//    saveTeleportNode();
 }
 void
 VR::leftTouchPressMove()
@@ -1233,6 +1284,20 @@ VR::bothTriggerReleased()
 
 
 //---------------------------------------
+bool
+VR::isXTriggered(vr::VRControllerState_t &state)
+{
+  return (state.ulButtonPressed &
+	  vr::ButtonMaskFromId(vr::k_EButton_A));
+}
+
+bool
+VR::isYTriggered(vr::VRControllerState_t &state)
+{
+  return (state.ulButtonPressed &
+	  vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu));
+}
+
 bool
 VR::isTriggered(vr::VRControllerState_t &state)
 {
