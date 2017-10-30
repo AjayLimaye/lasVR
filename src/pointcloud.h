@@ -30,8 +30,8 @@ class PointCloud
   Vec coordMin() { return m_coordMin; };
   Vec coordMax() { return m_coordMax; };
 
-  Vec tightOctreeMinO() { return m_tightOctreeMinO; }
-  Vec tightOctreeMaxO() { return m_tightOctreeMaxO; }
+  Vec tightOctreeMinO() { return m_tightOctreeMinAllTiles; }
+  Vec tightOctreeMaxO() { return m_tightOctreeMaxAllTiles; }
 
   Vec tightOctreeMin();
   Vec tightOctreeMax();
@@ -141,6 +141,7 @@ class PointCloud
   Vec m_tightOctreeMin, m_tightOctreeMax;
   Vec m_octreeMinO, m_octreeMaxO;
   Vec m_tightOctreeMinO, m_tightOctreeMaxO;
+  Vec m_tightOctreeMinAllTiles, m_tightOctreeMaxAllTiles;
   Vec m_gmin, m_gmax;
 
   float m_scale;

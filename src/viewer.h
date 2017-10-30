@@ -77,7 +77,10 @@ class Viewer : public QGLViewer
 
   bool editMode() { return m_editMode; }
 
+  void setEditMode(bool);
   void toggleEditMode();
+
+  void setCamMode(bool);
   void toggleCamMode();
 
   void centerPointClouds();
@@ -115,7 +118,6 @@ class Viewer : public QGLViewer
     void updateFramerate();
     void setPointBudget(int);
 
-    void setEditMode(bool);
     void setVRMode(bool);
     bool vrMode() { return m_vrMode; }
 
@@ -253,6 +255,7 @@ class Viewer : public QGLViewer
 
     QString m_dataDir;
 
+    bool m_vrModeSwitched;
     bool m_vrMode;
     bool m_editMode;
     QPoint m_prevPos;

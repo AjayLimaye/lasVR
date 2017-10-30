@@ -36,6 +36,8 @@ PointCloud::PointCloud()
   m_octreeMaxO = Vec(0,0,0);
   m_tightOctreeMinO = Vec(0,0,0);
   m_tightOctreeMaxO = Vec(0,0,0);
+  m_tightOctreeMinAllTiles = Vec(0,0,0);
+  m_tightOctreeMaxAllTiles = Vec(0,0,0);
 
   //m_dpv = 3;
   //m_dpv = 4;
@@ -106,6 +108,8 @@ PointCloud::reset()
   m_octreeMaxO = Vec(0,0,0);
   m_tightOctreeMinO = Vec(0,0,0);
   m_tightOctreeMaxO = Vec(0,0,0);
+  m_tightOctreeMinAllTiles = Vec(0,0,0);
+  m_tightOctreeMaxAllTiles = Vec(0,0,0);
 
 
   m_fileFormat = true; // LAS
@@ -230,7 +234,30 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
 	  
       QFileInfo finfo(dirnames[d]);
       if (finfo.isDir())
-	loadTileOctree(dirnames[d]);
+	{
+	  loadTileOctree(dirnames[d]);
+
+	  if (d == 0)
+	    {
+	      m_tightOctreeMinAllTiles = m_tightOctreeMinO;
+	      m_tightOctreeMaxAllTiles = m_tightOctreeMaxO;
+	    }
+	  else
+	    {
+	      double lx = m_tightOctreeMinAllTiles.x;
+	      double ly = m_tightOctreeMinAllTiles.y;
+	      double lz = m_tightOctreeMinAllTiles.z;
+	      double ux = m_tightOctreeMaxAllTiles.x;
+	      double uy = m_tightOctreeMaxAllTiles.y;
+	      double uz = m_tightOctreeMaxAllTiles.z;
+	      m_tightOctreeMinAllTiles = Vec(qMin(m_tightOctreeMinO.x,lx),
+					     qMin(m_tightOctreeMinO.y,ly),
+					     qMin(m_tightOctreeMinO.z,lz));
+	      m_tightOctreeMaxAllTiles = Vec(qMax(m_tightOctreeMaxO.x,ux),
+					     qMax(m_tightOctreeMaxO.y,uy),
+					     qMax(m_tightOctreeMaxO.z,uz));
+	    }
+	}
     }
 
   Global::progressBar()->hide();
@@ -1548,8 +1575,8 @@ PointCloud::setScale(float scl)
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
-  m_tightOctreeMin = xformPoint(m_tightOctreeMinO);
-  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
   for(int d=0; d<m_allNodes.count(); d++)
     {
       OctreeNode *node = m_allNodes[d];
@@ -1578,8 +1605,8 @@ PointCloud::setShift(Vec shift)
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
-  m_tightOctreeMin = xformPoint(m_tightOctreeMinO);
-  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
 
   for(int d=0; d<m_allNodes.count(); d++)
     {
@@ -1603,8 +1630,8 @@ PointCloud::setXform(float scale, Vec shift, Quaternion rotate, Vec xformCen)
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
-  m_tightOctreeMin = xformPoint(m_tightOctreeMinO);
-  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {
@@ -1641,8 +1668,8 @@ PointCloud::undo()
 
   m_octreeMin = xformPoint(m_octreeMinO);
   m_octreeMax = xformPoint(m_octreeMaxO);
-  m_tightOctreeMin = xformPoint(m_tightOctreeMinO);
-  m_tightOctreeMax = xformPoint(m_tightOctreeMaxO);
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
   
   for(int d=0; d<m_allNodes.count(); d++)
     {

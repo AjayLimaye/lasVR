@@ -401,8 +401,13 @@ VrMain::showMessage(QString mesg)
     setWindowTitle(mesg);
 }
 
-void VrMain::on_actionEditMode_triggered() { m_viewer->toggleEditMode(); }
-void VrMain::on_actionCamMode_triggered() { m_viewer->toggleCamMode(); }
+void VrMain::on_actionEditMode_triggered()
+{
+  ui.actionCamMode->setChecked(ui.actionEditMode->isChecked());
+  m_viewer->setEditMode(ui.actionEditMode->isChecked());
+  m_viewer->setCamMode(ui.actionCamMode->isChecked());
+}
+void VrMain::on_actionCamMode_triggered() { m_viewer->setCamMode(ui.actionCamMode->isChecked()); }
 void VrMain::on_actionAlign_triggered() { m_viewer->alignUsingPointPairs(); }
 void VrMain::on_actionCenter_triggered() { m_viewer->centerPointClouds(); }
 void VrMain::on_actionUndo_triggered() { m_viewer->undo(); }

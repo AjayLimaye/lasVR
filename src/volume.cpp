@@ -435,8 +435,8 @@ Volume::postLoad(bool showInfo)
   if (mt > 0)
     mesg += QString("MAX TIME STEP : %1\n\n").arg(mt);
 
+  mesg += QString("Point clouds : %1\n\n").arg(m_pointClouds.count()); 
   mesg += QString("Tile node count : %1\n").arg(m_tiles.count()); 
-  //mesg += QString("Octree node count : %1\n\n").arg(allNodes.count()); 
   mesg += QString("Octree node count : %1\n\n").arg(uid+1); 
   
   QMessageBox::information(0, "", mesg);

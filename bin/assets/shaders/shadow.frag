@@ -24,6 +24,9 @@ void main()
 
   color = texture2DRect(colorTex, spos.xy);
 
+  if (color.a < 0.001)
+    discard;
+
   //------------------------------
   if (copyOnly)
     {

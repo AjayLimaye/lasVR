@@ -2232,7 +2232,11 @@ VR::setShowMap(bool sm)
   if (!m_showMap)
     m_menuPanels.removeOne("00");
   
-  m_currPanel = 0;
+  if (m_showMap)
+    m_currPanel = 1;
+  else
+    m_currPanel = 0;
+
   m_leftMenu.setCurrentMenu(m_menuPanels[m_currPanel]);
 }
 

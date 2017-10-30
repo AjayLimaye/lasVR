@@ -133,6 +133,8 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   connect(this, SIGNAL(loadLinkedData(QStringList)),
 	  this, SLOT(loadLink(QStringList)));
 
+  connect(this, SIGNAL(resetModel()),
+	  &m_vr, SLOT(resetModel()));
 
   QTimer *fpsTimer = new QTimer(this);
   connect(fpsTimer, &QTimer::timeout,
@@ -145,7 +147,8 @@ Viewer::~Viewer()
 {
   reset();
 
-  m_vr.shutdown();
+  if (m_vr.vrEnabled())
+    m_vr.shutdown();
 }
 
 void
@@ -241,55 +244,8 @@ Viewer::reset()
   m_currFrame = 0;
   m_imageFileName.clear();
   m_imageMode = 0;
-}
 
-void
-Viewer::GlewInit()
-{
-  GlewInit::initialise();
-
-  glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);  
-
-  m_vr.initVR();
-
-  if (m_vr.vrEnabled())
-    m_vrMode = true;
-
-  emit message(QString("VRMode %1").arg(m_vr.vrEnabled()));
-}
-
-void
-Viewer::setVRMode(bool b)
-{
-  m_vrMode = b;
-
-  if (!m_volume)
-    return;
-
-  m_volumeFactory->pushVolume(m_volume);
-
-  if (m_vrMode && m_vr.vrEnabled())
-    m_volume->shiftToZero(true);
-  else
-    {
-      if (m_pointClouds.count() > 1)
-	m_volume->shiftToZero(false);
-      else
-	m_volume->shiftToZero(true);
-    }
-
-  m_volume->postLoad(false);
-
-  start();
-
-  resizeGL(size().width(), size().height());
+  m_vrModeSwitched = false;
 }
 
 void
@@ -297,25 +253,6 @@ Viewer::genColorMap()
 {
   if (m_colorMap)
     return;
-
-//  QList<Vec> colgrad;
-//  colgrad << Vec(0.0, 1.000, 0.500);
-//  colgrad << Vec(0.3, 1.000, 0.767);
-//  colgrad << Vec(0.6, 1.000, 0.933);
-//  colgrad << Vec(0.8, 1.000, 1.000);
-//  colgrad << Vec(1.0, 1.000, 0.800);
-//  colgrad << Vec(1.0, 0.933, 0.600);
-//  colgrad << Vec(1.0, 0.767, 0.300);
-//  colgrad << Vec(1.0, 0.500, 0.000);
-  
-//  m_colorGrad << Vec(0.0, 0.500, 1.000);
-//  m_colorGrad << Vec(0.6, 1.000, 0.933);
-//  m_colorGrad << Vec(0.8, 1.000, 1.000);
-//  m_colorGrad << Vec(0.3, 1.000, 0.767);
-//  m_colorGrad << Vec(1.0, 1.000, 0.800);
-//  m_colorGrad << Vec(1.0, 0.933, 0.600);
-//  m_colorGrad << Vec(1.0, 0.767, 0.300);
-//  m_colorGrad << Vec(1.0, 0.500, 0.000);
 
   m_colorGrad << Vec(1,102, 94)/255.0f;
   m_colorGrad << Vec(53,151,143)/255.0f;
@@ -358,6 +295,88 @@ Viewer::genColorMap()
 }
 
 void
+Viewer::GlewInit()
+{
+  GlewInit::initialise();
+
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);  
+
+  emit message("Ready");
+
+//  m_vr.initVR();
+//
+//  if (m_vr.vrEnabled())
+//    m_vrMode = true;
+//
+//  emit message(QString("VRMode %1").arg(m_vr.vrEnabled()));
+}
+
+void
+Viewer::setVRMode(bool b)
+{
+  if (b)
+    {
+      m_vrModeSwitched = true;
+
+      m_moveViewerToCenter = true;
+
+      if (!m_vr.vrEnabled())
+	m_vr.initVR();
+
+      if (m_vr.vrEnabled())
+	{
+	  m_vrMode = true;     
+	  emit message("VR mode enabled");
+	}
+      else
+	{
+	  QMessageBox::information(0, "", "Cannot enable VR mode");
+	  return;
+	}
+    }
+  
+  m_vrMode = b;
+
+  if (!m_volume)
+    return;
+
+  m_volumeFactory->pushVolume(m_volume);
+
+  if (!m_volume->shiftToZero())
+    {
+      if (m_vrMode && m_vr.vrEnabled())
+	m_volume->setShiftToZero(true);
+      else
+	{
+	  if (m_pointClouds.count() > 1)
+	    m_volume->setShiftToZero(false);
+	  else
+	    m_volume->setShiftToZero(true);
+	}
+
+      m_volume->postLoad(false);
+    }
+
+  resizeGL(size().width(), size().height());
+
+  start();
+
+  QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
+			 QPointF(0,0),
+			 Qt::LeftButton,
+			 Qt::LeftButton,
+			 Qt::NoModifier);
+  mouseReleaseEvent(&dummyEvent);
+}
+
+void
 Viewer::start()
 {
   m_tiles.clear();
@@ -385,7 +404,6 @@ Viewer::start()
 	m_vr.setShowTimeseriesMenu(false);
     }
 
-  m_showSphere = m_pointClouds[0]->showSphere();
   m_pointType = m_pointClouds[0]->pointType();
   
   createMinMaxTexture();
@@ -417,8 +435,6 @@ Viewer::start()
       m_vr.setPlayButton(m_pointClouds[0]->playButton());
       m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
       m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
-      //  if (m_volume->timeseries())
-      //    m_vr.setShowTimeseriesMenu(true);
     }
 
   if (!m_shadowShader)
@@ -458,6 +474,8 @@ Viewer::start()
 
   if (m_vrMode && m_vr.vrEnabled())
     {
+      //m_vr.setGenDrawList(true);
+
       m_menuCam.setScreenWidthAndHeight(m_vr.screenWidth(), m_vr.screenHeight());
       m_menuCam.setSceneBoundingBox(m_coordMin, m_coordMax);
       m_menuCam.setType(Camera::ORTHOGRAPHIC);
@@ -477,6 +495,9 @@ Viewer::start()
     }
   else
     showEntireScene();
+
+//    if (m_vrMode && m_vr.vrEnabled())
+//      genDrawNodeListForVR();
 
   emit message("Ready to serve");
 }
@@ -761,13 +782,7 @@ void
 Viewer::setEditMode(bool b)
 {
   m_editMode = b;
-  m_pointPairs.clear();
-}
 
-void
-Viewer::toggleEditMode()
-{
-  m_editMode = !m_editMode;
   m_pointPairs.clear();
 
   if (m_pointClouds.count() != 2)
@@ -784,18 +799,32 @@ Viewer::toggleEditMode()
   
   genDrawNodeList();
   update();
-  return;
 }
 
+void
+Viewer::toggleEditMode()
+{
+  setEditMode(!m_editMode);
+}
+
+void
+Viewer::setCamMode(bool b)
+{
+  if (b) // set orthographic mode
+    camera()->setType(Camera::ORTHOGRAPHIC);
+  else
+    camera()->setType(Camera::PERSPECTIVE);
+
+  updateGL();
+
+}
 void
 Viewer::toggleCamMode()
 {
   if (camera()->type() == Camera::ORTHOGRAPHIC)
-    camera()->setType(Camera::PERSPECTIVE);
+    setCamMode(false);
   else
-    camera()->setType(Camera::ORTHOGRAPHIC);
-
-  updateGL();
+    setCamMode(true);
 }
 
 void
@@ -1098,6 +1127,22 @@ Viewer::mousePressEvent(QMouseEvent *event)
       m_selectActive = false;
     }
   //------------------------------------------
+  // remove point
+  if (event->modifiers() & Qt::ShiftModifier &&
+      event->buttons() == Qt::RightButton)
+    {
+      for (int i=0; i<m_pointPairs.count(); i++)
+	{
+	  Vec pp = camera()->projectedCoordinatesOf(m_pointPairs[i]);
+	  if (qAbs(pp.x-event->pos().x()) < 10 &&
+	      qAbs(pp.y-event->pos().y()) < 10)
+	    {
+	      m_pointPairs.removeAt(i);
+	      return;
+	    }
+	}      
+    }
+  //------------------------------------------
 
   QGLViewer::mousePressEvent(event);
 
@@ -1247,7 +1292,7 @@ Viewer::scalePointCloud(QPoint delta)
 void
 Viewer::dummydraw()
 {
-  glClearColor(0.2,0.2,0.2,0.2);
+  glClearColor(0.2,0.2,0.2,0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   drawAABB();
@@ -1256,7 +1301,7 @@ Viewer::dummydraw()
 void
 Viewer::paintGL()
 {
-  glClearColor(0.2,0.2,0.2,0.2);
+  glClearColor(0,0,0,0);
 
   if (!m_vrMode ||
       !m_vr.vrEnabled() ||
@@ -1359,6 +1404,18 @@ Viewer::paintGL()
   if (m_vr.reUpdateMap())
     m_firstImageDone = 0;
 
+
+//  if (m_moveViewerToCenter &&
+//      m_vboLoadedAll &&
+//      m_pointClouds[0]->showMap()&&
+//      m_firstImageDone == 2)
+//    {
+//      m_vr.resetModel();
+//      m_moveViewerToCenter = false;
+//      m_firstImageDone++;
+//    }
+  
+
   if (m_vboLoadedAll &&
       m_pointClouds[0]->showMap()&&
       m_firstImageDone < 2)
@@ -1369,27 +1426,9 @@ Viewer::paintGL()
       m_vr.resetUpdateMap();
 
       //--------------
-      if (m_moveViewerToCenter) // do it only once
+      if (m_moveViewerToCenter && m_firstImageDone == 2) // do it only once
 	{
-	  Vec cmin = m_pointClouds[0]->tightOctreeMin();
-	  Vec cmax = m_pointClouds[0]->tightOctreeMax();
-	  for(int d=0; d<m_pointClouds.count(); d++)
-	    {
-	      if (m_pointClouds[d]->time() == -1 ||
-		  m_pointClouds[d]->time() == m_currTime)
-		{
-		  cmin = m_pointClouds[d]->tightOctreeMin();
-		  cmax = m_pointClouds[d]->tightOctreeMax();
-		  break;
-		}
-	    }
-	  
-	  Vec c = (cmin+cmax)/2;
-	  c.z = cmax.z;
-	  //c = Global::stickToGround(c);
-	  QVector3D cmid = QVector3D(c.x, c.y, c.z);
-	  m_vr.teleport(cmid);
-
+	  m_vr.resetModel();
 	  m_moveViewerToCenter = false;
 	}
       //--------------
@@ -1411,7 +1450,7 @@ Viewer::captureKeyFrameImage(int kfn)
 void
 Viewer::draw()
 {
-  glClearColor(0.2,0.2,0.2,0.2);
+  glClearColor(0.2,0.2,0.2,0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_npoints <= 0)
@@ -1456,7 +1495,7 @@ Viewer::draw()
 void
 Viewer::fastDraw()
 {
-  glClearColor(0.2,0.2,0.2,0.2);
+  glClearColor(0.2,0.2,0.2,0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (m_npoints <= 0)
@@ -2214,20 +2253,23 @@ Viewer::drawPointsWithReload()
   glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer[m_vbID]);
 
 
-  glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
-			 GL_COLOR_ATTACHMENT0,
-			 GL_TEXTURE_RECTANGLE,
-			 m_depthTex[0],
-			 0);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
-			 GL_COLOR_ATTACHMENT1,
-			 GL_TEXTURE_RECTANGLE,
-			 m_depthTex[1],
-			 0);
-  GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT,
-		       GL_COLOR_ATTACHMENT1_EXT };
-  glDrawBuffers(2, buffers);
+  if (!m_selectActive)
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			     GL_COLOR_ATTACHMENT0,
+			     GL_TEXTURE_RECTANGLE,
+			     m_depthTex[0],
+			     0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			     GL_COLOR_ATTACHMENT1,
+			     GL_TEXTURE_RECTANGLE,
+			     m_depthTex[1],
+			     0);
+      GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT,
+			   GL_COLOR_ATTACHMENT1_EXT };
+      glDrawBuffers(2, buffers);
+    }
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -2260,7 +2302,10 @@ Viewer::drawPointsWithReload()
 
   glUniform1i(m_depthParm[13], m_pointType); // pointsize calculation
 
-  glUniform1i(m_depthParm[14], 1); // shadows
+  if (m_selectActive)
+    glUniform1i(m_depthParm[14], 0); // no shadows
+  else
+    glUniform1i(m_depthParm[14], 1); // shadows
   
   glUniform1f(m_depthParm[15], camera()->zFar()); // zfar
 
@@ -2301,6 +2346,22 @@ Viewer::drawPointsWithReload()
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+  if (m_selectActive)
+    {
+      glDisable(GL_PROGRAM_POINT_SIZE );
+      glDisable(GL_POINT_SPRITE);
+      
+      glActiveTexture(GL_TEXTURE2);
+      glDisable(GL_TEXTURE_RECTANGLE);
+      
+      glActiveTexture(GL_TEXTURE3);
+      glDisable(GL_TEXTURE_RECTANGLE);
+      
+      glActiveTexture(GL_TEXTURE0);
+      glDisable(GL_TEXTURE_1D);
+
+      return;
+    }   
 //--------------------------------------------
 
 //--------------------------------------------
@@ -2547,13 +2608,25 @@ Viewer::drawPointPairs()
   startScreenCoordinatesSystem();
   for(int i=0; i<m_pointPairs.count(); i++)
     {
-      Vec v = m_pointPairs[i];
+      int pcN;
+      if (i<3)
+	pcN = 1;
+      else
+	pcN = 2;
 
+      int pn;
+      if (i<3)
+	pn = i;
+      else
+	pn = i-2;
+      
+      Vec v = m_pointPairs[i];
+      
       Vec scr = camera()->projectedCoordinatesOf(v);
       int x = scr.x;
       int y = scr.y;
       QFont font = QFont("Helvetica", 10);
-      QString text = QString("%1").arg(i);
+      QString text = QString("%1(%2)").arg(pcN).arg(pn);
       StaticFunctions::renderText(x, y, text, font, Qt::black, Qt::white);
     }
   stopScreenCoordinatesSystem();
@@ -2563,7 +2636,6 @@ Viewer::drawPointPairs()
 void
 Viewer::drawAABB()
 {
-  //glDisable(GL_DEPTH_TEST);
   glDisable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  
 
@@ -2586,7 +2658,6 @@ Viewer::drawAABB()
 	      
 	      cmin = m_pointClouds[1]->tightOctreeMinO();
 	      cmax = m_pointClouds[1]->tightOctreeMaxO();
-	      //Vec cmid = (cmax+cmin)*0.5;	      
 	      Vec cmid = m_pointClouds[1]->getXformCen();
 
 	      QList<Vec> v;
@@ -2639,7 +2710,6 @@ Viewer::drawAABB()
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   glLineWidth(1.0);
-  glEnable(GL_DEPTH_TEST);
 }
 
 Vec
@@ -3247,7 +3317,7 @@ Viewer::loadLinkOnTop(QString dirname)
       return;
     }
 
-  m_volume->shiftToZero(false);
+  m_volume->setShiftToZero(false);
 
   m_volumeFactory->pushVolume(m_volume);
 
@@ -3304,7 +3374,7 @@ Viewer::loadLink(QString dirname)
       Volume *newvol = m_volumeFactory->newVolume();
 
       if (m_vrMode && m_vr.vrEnabled())
-	newvol->shiftToZero(true);
+	newvol->setShiftToZero(true);
       
       if (!newvol->loadDir(dirname))
 	{
@@ -3339,7 +3409,7 @@ Viewer::loadLink(QStringList dirnames)
   // new volume is automatically pushed on the stack
   Volume *vol = m_volumeFactory->newVolume();
   if (m_vrMode && m_vr.vrEnabled())
-    vol->shiftToZero(true);
+    vol->setShiftToZero(true);
       
 
   if (!vol->loadTiles(dirnames))

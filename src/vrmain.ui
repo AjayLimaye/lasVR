@@ -48,6 +48,7 @@
     <addaction name="actionFly"/>
     <addaction name="separator"/>
     <addaction name="actionVRMode"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuProcess">
     <property name="title">

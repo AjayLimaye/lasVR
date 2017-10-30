@@ -23,7 +23,8 @@ class Volume : public QObject
 
   void reset();
 
-  void shiftToZero(bool b) { m_zeroShift = b; }
+  void setShiftToZero(bool b) { m_zeroShift = b; }
+  bool shiftToZero() { return m_zeroShift; }
 
   bool loadOnTop(QString);
   bool loadDir(QString);

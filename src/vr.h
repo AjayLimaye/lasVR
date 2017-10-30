@@ -58,6 +58,7 @@ class VR : public QObject
 
   float* depthBuffer() { return m_depthBuffer; }
 
+  void setGenDrawList(bool b) { m_genDrawList = b; }
   bool genDrawList() { return m_genDrawList; }
   void resetGenDrawList() { m_genDrawList = false; }
 

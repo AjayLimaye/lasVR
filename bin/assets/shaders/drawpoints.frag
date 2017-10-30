@@ -33,11 +33,13 @@ void main()
   color = vec4(fragmentColor, alpha);
 
 
-  gl_FragDepth = zdepth - zdepthR*dc;
+  if (shadows)
+    gl_FragDepth = zdepth - zdepthR*dc;
+  else
+    gl_FragDepth = zdepth;
 
 
 //  color = vec4(fragmentColor, 1);
-//  gl_FragDepth = zdepth;
 
   if (shadows)
     {
