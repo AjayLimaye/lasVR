@@ -130,16 +130,16 @@ PointCloud::loadAll()
     }
 }
 
-int
-PointCloud::maxTime()
-{
-  int maxTime = 0;
-
-  for(int d=0; d<m_tiles.count(); d++)
-    maxTime = qMax(maxTime, m_tiles[d]->time());
-
-  return maxTime;
-}
+//int
+//PointCloud::maxTime()
+//{
+//  int maxTime = 0;
+//
+//  for(int d=0; d<m_tiles.count(); d++)
+//    maxTime = qMax(maxTime, m_tiles[d]->time());
+//
+//  return maxTime;
+//}
 
 void
 PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling)
@@ -435,7 +435,7 @@ PointCloud::loadTileOctree(QString dirnameO)
 	  oNode->setTightMin(m_tightOctreeMinO);
 	  oNode->setTightMax(m_tightOctreeMaxO);
 	  oNode->setPriority(priority);
-	  oNode->setTime(time);
+	  //oNode->setTime(time);
 	  //oNode->setShift(shift);
 	  //oNode->setXformCen(xformCen);
 	  //oNode->setRotation(rotate);
@@ -506,7 +506,7 @@ PointCloud::loadTileOctree(QString dirnameO)
 	      tnode->setTightMin(m_tightOctreeMinO);
 	      tnode->setTightMax(m_tightOctreeMaxO);
 	      tnode->setPriority(priority);
-	      tnode->setTime(time);
+	      //tnode->setTime(time);
 	      //tnode->setShift(shift);
 	      //tnode->setXformCen(xformCen);
 	      //tnode->setRotation(rotate);
@@ -807,7 +807,7 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setDataPerVertex(m_dpv);
 
       tnode->setPriority(priority);
-      tnode->setTime(time);
+      //tnode->setTime(time);
       //tnode->setShift(shift);
       //tnode->setXformCen(xformCen);
       //tnode->setRotation(rotate);
@@ -1687,21 +1687,26 @@ PointCloud::undo()
 }
 
 void
-PointCloud::saveModInfo()
+PointCloud::saveModInfo(QString askString, bool askTime)
 {
   QJsonObject jsonMod;
 
   QJsonObject jsonInfo;
 
-  bool ok;
-  int tm = QInputDialog::getInt(0,
-				"Pointcloud time step",
-				"Set Time Step",
-				m_time, -1, 10000, 1, &ok);
-  if (ok)
-    m_time = tm;
+  if (askTime || m_time == -1)
+    {
+      bool ok;
+      int tm = QInputDialog::getInt(0,
+				    "Pointcloud time step",
+				    askString,
+				    m_time, -1, 10000, 1, &ok);
+      if (ok)
+	m_time = tm;
+    }
 
   
+  jsonInfo["name"] = m_name;
+
   jsonInfo["time"] = m_time;
 
   jsonInfo["color"] = m_colorPresent;
@@ -1737,7 +1742,8 @@ PointCloud::saveModInfo()
   saveFile.open(QIODevice::WriteOnly);
   saveFile.write(saveDoc.toJson());
 
-  QMessageBox::information(0, "", "Information saved to\n"+jsonfile);
+  if (askTime) // modified point cloud
+    QMessageBox::information(0, "", "Information saved to\n"+jsonfile);
 }
 
 void

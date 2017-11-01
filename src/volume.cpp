@@ -86,7 +86,8 @@ Volume::maxTime()
   int maxTime = 0;
 
   for(int d=0; d<m_pointClouds.count(); d++)
-    maxTime = qMax(maxTime, m_pointClouds[d]->maxTime());
+    //maxTime = qMax(maxTime, m_pointClouds[d]->maxTime());
+    maxTime = qMax(maxTime, m_pointClouds[d]->time());
 
   return maxTime;
 }
@@ -120,6 +121,9 @@ Volume::loadOnTop(QString dirname)
       pointCloud->setPointType(m_pointType);
       //--------------------------------------------
 
+      QString name = QFileInfo(dirname).fileName();
+      pointCloud->setName(name);
+
       m_pointClouds << pointCloud;
       pointCloud->loadMultipleTiles(dirnames);
     }
@@ -130,7 +134,6 @@ Volume::loadOnTop(QString dirname)
 
   return true;
 }
-
 
 bool
 Volume::loadDir(QString dirname)
@@ -177,7 +180,7 @@ Volume::loadDir(QString dirname)
 			      QDir::NoDotAndDotDot | QDir::NoSymLinks,
 			      QDirIterator::NoIteratorFlags);
       int step = 0;     
-      QStringList dirnames;
+      QString dirnames;
       while(topDirIter.hasNext())
 	{
 	  PointCloud *pointCloud = new PointCloud();
@@ -196,11 +199,15 @@ Volume::loadDir(QString dirname)
 	  if (!m_timeseries)
 	    step = -1;
 
-	  pointCloud->loadPoTreeMultiDir(topDirIter.next(), step, m_ignoreScaling);
+	  QString dirname = topDirIter.next();
+	  pointCloud->loadPoTreeMultiDir(dirname, step, m_ignoreScaling);
 
 	  step ++;
+
+	  dirnames = dirnames + "\n" + dirname;
 	}
-    }  
+
+    }
   else if (QDir(dirname).exists("cloud.js"))
     {
       // Load single PoTree directory
@@ -221,7 +228,12 @@ Volume::loadDir(QString dirname)
       pointCloud->setPointType(m_pointType);
       //--------------------------------------------
 
+      QString name = QFileInfo(dirname).fileName();
+      pointCloud->setName(name);
+
       m_pointClouds << pointCloud;
+
+
       pointCloud->loadMultipleTiles(dirnames);
     }
   else

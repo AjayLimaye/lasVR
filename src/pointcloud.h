@@ -43,11 +43,14 @@ class PointCloud
   QList<OctreeNode*> allNodes() { return m_allNodes; }
   QList< QList<uchar> > vData() { return m_vData; }
 
-  int maxTime();
+  //int maxTime();
 
   QString name() { return m_name; }
+  void setName(QString name) { m_name = name; }
+
   int priority() { return m_priority; }
   int time() { return m_time; }
+  void setTime(int t) { m_time = t; }
 
   void drawInactiveTiles();
   void drawActiveNodes();
@@ -126,7 +129,7 @@ class PointCloud
 
   void undo();
 
-  void saveModInfo();
+  void saveModInfo(QString, bool);
 
   void setEditMode(bool);
 

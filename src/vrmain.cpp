@@ -11,6 +11,8 @@
 #include <QFileDialog>
 #include <QPushButton>
 #include <QWidgetAction>
+#include <QVBoxLayout>
+#include <QPushButton>
 
 VrMain::VrMain(QWidget *parent) :
   QMainWindow(parent)
@@ -37,6 +39,46 @@ VrMain::VrMain(QWidget *parent) :
   setMouseTracking(true);
 
   m_viewer->setVolumeFactory(&m_volumeFactory);
+
+
+  //-------------------------
+  m_dockTimeStamps = new QDockWidget("Time Stamp Editor", this);
+  m_dockTimeStamps->setAllowedAreas(Qt::RightDockWidgetArea | 
+				    Qt::LeftDockWidgetArea);
+  
+  m_tableWidget = new QTableWidget();
+  m_tableWidget->verticalHeader()->setSectionsMovable(true);
+  //m_tableWidget->verticalHeader()->setSectionsClickable(true);
+  //m_tableWidget->verticalHeader()->hide();
+  m_tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+  m_tableWidget->setShowGrid(true);
+  m_tableWidget->setAlternatingRowColors(false);
+  m_tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+  m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+  QString str;
+  str = "QHeaderView {font-size : 12pt; }";
+  m_tableWidget->setStyleSheet(str);
+
+
+  QWidget *wdg = new QWidget();
+  
+  QVBoxLayout *vbox = new QVBoxLayout();
+
+  QPushButton *sTs = new QPushButton("Save");
+  connect(sTs, SIGNAL(clicked()),
+	  this, SLOT(saveTimeStamps()));
+
+  vbox->addWidget(sTs);
+  vbox->addWidget(m_tableWidget);
+
+  wdg->setLayout(vbox);
+
+  m_dockTimeStamps->setWidget(wdg);
+  m_dockTimeStamps->hide();
+
+  addDockWidget(Qt::LeftDockWidgetArea,m_dockTimeStamps);
+  ui.menuProcess->addAction(m_dockTimeStamps->toggleViewAction());
+  //-------------------------
 
 
   //-------------------------
@@ -347,29 +389,73 @@ VrMain::loadTiles(QStringList flnms)
   m_timeStep->setRange(0, m_viewer->maxTimeStep());
   m_timeStep->setValue(0);
 
-//  Volume *vol = m_volumeFactory.newVolume();
-//
-//  if (flnms.count() == 1)
-//    {
-//      //if (!m_volume->loadDir(flnms[0]))
-//      if (!vol->loadDir(flnms[0]))
-//	{
-//	  QMessageBox::information(0, "Error", "Cannot load tiles from directory");
-//	  return;
-//	}
-//    }
-//  else
-//    {
-//      //if (!m_volume->loadTiles(flnms))
-//      if (!vol->loadTiles(flnms))
-//	{
-//	  QMessageBox::information(0, "Error", "Cannot load the tiles");
-//	  return;
-//	}
-//    }    
-//
-//  m_viewer->start();
+  modifyTableWidget();
 }
+
+void
+VrMain::modifyTableWidget()
+{
+  
+  while(m_tableWidget->rowCount() > 0)
+    {
+      m_tableWidget->removeRow(0);
+    }
+  
+  m_tableWidget->setColumnCount(2);
+
+  QStringList item;
+  item << "Time";
+  item << "Name";
+
+  m_tableWidget->setHorizontalHeaderLabels(item);
+
+  m_tableWidget->setColumnWidth(0, 50);
+  m_tableWidget->setColumnWidth(1, 150);
+  m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
+  m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
+
+  QList<PointCloud*> pcl = m_viewer->pointCloudList();
+  for(int i=0; i<pcl.count(); i++)
+    {
+      m_tableWidget->insertRow(i);
+      m_tableWidget->setRowHeight(i, 30);
+
+      QString name = pcl[i]->name();
+      int time = pcl[i]->time();
+
+      QTableWidgetItem *wi = new QTableWidgetItem(QString("%1").arg(time));
+      wi->setTextAlignment(Qt::AlignCenter);
+      m_tableWidget->setItem(i, 0, wi);
+      
+      wi = new QTableWidgetItem(name);
+      m_tableWidget->setItem(i, 1, wi);
+    }
+}
+
+
+void
+VrMain::saveTimeStamps()
+{
+  QList<PointCloud*> pcl = m_viewer->pointCloudList();
+  for(int i=0; i<pcl.count(); i++)
+    {
+      int time = m_tableWidget->item(i, 0)->text().toInt();
+      QString name = m_tableWidget->item(i, 01)->text();
+      pcl[i]->setTime(time);
+      pcl[i]->setName(name);
+      pcl[i]->saveModInfo("",false);
+    }
+  QMessageBox::information(0, "Save Time Stamps", "Saved time stamps to respective mod.json files.");
+
+
+  int maxTime = 0;
+  for(int d=0; d<pcl.count(); d++)
+    maxTime = qMax(maxTime, pcl[d]->time());
+
+  m_timeStep->setRange(0, maxTime);
+  m_timeStep->setValue(0);
+}
+
 
 void
 VrMain::showFramerate(float f)

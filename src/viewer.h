@@ -104,6 +104,8 @@ class Viewer : public QGLViewer
   void setSoftShadows(bool b) { m_softShadows = b; update(); }
   void setSpheres(bool b) { m_showSphere = b; update(); }
 
+  QList<PointCloud*> pointCloudList() { return m_pointClouds; }
+
   public slots :
     void GlewInit();
     void showBox(bool);

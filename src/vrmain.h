@@ -12,6 +12,7 @@
 
 #include <QThread>
 #include <QDockWidget>
+#include <QTableWidget>
 
 class VrMain : public QMainWindow
 {
@@ -30,6 +31,7 @@ class VrMain : public QMainWindow
   void keyPressEvent(QKeyEvent*);
 
  private slots :
+   void saveTimeStamps();
    void on_actionLoad_LAS_triggered();
    void on_actionQuit_triggered();
    void on_actionFly_triggered();
@@ -74,7 +76,13 @@ class VrMain : public QMainWindow
   KeyFrameEditor *m_keyFrameEditor;
   KeyFrame *m_keyFrame;
 
+
+  QDockWidget *m_dockTimeStamps;
+  QTableWidget *m_tableWidget;
+
   void loadTiles(QStringList);
+
+  void modifyTableWidget();
 };
 
 #endif

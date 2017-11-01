@@ -878,7 +878,9 @@ Viewer::undo()
 void
 Viewer::saveModInfo()
 {
-  m_pointClouds[1]->saveModInfo();
+  m_pointClouds[0]->saveModInfo("Time step for control point cloud", false);
+
+  m_pointClouds[1]->saveModInfo("Time step for modified point cloud", true);
 }
 
 void
