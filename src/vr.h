@@ -113,7 +113,7 @@ class VR : public QObject
   QMatrix4x4 final_xformInverted() { return m_final_xformInverted; }
 
 
-  void preDraw();
+  bool preDraw();
   void postDraw();
 
   void bindBuffer(vr::Hmd_Eye);
@@ -318,7 +318,7 @@ class VR : public QObject
 				 vr::TrackedPropertyError *error = 0);
   
   void updatePoses();
-  void updateInput();
+  bool updateInput();
 
   void ProcessVREvent(const vr::VREvent_t & event);
   

@@ -475,16 +475,14 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   //for(int og=0; og<m_optionsGeom.count(); og++)
   int ogend = m_optionsGeom.count();
   if (!m_playMenu)
-    //ogend = 7;
     ogend = 8;
+  else
+    ogend = m_optionsGeom.count()-1; // don't show step number here
 
   for(int og=0; og<ogend; og++)
     {
       bool ok = false;
       ok = (m_selected == og);
-      //ok |= (og == 5 && m_softShadows);
-      //ok |= (og == 6 && m_edges);
-      //ok |= (og >= 10);
       ok |= (og == 6 && m_softShadows);
       ok |= (og == 7 && m_edges);
       ok |= (og >= 11);
@@ -495,108 +493,78 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	  float cy = m_optionsGeom[og].y();
 	  float cwd = m_optionsGeom[og].width();
 	  float cht = m_optionsGeom[og].height();
-	  
-	  //if (og < 10)
-	  if (og < 11)
+
+	  Vec mc = Vec(0,0,0);
+	  if (og == m_selected)
 	    {
-	      if (og == m_selected)
-		{
-		  if (triggerPressed)
-		    glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2);
-		  else
-		    glUniform3f(rcShaderParm[2], 0.5, 0.7, 1);
-		}
+	      if (triggerPressed)
+		mc = Vec(0.2, 0.8, 0.2);
 	      else
-		glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5);
+		mc = Vec(0.5, 0.7, 1);
 	    }
-	  //else if (og == 10)
-	  else if (og == 11)
+	  else
 	    {
-	      if (!m_playButton) // hide play button
-		glUniform3f(rcShaderParm[2], 0.01, 0.01, 0.01);
-	      else
-		{
-		  //if (m_selected == 10)
-		  if (m_selected == 11)
-		    {
-		      if (triggerPressed)
-			glUniform3f(rcShaderParm[2], 0.2, 0.8, 0.2);
-		      else
-			glUniform3f(rcShaderParm[2], 0.5, 0.7, 1);
-		    }
-		  else if (m_play)
-		    glUniform3f(rcShaderParm[2], 0.5, 1.0, 0.5);
-		  else
-		    glUniform3f(rcShaderParm[2], 0, 0, 0);
-		}
-	    }
-	  //else if (og == 11) // show step number
-	  else if (og == 12) // show step number
-	    {
-	      glBindTexture(GL_TEXTURE_2D, m_stepTexture);
-	      glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
+	      if (og < 11 || (og == 11 && m_play))
+		mc = Vec(0.5, 1.0, 0.5);
 	    }
 
-	  QVector3D v[4];  
-	  v[0] = vleft + cx*vright - cy*vfrontActual + 0.01*up; // slightly raised
-	  v[1] = v[0] - cht*vfrontActual;
-	  v[2] = v[1] + cwd*vright;
-	  v[3] = v[2] + cht*vfrontActual;
-	  
-	  for(int i=0; i<4; i++)
-	    {
-	      m_vertData[8*i + 0] = v[i].x();
-	      m_vertData[8*i + 1] = v[i].y();
-	      m_vertData[8*i + 2] = v[i].z();
-	      m_vertData[8*i+3] = 0;
-	      m_vertData[8*i+4] = 0;
-	      m_vertData[8*i+5] = 0;
-	    }
-	  
-	  float tx0 = 0;
-	  float ty0 = 0;
-	  float tx1 = 1;
-	  float ty1 = 1;
-	  
-	  //if (og < 11)
-	  if (og < 12)
-	    {
-	      tx0 = m_relGeom[og].x()/(float)m_texWd;
-	      tx1 = tx0 + m_relGeom[og].width()/(float)m_texWd;
-	      
-	      ty0 = m_relGeom[og].y()/(float)m_texHt;
-	      ty1 = ty0 + m_relGeom[og].height()/(float)m_texHt;
-	    }
-	  
-	  float texC[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
-	  
-	  m_vertData[6] =  texC[0];  m_vertData[7] =  texC[1];
-	  m_vertData[14] = texC[2];  m_vertData[15] = texC[3];
-	  m_vertData[22] = texC[4];  m_vertData[23] = texC[5];
-	  m_vertData[30] = texC[6];  m_vertData[31] = texC[7];
-	  
-	  glBufferSubData(GL_ARRAY_BUFFER,
-			  0,
-			  sizeof(float)*8*4,
-			  &m_vertData[0]);
-	  
-	      
-	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+	  if (og == 11 && !m_playButton) // hide play button
+	    mc = Vec(0.01, 0.01, 0.01);
+
+	  showText(m_glTexture, m_optionsGeom[og],
+		   vleft, vright, vfrontActual, up,
+		   cx, cx+cwd, cy, cy+cht,
+		   mc);
 	}
     }
   
+  // ---- 
+  // show step number
+  if (m_playMenu)
+    showText(m_stepTexture, m_optionsGeom[12],
+	     vleft, vright, vfrontActual, up,
+	     0, 1, 0, 1,
+	     Vec(0,0,0));
+  // ---- 
 
   // ---- 
   // show data name
-  glBindTexture(GL_TEXTURE_2D, m_dataNameTexture);
-  glUniform3f(rcShaderParm[2], 0, 0, 0); // mix color
   int dg = 0;
   if (m_playMenu)
     dg = 1;
-  float cx =  m_dataGeom[dg].x();
-  float cy =  m_dataGeom[dg].y();
-  float cwd = m_dataGeom[dg].width();
-  float cht = m_dataGeom[dg].height();
+  showText(m_dataNameTexture, m_dataGeom[dg],
+	   vleft, vright, vfrontActual, up,
+	   0, 1, 0, 1,
+	   Vec(0,0,0));
+  // ---- 
+
+
+  glBindVertexArray(0);
+  glDisable(GL_TEXTURE_2D);
+  
+  glUseProgram( 0 );
+  
+  glDisable(GL_BLEND);
+}
+
+void
+Menu01::showText(GLuint tex, QRectF geom,
+		 QVector3D vleft, QVector3D vright,
+		 QVector3D vfrontActual, QVector3D up,
+		 float tx0, float tx1, float ty0, float ty1,
+		 Vec mc)
+{
+  glBindTexture(GL_TEXTURE_2D, tex);
+
+  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
+  glUniform3f(rcShaderParm[2], mc.x, mc.y, mc.z); // mix color
+
+  float cx =  geom.x();
+  float cy =  geom.y();
+  float cwd = geom.width();
+  float cht = geom.height();
+
+  QVector3D v[4];  
   v[0] = vleft + cx*vright - cy*vfrontActual + 0.01*up; // slightly raised
   v[1] = v[0] - cht*vfrontActual;
   v[2] = v[1] + cwd*vright;
@@ -612,10 +580,6 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
       m_vertData[8*i+5] = 0;
     }
   
-  float tx0 = 0;
-  float ty0 = 0;
-  float tx1 = 1;
-  float ty1 = 1;  
   float texD[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
 	  
   m_vertData[6] =  texD[0];  m_vertData[7] =  texD[1];
@@ -630,15 +594,6 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   
   
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
-  // ----
-
-
-  glBindVertexArray(0);
-  glDisable(GL_TEXTURE_2D);
-  
-  glUseProgram( 0 );
-  
-  glDisable(GL_BLEND);
 }
 
 int

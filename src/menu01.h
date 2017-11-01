@@ -93,6 +93,12 @@ class Menu01 : public QObject
   void genVertData();
 
   QVector3D projectPin(QMatrix4x4, QMatrix4x4);
+
+  void showText(GLuint, QRectF,
+		QVector3D, QVector3D,
+		QVector3D, QVector3D,
+		float,float,float,float,
+		Vec);
 };
 
 #endif

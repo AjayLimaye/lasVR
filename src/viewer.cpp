@@ -1325,7 +1325,11 @@ Viewer::paintGL()
       return;
     }
 
-  m_vr.preDraw();
+  if (!m_vr.preDraw())
+    {
+      update();
+      return;
+    }
 
   if (m_vr.genDrawList())
     {

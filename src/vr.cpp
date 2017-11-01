@@ -322,7 +322,6 @@ VR::initVR()
 
   buildAxesVB();
 
-
 // loads a cubemap texture from 6 individual texture faces
 // order:
 // +X (right)
@@ -384,7 +383,7 @@ VR::updatePoses()
     }
 }
 
-void
+bool
 VR::updateInput()
 {
   vr::VREvent_t event;
@@ -416,13 +415,19 @@ VR::updateInput()
   
   m_rightController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
 
-  bool leftActive = m_hmd->GetControllerState(m_leftController,
+
+  bool leftValid = m_hmd->GetControllerState(m_leftController,
 					      &m_stateLeft,
 					      sizeof(m_stateLeft));
+  if (!leftValid)
+    return false;
 
-  bool rightActive = m_hmd->GetControllerState(m_rightController,
+  bool rightValid = m_hmd->GetControllerState(m_rightController,
 					       &m_stateRight,
 					       sizeof(m_stateRight));
+
+  if (!rightValid)
+    return false;
 
   bool xActive = isXTriggered(m_stateLeft);
   bool yActive = isYTriggered(m_stateLeft);
@@ -582,6 +587,7 @@ VR::updateInput()
 
 // -----------------------
 
+  return true;
 }
 //---------------------------------------
 
@@ -1525,13 +1531,16 @@ VR::getQuaternion(vr::HmdMatrix34_t mat)
   return q;
 }
 
-void
+bool
 VR::preDraw()
 {
   m_deadRadius = -1;
 
   updatePoses();
-  updateInput();
+  bool ok = updateInput();
+  if (!ok)
+    return false;
+
   buildAxes();
 
   if (m_showMap)
@@ -1541,7 +1550,8 @@ VR::preDraw()
       if (!buildTeleport())
 	buildPinPoint();
     }
-  
+
+  return true;
 }
 
 void
@@ -2065,7 +2075,12 @@ VR::renderControllers(vr::Hmd_Eye eye)
   bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
   if(bIsInputCapturedByAnotherProcess)
     return;
+
+  if( !m_hmd->IsTrackedDeviceConnected(m_leftController) ||
+      !m_hmd->IsTrackedDeviceConnected(m_rightController) )
+    return;
   
+
   QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
   QVector4D center = mat * QVector4D(0,0,0,1);
   QVector4D point = mat * QVector4D(0,0,1,1);
