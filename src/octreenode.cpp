@@ -98,22 +98,19 @@ OctreeNode::setGlobalMinMax(Vec gmin, Vec gmax)
   m_globalMin = gmin;
   m_globalMax = gmax;    
 
-  m_bmin -= gmin;
-  m_bmax -= gmin;
+  m_bmin = xformPoint(m_bminO);
+  m_bmax = xformPoint(m_bmaxO);
 
-  m_tightMin -= gmin;
-  m_tightMax -= gmin;
+  m_tightMin = xformPoint(m_tightMinO);
+  m_tightMax = xformPoint(m_tightMaxO);
 }
 
 Vec
 OctreeNode::xformPoint(Vec v)
 {
-  //Vec tomid = (m_tightMinO+m_tightMaxO)*0.5;
   Vec ov = v-m_xformCen;
 
   ov = m_rotation.rotate(ov);
-  //Vec q = Vec(m_rotation[0],m_rotation[1],m_rotation[2]);
-  //ov = ov + 2.0*cross(q, cross(q,ov) + m_rotation[3]*ov);
 
   ov *= m_scale;
 
@@ -455,15 +452,6 @@ OctreeNode::loadDataFromLASFile()
 //	  point->classification != 18)
 	{
 	  double x, y, z;
-//	  x = (point->X * header->x_scale_factor) + header->x_offset;
-//	  y = (point->Y * header->y_scale_factor) + header->y_offset;
-//	  z = (point->Z * header->z_scale_factor) + header->z_offset;
-//
-//	  x = x*m_scale + m_shift.x;
-//	  y = y*m_scale + m_shift.y;
-//	  z = z*m_scale + m_shift.z;
-
-
 	  x = ((double)point->X * m_scaleCloudJs) + m_offset.x;
 	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
 	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
@@ -475,16 +463,7 @@ OctreeNode::loadDataFromLASFile()
 	      x = ve.x;
 	      y = ve.y;
 	      z = ve.z;
-	    }
-
-//	  x += m_shift.x;
-//	  y += m_shift.y;
-//	  z += m_shift.z;
-//
-//	  x *= m_scale;
-//	  y *= m_scale;
-//	  z *= m_scale;
-	  
+	    }	  
 
 	  if (m_dpv == 3)
 	    {
@@ -492,9 +471,6 @@ OctreeNode::loadDataFromLASFile()
 	      vertexPtr[0] = x;
 	      vertexPtr[1] = y;
 	      vertexPtr[2] = z;
-	      //vertexPtr[0] = x - m_globalMin.x;
-	      //vertexPtr[1] = y - m_globalMin.y;
-	      //vertexPtr[2] = z - m_globalMin.z;
 	    }
 
 	  if (m_dpv > 3)
@@ -507,9 +483,6 @@ OctreeNode::loadDataFromLASFile()
 	      vertexPtr[0] = x;
 	      vertexPtr[1] = y;
 	      vertexPtr[2] = z;
-	      //vertexPtr[0] = x - m_globalMin.x;
-	      //vertexPtr[1] = y - m_globalMin.y;
-	      //vertexPtr[2] = z - m_globalMin.z;
 	      //-------------------------------------------
 
 	      Vec col = Vec(1,1,1);
@@ -601,85 +574,6 @@ OctreeNode::setId(int id)
 	    cnode->setId(id);
 	}
     }
-}
-
-void
-OctreeNode::computeBB()
-{
-  laszip_POINTER laszip_reader;
-  
-  laszip_create(&laszip_reader);
-
-  laszip_BOOL is_compressed = m_fileName.endsWith(".laz");
-  if (laszip_open_reader(laszip_reader, m_fileName.toLatin1().data(), &is_compressed))
-    {
-      QMessageBox::information(0, "", "Error opening file "+m_fileName);
-    }
-  
-  laszip_header* header;
-  laszip_get_header_pointer(laszip_reader, &header);
-  
-  laszip_I64 npts = (header->number_of_point_records ? header->number_of_point_records : header->extended_number_of_point_records);
-  
-  // get a pointer to the points that will be read  
-  laszip_point* point;
-  laszip_get_point_pointer(laszip_reader, &point);
-
-  Vec bbmin;
-  Vec bbmax;
-
-  for(qint64 i = 0; i < npts; i++)
-    {
-      // read a point
-      laszip_read_point(laszip_reader);
-      
-      if (point->classification != 7 && // condition specifically for ACT data 
-	  point->classification != 18)
-	{
-	  float x, y, z;
-	  //x = (point->X * header->x_scale_factor) + header->x_offset;
-	  //y = (point->Y * header->y_scale_factor) + header->y_offset;
-	  //z = (point->Z * header->z_scale_factor) + header->z_offset;
-
-	  x = ((double)point->X * m_scaleCloudJs) + m_offset.x;
-	  y = ((double)point->Y * m_scaleCloudJs) + m_offset.y;
-	  z = ((double)point->Z * m_scaleCloudJs) + m_offset.z;
-
-	  if (!m_editMode)
-	    {
-	      Vec ve = Vec(x,y,z);
-	      ve = xformPoint(ve);
-	      x = ve.x;
-	      y = ve.y;
-	      z = ve.z;
-	    }
-
-	  //x += m_shift.x;
-	  //y += m_shift.y;
-	  //z += m_shift.z;
-	  //
-	  //x *= m_scale;
-	  //y *= m_scale;
-	  //z *= m_scale;
-
-	  if (i == 0)
-	    {
-	      m_bmin = Vec(x,y,z);
-	      m_bmax = Vec(x,y,z);
-	    }
-	  else
-	    {
-	      m_bmin.x = qMin(m_bmin.x, (double)x);
-	      m_bmin.y = qMin(m_bmin.y, (double)y);
-	      m_bmin.z = qMin(m_bmin.z, (double)z);
-	      m_bmax.x = qMax(m_bmax.x, (double)x);
-	      m_bmax.y = qMax(m_bmax.y, (double)y);
-	      m_bmax.z = qMax(m_bmax.z, (double)z);
-	    }
-	}
-    }
-
-  laszip_close_reader(laszip_reader);
 }
 
 QList<OctreeNode*>

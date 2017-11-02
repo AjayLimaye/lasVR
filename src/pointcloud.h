@@ -27,8 +27,8 @@ class PointCloud
 
   void setLevelsBelow();
 
-  Vec coordMin() { return m_coordMin; };
-  Vec coordMax() { return m_coordMax; };
+  Vec globalMin() { return m_gmin; };
+  Vec globalMax() { return m_gmax; };
 
   Vec tightOctreeMinO() { return m_tightOctreeMinAllTiles; }
   Vec tightOctreeMaxO() { return m_tightOctreeMaxAllTiles; }
@@ -161,9 +161,6 @@ class PointCloud
   Vec m_xformCen;
 
   bool m_ignoreScaling;
-
-  Vec m_coordMin;
-  Vec m_coordMax;
 
   bool m_showMap;
   bool m_gravity;

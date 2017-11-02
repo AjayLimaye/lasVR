@@ -260,6 +260,8 @@ connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
   timeStep->setDefaultWidget(m_timeStep);
   ui.menuOptions->addAction(timeStep);
   //============================
+
+  //ui.toolBar->hide();
 }
 
 void
@@ -297,6 +299,12 @@ VrMain::dragEnterEvent(QDragEnterEvent *event)
 void
 VrMain::dropEvent(QDropEvent *event)
 {
+  if (!GlewInit::initialised())
+    {
+      QMessageBox::information(0, "", "Not Ready Yet");
+      return;
+    }
+
   if (event && event->mimeData())
     {
       const QMimeData *data = event->mimeData();

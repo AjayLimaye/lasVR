@@ -342,6 +342,7 @@ Volume::postLoad(bool showInfo)
   // calculate min and max coord
   m_coordMin = m_pointClouds[0]->tightOctreeMin();
   m_coordMax = m_pointClouds[0]->tightOctreeMax();
+
   for(int d=1; d<m_pointClouds.count(); d++)
     {
       Vec cmin = m_pointClouds[d]->tightOctreeMin();

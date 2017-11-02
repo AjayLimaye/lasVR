@@ -82,8 +82,6 @@ class OctreeNode
   float spacing() { return m_spacing; }
   uchar maxVisibleLevel() { return m_maxVisLevel; }
 
-  void computeBB();
-
   Vec tightOctreeMin() { return m_tightMin; }
   Vec tightOctreeMax() { return m_tightMax; }
 

@@ -844,24 +844,15 @@ Viewer::centerPointClouds()
   Vec cmin0 = m_pointClouds[0]->tightOctreeMin();
   Vec cmax0 = m_pointClouds[0]->tightOctreeMax();
   Vec cmid0 = (cmax0+cmin0)/2;
-  
-  Vec cmin1 = m_pointClouds[1]->tightOctreeMinO();
-  Vec cmax1 = m_pointClouds[1]->tightOctreeMaxO();
+
+  Vec cmin1 = m_pointClouds[1]->tightOctreeMin();
+  Vec cmax1 = m_pointClouds[1]->tightOctreeMax();
   Vec cmid1 = (cmax1+cmin1)/2;
-  
-  Vec shift = cmid0 - cmin1;
-  float scale = m_pointClouds[1]->getScale();
-  Quaternion rot = m_pointClouds[1]->getRotation();
-  QMessageBox::information(0, "", QString("%1 %2 %3").\
-			   arg(shift.x).arg(shift.y).arg(shift.z));
-  m_pointClouds[1]->setXform(scale, shift, rot, cmid1);
-  
-  m_coordMin = cmin0;
-  m_coordMax = cmax0;
-  setSceneBoundingBox(cmin0, cmax0);
 
-  showEntireScene();
+  Vec shift = cmid0 - cmid1;
 
+  m_pointClouds[1]->translate(shift);
+  
   genDrawNodeList();
 }
 
@@ -878,8 +869,6 @@ Viewer::undo()
 void
 Viewer::saveModInfo()
 {
-  m_pointClouds[0]->saveModInfo("Time step for control point cloud", false);
-
   m_pointClouds[1]->saveModInfo("Time step for modified point cloud", true);
 }
 
@@ -1401,9 +1390,6 @@ Viewer::paintGL()
 
       drawPointsWithShadows(vr::Eye_Left);
       drawLabelsForVR(vr::Eye_Left);
-      //if (m_showBox)
-      //  drawAABB();
-      //drawInfo();	
       m_vr.postDrawLeftBuffer();
       
       
@@ -1412,9 +1398,6 @@ Viewer::paintGL()
 
       drawPointsWithShadows(vr::Eye_Right);
       drawLabelsForVR(vr::Eye_Right);
-      //if (m_showBox)
-      //  drawAABB();
-      //drawInfo();
       m_vr.postDrawRightBuffer();
     }
 
@@ -2350,12 +2333,10 @@ Viewer::drawPointsWithReload()
   glUniform1i(m_depthParm[20], m_editMode); // applyXform
   if (m_editMode)
     {
-      //Vec cmin = m_pointClouds[1]->tightOctreeMinO();
-      //Vec cmax = m_pointClouds[1]->tightOctreeMaxO();
-      //Vec cmid = (cmax+cmin)*0.5;	      
+      Vec shift = m_deltaShift - m_pointClouds[1]->globalMin();      
       Vec cmid = m_pointClouds[1]->getXformCen();
       glUniform1i(m_depthParm[21], m_volume->xformTileId());
-      glUniform3f(m_depthParm[22], m_deltaShift.x, m_deltaShift.y, m_deltaShift.z);
+      glUniform3f(m_depthParm[22], shift.x, shift.y, shift.z);
       glUniform3f(m_depthParm[23], cmid.x, cmid.y, cmid.z);
       glUniform1f(m_depthParm[24], m_deltaScale);
       glUniform4f(m_depthParm[25], m_deltaRot[0], m_deltaRot[1], m_deltaRot[2], m_deltaRot[3]);
@@ -2686,7 +2667,10 @@ Viewer::drawAABB()
 		  glLineWidth(2.0);
 		  glColor3f(0.5,1.0,0.7);
 		}
-	      
+
+	      Vec gmin = m_pointClouds[1]->globalMin();
+	      Vec shift = m_deltaShift - gmin;
+
 	      cmin = m_pointClouds[1]->tightOctreeMinO();
 	      cmax = m_pointClouds[1]->tightOctreeMaxO();
 	      Vec cmid = m_pointClouds[1]->getXformCen();
@@ -2715,7 +2699,9 @@ Viewer::drawAABB()
 		  ov = m_deltaRot.rotate(ov);		  
 		  ov *= m_deltaScale;
 		  ov += cmid;  
-		  ov += m_deltaShift;
+		  ov += shift;
+		  //ov += m_deltaShift;
+		  //ov -= gmin;
 		  v[ip] = ov;
 		}
 	      
@@ -2727,15 +2713,27 @@ Viewer::drawAABB()
     }
   else
     {
+      glColor3f(1,1,0.8);
+      glLineWidth(2.0);
       StaticFunctions::drawBox(m_coordMin, m_coordMax);
 
+      glColor3f(1,1,1);
+      glLineWidth(1.0);
       for(int d=0; d<m_pointClouds.count(); d++)
-	m_pointClouds[d]->drawInactiveTiles();
-      
-      
-      glLineWidth(2.0);
-      for(int d=0; d<m_pointClouds.count(); d++)
-	m_pointClouds[d]->drawActiveNodes();
+	{
+	  Vec cmin = m_pointClouds[d]->tightOctreeMin();
+	  Vec cmax = m_pointClouds[d]->tightOctreeMax();
+
+	  StaticFunctions::drawBox(cmin, cmax);
+	}
+
+//      for(int d=0; d<m_pointClouds.count(); d++)
+//	m_pointClouds[d]->drawInactiveTiles();
+//      
+//      
+//      glLineWidth(2.0);
+//      for(int d=0; d<m_pointClouds.count(); d++)
+//	m_pointClouds[d]->drawActiveNodes();
     }
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -3348,8 +3346,8 @@ Viewer::loadLinkOnTop(QString dirname)
       return;
     }
 
-  m_volume->setShiftToZero(false);
-
+  //m_volume->setShiftToZero(false);
+  
   m_volumeFactory->pushVolume(m_volume);
 
   m_dataDir = dirname;
@@ -3801,6 +3799,8 @@ Viewer::alignUsingPointPairs()
   Vec xformCen = x0;
   float scale = m_pointClouds[1]->getScale();
 
+
+  shift += m_pointClouds[1]->globalMin();
   m_pointClouds[1]->setXform(scale, shift, q, xformCen);
   
 

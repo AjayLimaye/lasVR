@@ -1558,11 +1558,11 @@ PointCloud::setGlobalMinMax(Vec gmin, Vec gmax)
   m_gmin = gmin;
   m_gmax = gmax;
 
-  m_octreeMin -= m_gmin;
-  m_octreeMax -= m_gmin;
+  m_octreeMin = xformPoint(m_octreeMinO);
+  m_octreeMax = xformPoint(m_octreeMaxO);
 
-  m_tightOctreeMin -= m_gmin;
-  m_tightOctreeMax -= m_gmin;
+  m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
+  m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
 
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->setGlobalMinMax(m_gmin, m_gmax);
@@ -1693,16 +1693,16 @@ PointCloud::saveModInfo(QString askString, bool askTime)
 
   QJsonObject jsonInfo;
 
-  if (askTime || m_time == -1)
-    {
-      bool ok;
-      int tm = QInputDialog::getInt(0,
-				    "Pointcloud time step",
-				    askString,
-				    m_time, -1, 10000, 1, &ok);
-      if (ok)
-	m_time = tm;
-    }
+//  if (askTime || m_time == -1)
+//    {
+//      bool ok;
+//      int tm = QInputDialog::getInt(0,
+//				    "Pointcloud time step",
+//				    askString,
+//				    m_time, -1, 10000, 1, &ok);
+//      if (ok)
+//	m_time = tm;
+//    }
 
   
   jsonInfo["name"] = m_name;
