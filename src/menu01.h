@@ -51,6 +51,7 @@ class Menu01 : public QObject
   void updateScale(int);
   void updateSoftShadows(bool);
   void updateEdges(bool);
+  void updateSpheres(bool);
   void gotoFirstStep();
   void gotoPreviousStep();
   void gotoNextStep();
@@ -76,6 +77,7 @@ class Menu01 : public QObject
   int m_selected;
   bool m_softShadows;
   bool m_edges;
+  bool m_spheres;
   bool m_play;
   bool m_playMenu;
   bool m_playButton;

@@ -20,6 +20,8 @@ VrMenu::VrMenu() : QObject()
 	  this, SIGNAL(updateSoftShadows(bool)));
   connect(m_menus["01"], SIGNAL(updateEdges(bool)),
 	  this, SIGNAL(updateEdges(bool)));
+  connect(m_menus["01"], SIGNAL(updateSpheres(bool)),
+	  this, SIGNAL(updateSpheres(bool)));
 
   connect(m_menus["01"], SIGNAL(gotoFirstStep()),
 	  this, SIGNAL(gotoFirstStep()));

@@ -48,7 +48,6 @@ class OctreeNode
   void setDataPerVertex(int d) { m_dpv = d; }
   void setColorPresent(bool b) { m_colorPresent = b; }
   void setClassPresent(bool b) { m_classPresent = b; }
-  void setColorMap(QList<Vec> cm) { m_colorMap = cm; }
   void setGlobalMinMax(Vec, Vec);
   void setPointSize(float ps) { m_pointSize = ps; }
   void setPointSizeFactor(float ps) { m_pointSize *= ps; }
@@ -134,7 +133,6 @@ class OctreeNode
   QStringList m_pointAttrib;
   int m_attribBytes;
 
-  QList<Vec> m_colorMap;
   Vec m_globalMin;
   Vec m_globalMax;
 

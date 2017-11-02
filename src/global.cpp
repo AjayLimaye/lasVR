@@ -228,3 +228,8 @@ QProgressBar* Global::progressBar()
 }
 void Global::hideProgressBar() { m_statusBar->hide(); }
 void Global::showProgressBar() { m_statusBar->show(); }
+
+
+QList<Vec> Global::m_colorMap;
+void Global::setColorMap(QList<Vec> cm) { m_colorMap = cm; }
+QList<Vec> Global::getColorMap() { return m_colorMap; }

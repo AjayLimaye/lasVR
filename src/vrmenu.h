@@ -60,6 +60,7 @@ class VrMenu : public QObject
   void updateScale(int);
   void updateSoftShadows(bool);
   void updateEdges(bool);
+  void updateSpheres(bool);
   void gotoFirstStep();
   void gotoPreviousStep();
   void gotoNextStep();

@@ -58,6 +58,8 @@ class Global
   static QString previousDirectory();
   static void setPreviousDirectory(QString);
 
+  static void setColorMap(QList<Vec>);
+  static QList<Vec> getColorMap();
 
  private :
   static GLuint m_circleSpriteTexture;
@@ -77,6 +79,8 @@ class Global
   static int m_keyFrameNumber;
 
   static QString m_previousDirectory;
+
+  static QList<Vec> m_colorMap;
 };
 
 #endif

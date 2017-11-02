@@ -66,6 +66,7 @@ VR::VR() : QObject()
   m_currPanel = -1;
   m_leftMenu.setCurrentMenu("none");
 
+  m_spheres = false;
   m_edges = true;
   m_softShadows = true;
 
@@ -80,6 +81,8 @@ VR::VR() : QObject()
   connect(&m_leftMenu, SIGNAL(updateScale(int)),
 	  this, SLOT(updateScale(int)));
 
+  connect(&m_leftMenu, SIGNAL(updateSpheres(bool)),
+	  this, SLOT(updateSpheres(bool)));
   connect(&m_leftMenu, SIGNAL(updateEdges(bool)),
 	  this, SLOT(updateEdges(bool)));
   connect(&m_leftMenu, SIGNAL(updateSoftShadows(bool)),
@@ -99,11 +102,12 @@ void
 VR::updatePointSize(int sz)
 {
   if (m_showMap)
-    m_pointSize = qMax(0.5f, m_pointSize + sz*0.1f);
+    m_pointSize = qMax(0.1f, m_pointSize + sz*0.1f);
   else
-    m_pointSize = qMax(0.5f, m_pointSize + sz);
+    m_pointSize = qMax(0.1f, m_pointSize + sz*0.2f);
 }
 
+void VR::updateSpheres(bool b) { m_spheres = b; }
 void VR::updateEdges(bool b) { m_edges = b; }
 void VR::updateSoftShadows(bool b) { m_softShadows = b; }
 
@@ -205,10 +209,17 @@ VR::resetModel()
 
   m_play = false;
 
-  
-  QVector3D cmid = (m_coordMin+m_coordMax)/2;
-  cmid.setZ(m_coordMax.z());
-  teleport(cmid);
+  if (m_showMap)
+    {
+      QVector3D cmid = (m_coordMin+m_coordMax)/2;
+      cmid.setZ(m_coordMax.z());
+      teleport(cmid);
+    }
+  else
+  {
+    QVector3D cmid = (m_coordMin+m_coordMax)/2;
+    teleport(cmid);
+  }
 }
 
 QMatrix4x4

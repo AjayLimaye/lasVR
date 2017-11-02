@@ -1,3 +1,4 @@
+#include "global.h"
 #include "staticfunctions.h"
 #include "octreenode.h"
 
@@ -308,7 +309,8 @@ OctreeNode::loadDataFromBINFile()
       memset(m_coord, 20*m_numpoints, 0);
     }
 
-  int clim = m_colorMap.count()-1;
+  QList<Vec> colorMap = Global::getColorMap();
+  int clim = colorMap.count()-1;
 
   uchar *data = new uchar[fsz];
   
@@ -368,7 +370,7 @@ OctreeNode::loadDataFromBINFile()
 	      int zi = z;
 	      float zf = z - zi;
 	      if (zi >= clim) { zi = clim-1; zf = 1.0; }
-	      col = m_colorMap[zi]*(1.0-zf) + zf*m_colorMap[zi+1];
+	      col = colorMap[zi]*(1.0-zf) + zf*colorMap[zi+1];
 	      col *= 255;
 	    }
 	  
@@ -437,7 +439,8 @@ OctreeNode::loadDataFromLASFile()
     }
 
 
-  int clim = m_colorMap.count()-1;
+  QList<Vec> colorMap = Global::getColorMap();
+  int clim = colorMap.count()-1;
 
   qint64 np = 0;
   for(qint64 i = 0; i < npts; i++)
@@ -490,8 +493,12 @@ OctreeNode::loadDataFromLASFile()
 	      if (!m_classPresent &&
 		  !m_colorPresent)
 		{
-		  z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+		  if (qAbs(m_globalMax.z-m_globalMin.z) > 0)
+		    z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+		  else
+		    z = 0.5;
 		  z = qBound(0.0, z, 1.0);
+
 //		  float zsign = (z < 0.5 ? -1 : 1);
 //		  z = qAbs(z-0.5)*2;
 //		  z = StaticFunctions::easeOut(StaticFunctions::easeOut(z));
@@ -499,13 +506,15 @@ OctreeNode::loadDataFromLASFile()
 		  int zi = z;
 		  float zf = z - zi;
 		  if (zi >= clim) { zi = clim-1; zf = 1.0; }
-		  col = m_colorMap[zi]*(1.0-zf) + zf*m_colorMap[zi+1];
+
+		  col = colorMap[zi]*(1.0-zf) + zf*colorMap[zi+1];
+
 		  col *= 255;
 		}
 	      else if (m_classPresent)
 		{
 		  int idx = qBound(0, (int)(point->classification), clim);
-		  Vec col0 = m_colorMap[idx];
+		  Vec col0 = colorMap[idx];
 		  
 		  z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
 		  z = 0.5+(z-0.5 < 0 ? -1 : z-0.5 > 0 ? 1 : 0)*qPow(qAbs(z-0.5f), 0.4f);
@@ -514,7 +523,7 @@ OctreeNode::loadDataFromLASFile()
 		  int zi = z;
 		  float zf = z - zi;
 		  if (zi >= clim) { zi = clim-1; zf = 1.0; }
-		  Vec col1 = m_colorMap[zi]*(1.0-zf) + zf*m_colorMap[zi+1];
+		  Vec col1 = colorMap[zi]*(1.0-zf) + zf*colorMap[zi+1];
 		  
 		  col = col0*0.5 + col1*0.5;
 		  col *= 255;

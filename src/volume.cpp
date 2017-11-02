@@ -700,7 +700,12 @@ Volume::loadTopJson(QString jsonfile)
 	m_playbutton = jsonInfo["play_button"].toBool();
 
       if (jsonInfo.contains("color"))
-	m_colorPresent = jsonInfo["color"].toBool();
+	{
+	  if (jsonInfo["color"].isBool())
+	    m_colorPresent = jsonInfo["color"].toBool();
+	  else
+	    m_colorPresent = (jsonInfo["color"].toInt() != 0);
+	}
 
       if (jsonInfo.contains("point_as_sphere"))
 	{

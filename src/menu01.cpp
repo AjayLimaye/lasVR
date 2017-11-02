@@ -33,6 +33,7 @@ Menu01::Menu01() : QObject()
 
   m_softShadows = true;
   m_edges = true;
+  m_spheres = false;
   m_play = false;
   m_playMenu = false;
   m_playButton = false;
@@ -259,8 +260,10 @@ Menu01::genVertData()
   m_relGeom << QRect(400, 100, 100, 100); // point size +
   m_relGeom << QRect(300, 200, 100, 100); // scaling -
   m_relGeom << QRect(400, 200, 100, 100); // scaling +
-  m_relGeom << QRect(400, 300, 100, 100); // soft shadows
-  m_relGeom << QRect(400, 400, 100, 90); // edges
+
+  m_relGeom << QRect(400, 300, 100, 55); // soft shadows
+  m_relGeom << QRect(400, 365, 100, 55); // edges
+  m_relGeom << QRect(400, 430, 100, 55); // spheres
 
   m_relGeom << QRect(25,  510, 75, 80); // play-reset
   m_relGeom << QRect(100, 510, 90, 80); // step back
@@ -475,7 +478,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   //for(int og=0; og<m_optionsGeom.count(); og++)
   int ogend = m_optionsGeom.count();
   if (!m_playMenu)
-    ogend = 8;
+    ogend = 9;
   else
     ogend = m_optionsGeom.count()-1; // don't show step number here
 
@@ -485,7 +488,8 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
       ok = (m_selected == og);
       ok |= (og == 6 && m_softShadows);
       ok |= (og == 7 && m_edges);
-      ok |= (og >= 11);
+      ok |= (og == 8 && m_spheres);
+      ok |= (og >= 12);
 
       if (ok)
 	{
@@ -504,11 +508,11 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 	    }
 	  else
 	    {
-	      if (og < 11 || (og == 11 && m_play))
+	      if (og < 12 || (og == 12 && m_play))
 		mc = Vec(0.5, 1.0, 0.5);
 	    }
 
-	  if (og == 11 && !m_playButton) // hide play button
+	  if (og == 12 && !m_playButton) // hide play button
 	    mc = Vec(0.01, 0.01, 0.01);
 
 	  showText(m_glTexture, m_optionsGeom[og],
@@ -521,7 +525,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   // ---- 
   // show step number
   if (m_playMenu)
-    showText(m_stepTexture, m_optionsGeom[12],
+    showText(m_stepTexture, m_optionsGeom[13],
 	     vleft, vright, vfrontActual, up,
 	     0, 1, 0, 1,
 	     Vec(0,0,0));
@@ -657,13 +661,11 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 
   int tp = -1;
 
-  //int ogend = 7;
-  int ogend = 8;
+  int ogend = 9;
 
   // play menu : last is step number
   if (m_playMenu)
-    //ogend = 11;
-    ogend = 12;
+    ogend = 13;
 
   for(int t=0; t<ogend; t++)
     {
@@ -682,8 +684,7 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
   m_selected = tp;
 
   //--------------------
-  //if (!m_playButton && m_selected == 10)
-  if (!m_playButton && m_selected == 11)
+  if (!m_playButton && m_selected == 12)
     m_selected = -1;
   //--------------------
   
@@ -705,10 +706,15 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
 	  m_edges = !m_edges;
 	  emit updateEdges(m_edges);
 	}
-      else if (m_selected == 8) emit gotoFirstStep();
-      else if (m_selected == 9) emit gotoPreviousStep();
-      else if (m_selected == 10) emit gotoNextStep();
-      else if (m_selected == 11 && m_playButton)
+      else if (m_selected == 8)
+	{
+	  m_spheres = !m_spheres;
+	  emit updateSpheres(m_spheres);
+	}
+      else if (m_selected == 9) emit gotoFirstStep();
+      else if (m_selected == 10) emit gotoPreviousStep();
+      else if (m_selected == 11) emit gotoNextStep();
+      else if (m_selected == 12 && m_playButton)
 	{
 	  m_play = !m_play;
 	  emit playPressed(m_play);

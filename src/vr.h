@@ -137,6 +137,7 @@ class VR : public QObject
   float flightSpeed() { return m_flightSpeed; }
   float pointSize() { return m_pointSize; }
 
+  bool spheres() { return m_spheres; }
   bool edges() { return m_edges; }
   bool softShadows() { return m_softShadows; }
 
@@ -161,6 +162,7 @@ class VR : public QObject
   void updateScale(int);  
   void updateSoftShadows(bool);
   void updateEdges(bool);
+  void updateSpheres(bool);
   void gotoFirstStep();
   void gotoPreviousStep();
   void gotoNextStep();
@@ -297,7 +299,7 @@ class VR : public QObject
 
   CubeMap m_skybox;
 
-
+  bool m_spheres;
   bool m_edges;
   bool m_softShadows;
 

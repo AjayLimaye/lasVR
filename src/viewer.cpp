@@ -263,6 +263,10 @@ Viewer::genColorMap()
   m_colorGrad << Vec(191,129,45)/255.0f;
   m_colorGrad << Vec(140,81,10)/255.0f;
 
+
+  Global::setColorMap(m_colorGrad);
+
+
   if (!m_colorMap)
     m_colorMap = new uchar[m_colorGrad.count()*4];
 
@@ -408,12 +412,12 @@ Viewer::start()
   
   createMinMaxTexture();
 
-  for(int d=0; d<m_pointClouds.count(); d++)
-    {
-      QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
-      for(int od=0; od<allNodes.count(); od++)
-	allNodes[od]->setColorMap(m_colorGrad);
-    }
+//  for(int d=0; d<m_pointClouds.count(); d++)
+//    {
+//      QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
+//      for(int od=0; od<allNodes.count(); od++)
+//	allNodes[od]->setColorMap(m_colorGrad);
+//    }
 
   m_coordMin = m_volume->coordMin();
   m_coordMax = m_volume->coordMax();
@@ -928,34 +932,6 @@ Viewer::keyPressEvent(QKeyEvent *event)
       update();
       return;
     }  
-
-//  if (event->key() == Qt::Key_1)
-//    {
-//      m_showEdges = !m_showEdges;
-//      update();
-//      return;
-//    }  
-//
-//  if (event->key() == Qt::Key_2)
-//    {
-//      m_softShadows = !m_softShadows;
-//      update();
-//      return;
-//    }  
-//
-//  if (event->key() == Qt::Key_3)
-//    {
-//      m_smoothDepth = !m_smoothDepth;
-//      update();
-//      return;
-//    }  
-//
-//  if (event->key() == Qt::Key_4)
-//    {
-//      m_showSphere = !m_showSphere;
-//      update();
-//      return;
-//    }  
 
   if (event->key() == Qt::Key_B)
     {
@@ -2064,7 +2040,7 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
   glUniform1f(m_shadowParm[5], m_nearDist);
   glUniform1f(m_shadowParm[6], m_farDist);
 
-  glUniform1i(m_shadowParm[7], m_showSphere);
+  glUniform1i(m_shadowParm[7], m_vr.spheres());
 
   glUniform1i(m_shadowParm[8], false); // copyOnly false
 
