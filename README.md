@@ -11,4 +11,6 @@ You can also very easily generate fly-through movies of the point clouds.
 Example fly-through movie: https://youtu.be/OXQyATxcxTM
 
 
+![Sample screen capture in desktop mode](/media/Shristi-screen-cap-1.jpg)
+
 
