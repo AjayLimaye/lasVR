@@ -923,7 +923,7 @@ PointCloud::getNumPointsInLASFile(QString flnm)
   laszip_BOOL is_compressed = flnm.endsWith(".laz");
   if (laszip_open_reader(laszip_reader, flnm.toLatin1().data(), &is_compressed))
     {
-      QMessageBox::information(0, "", "Error opening file" + flnm);
+      QMessageBox::information(0, flnm, "Error opening file" + flnm);
     }
   
   laszip_header* header;

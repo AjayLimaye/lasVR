@@ -320,6 +320,18 @@ OctreeNode::loadDataFromBINFile()
   binfl.close();
 
 
+  float gminZ,gmaxZ;
+  if (!m_editMode)
+    {
+      gminZ = 0;
+      gmaxZ = m_globalMax.z - m_globalMin.z;
+    }
+  else
+    {
+      gminZ = m_globalMin.z;
+      gmaxZ = m_globalMax.z;
+    }
+
   for(qint64 np = 0; np < m_numpoints; np++)
     {
       int *crd = (int*)(data + m_attribBytes*np);
@@ -364,7 +376,9 @@ OctreeNode::loadDataFromBINFile()
 
 	  if (!m_colorPresent)
 	    {
-	      z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+	      //z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+	      z = (z-gminZ)/(gmaxZ-gminZ);
+
 	      z = qBound(0.0, z, 1.0);
 	      z*=clim;
 	      int zi = z;
@@ -404,7 +418,7 @@ OctreeNode::loadDataFromLASFile()
   laszip_BOOL is_compressed = m_fileName.endsWith(".laz");
   if (laszip_open_reader(laszip_reader, m_fileName.toLatin1().data(), &is_compressed))
     {
-      QMessageBox::information(0, "", "Error opening file "+m_fileName);
+      QMessageBox::information(0, m_fileName, "Error opening file "+m_fileName);
     }
   
   laszip_header* header;
@@ -441,6 +455,18 @@ OctreeNode::loadDataFromLASFile()
 
   QList<Vec> colorMap = Global::getColorMap();
   int clim = colorMap.count()-1;
+
+  float gminZ,gmaxZ;
+  if (!m_editMode)
+    {
+      gminZ = 0;
+      gmaxZ = m_globalMax.z - m_globalMin.z;
+    }
+  else
+    {
+      gminZ = m_globalMin.z;
+      gmaxZ = m_globalMax.z;
+    }
 
   qint64 np = 0;
   for(qint64 i = 0; i < npts; i++)
@@ -493,10 +519,9 @@ OctreeNode::loadDataFromLASFile()
 	      if (!m_classPresent &&
 		  !m_colorPresent)
 		{
-		  if (qAbs(m_globalMax.z-m_globalMin.z) > 0)
-		    z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
-		  else
-		    z = 0.5;
+		  //z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+		  z = (z-gminZ)/(gmaxZ-gminZ);
+		  
 		  z = qBound(0.0, z, 1.0);
 
 //		  float zsign = (z < 0.5 ? -1 : 1);
@@ -516,7 +541,9 @@ OctreeNode::loadDataFromLASFile()
 		  int idx = qBound(0, (int)(point->classification), clim);
 		  Vec col0 = colorMap[idx];
 		  
-		  z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+		  //z = (z-m_globalMin.z)/(m_globalMax.z-m_globalMin.z);
+		  z = (z-gminZ)/(gmaxZ-gminZ);
+
 		  z = 0.5+(z-0.5 < 0 ? -1 : z-0.5 > 0 ? 1 : 0)*qPow(qAbs(z-0.5f), 0.4f);
 		  z = qBound(0.0, z, 1.0);
 		  z*=clim;

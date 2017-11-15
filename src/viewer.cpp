@@ -254,14 +254,24 @@ Viewer::genColorMap()
   if (m_colorMap)
     return;
 
-  m_colorGrad << Vec(1,102, 94)/255.0f;
-  m_colorGrad << Vec(53,151,143)/255.0f;
-  m_colorGrad << Vec(128,205,193)/255.0f;
-  m_colorGrad << Vec(199,234,229)/255.0f;
-  m_colorGrad << Vec(246,232,195)/255.0f;
-  m_colorGrad << Vec(223,194,125)/255.0f;
-  m_colorGrad << Vec(191,129,45)/255.0f;
-  m_colorGrad << Vec(140,81,10)/255.0f;
+  m_colorGrad << Vec(47 ,173,0  )/255.0; 
+  m_colorGrad << Vec(80 ,183,20	)/255.0;
+  m_colorGrad << Vec(112,194,42	)/255.0;
+  m_colorGrad << Vec(143,205,67	)/255.0;
+  m_colorGrad << Vec(172,216,94	)/255.0;
+  m_colorGrad << Vec(199,227,124)/255.0;
+  m_colorGrad << Vec(223,238,156)/255.0;
+  m_colorGrad << Vec(253,255,209)/255.0;
+  
+
+//  m_colorGrad << Vec(1,102, 94)/255.0f;
+//  m_colorGrad << Vec(53,151,143)/255.0f;
+//  m_colorGrad << Vec(128,205,193)/255.0f;
+//  m_colorGrad << Vec(199,234,229)/255.0f;
+//  m_colorGrad << Vec(246,232,195)/255.0f;
+//  m_colorGrad << Vec(223,194,125)/255.0f;
+//  m_colorGrad << Vec(191,129,45)/255.0f;
+//  m_colorGrad << Vec(140,81,10)/255.0f;
 
 
   Global::setColorMap(m_colorGrad);
@@ -721,7 +731,7 @@ Viewer::createShaders()
 					   "assets/shaders/drawpoints.vert",
 					   "assets/shaders/drawpoints.frag"))
     {
-      QMessageBox::information(0, "", "..");
+      QMessageBox::information(0, "Error drawpoints shader", "..");
       m_npoints = 0;
       return;
     }

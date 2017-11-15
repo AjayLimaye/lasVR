@@ -261,9 +261,9 @@ Menu01::genVertData()
   m_relGeom << QRect(300, 200, 100, 100); // scaling -
   m_relGeom << QRect(400, 200, 100, 100); // scaling +
 
-  m_relGeom << QRect(400, 300, 100, 55); // soft shadows
-  m_relGeom << QRect(400, 365, 100, 55); // edges
-  m_relGeom << QRect(400, 430, 100, 55); // spheres
+  m_relGeom << QRect(400, 300, 100, 50); // soft shadows
+  m_relGeom << QRect(400, 365, 100, 50); // edges
+  m_relGeom << QRect(400, 430, 100, 50); // spheres
 
   m_relGeom << QRect(25,  510, 75, 80); // play-reset
   m_relGeom << QRect(100, 510, 90, 80); // step back
