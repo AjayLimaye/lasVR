@@ -65,7 +65,9 @@ HEADERS += vrmain.h \
 	keyframeeditor.h \
 	saveimageseqdialog.h \
 	savemoviedialog.h \
-	propertyeditor.h
+        propertyeditor.h \
+        ply.h \
+        triset.h
 
 
 SOURCES += main.cpp \
@@ -97,4 +99,6 @@ SOURCES += main.cpp \
 	keyframeeditor.cpp \
 	saveimageseqdialog.cpp \
 	savemoviedialog.cpp \
-	propertyeditor.cpp
+        propertyeditor.cpp \
+        ply.c \
+        triset.cpp

@@ -165,6 +165,8 @@ class Viewer : public QGLViewer
     bool m_moveViewerToCenter;
     bool m_vboLoadedAll;
 
+    QList<Triset*> m_trisets;
+
     QList<PointCloud*> m_pointClouds;
     QList<OctreeNode*> m_tiles;
     QList<OctreeNode*> m_orderedTiles;
@@ -212,6 +214,9 @@ class Viewer : public QGLViewer
 
     GLhandleARB m_blurShader;
     GLint m_blurParm[20];
+
+    GLhandleARB m_meshShader;
+    GLint m_meshParm[20];
 
     bool m_showEdges;
     bool m_softShadows;
@@ -357,6 +362,9 @@ class Viewer : public QGLViewer
     bool endMovie();
 
     void drawPointPairs();
+
+    void drawTrisets();
+    void drawTrisets(vr::Hmd_Eye);
 };
 
 #endif

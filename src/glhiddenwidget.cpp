@@ -161,6 +161,9 @@ GLHiddenWidget::uploadVisTex()
 void
 GLHiddenWidget::createVisibilityTexture()
 {
+  if (m_pointClouds.count() == 0)
+    return;
+  
   // update visibility for pointcloud tiles
   for(int d=0; d<m_pointClouds.count(); d++)
     m_pointClouds[d]->updateVisibilityData();
@@ -481,6 +484,9 @@ GLHiddenWidget::updateView()
 {
   m_currTime = m_viewer->currentTime();
 
+  if (m_pointClouds.count() == 0)
+    return;
+  
   genDrawNodeList();
 
   m_volume->setNewLoad(false);
@@ -493,6 +499,9 @@ GLHiddenWidget::updateView()
 void
 GLHiddenWidget::genDrawNodeList()
 {
+  if (m_pointClouds.count() == 0)
+    return;
+  
   Vec cpos;
 
   QVector3D hp;

@@ -10,6 +10,7 @@
 #include <QGLViewer/vec.h>
 using namespace qglviewer;
 
+#include "triset.h"
 #include "pointcloud.h"
 #include "volumeloaderthread.h"
 
@@ -42,6 +43,8 @@ class Volume : public QObject
 
   QList<OctreeNode*> tiles() { return m_tiles; }
   QList<PointCloud*> pointClouds() { return m_pointClouds; }
+
+  QList<Triset*> trisets() { return m_trisets; }
 
   void setNewLoad(bool nl) { m_newLoad = nl; }
   void setLoadingNodes(QList<OctreeNode*> lon) { m_newLoad = true; m_loadingNodes = lon;}
@@ -99,6 +102,7 @@ class Volume : public QObject
   Vec m_coordMin;
   Vec m_coordMax;
 
+  QList<Triset*> m_trisets;
   QList<PointCloud*> m_pointClouds;
   QList<OctreeNode*> m_tiles;
   QList<OctreeNode*> m_loadingNodes;
@@ -134,6 +138,8 @@ class Volume : public QObject
   QList<OctreeNode*> getNodesWithOccupiedLeaves(OctreeNode*, QList<int>);
 
   void loadTopJson(QString);
+
+  void loadAllPLY(QString);
 };
 
 #endif

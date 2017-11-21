@@ -1,3 +1,4 @@
+#include "staticfunctions.h"
 #include "volume.h"
 
 #include <QtGui>
@@ -85,6 +86,9 @@ Volume::maxTime()
 {
   int maxTime = 0;
 
+  for(int d=0; d<m_trisets.count(); d++)
+    maxTime = qMax(maxTime, m_trisets[d]->time());
+
   for(int d=0; d<m_pointClouds.count(); d++)
     //maxTime = qMax(maxTime, m_pointClouds[d]->maxTime());
     maxTime = qMax(maxTime, m_pointClouds[d]->time());
@@ -154,7 +158,8 @@ Volume::loadDir(QString dirname)
 
   m_tiles.clear();
   m_pointClouds.clear();
-
+  m_trisets.clear();
+  
   //m_groundHeight = 0.16;
   //m_teleportScale = 1.0;
   m_groundHeight = 1.8;
@@ -174,6 +179,8 @@ Volume::loadDir(QString dirname)
       QString jsonfile = QDir(dirname).absoluteFilePath("top.json");
       loadTopJson(jsonfile);
 
+      loadAllPLY(dirname);
+	
       // top directory contains PoTree tiles for multiple data
       QDirIterator topDirIter(dirname,
 			      QDir::Dirs | QDir::Readable |
@@ -338,23 +345,51 @@ Volume::postLoad(bool showInfo)
       m_pointClouds[d]->setXform(scale, shift, rot, xformCen);
     }
 
-
-  // calculate min and max coord
-  m_coordMin = m_pointClouds[0]->tightOctreeMin();
-  m_coordMax = m_pointClouds[0]->tightOctreeMax();
-
-  for(int d=1; d<m_pointClouds.count(); d++)
+  if (m_trisets.count() > 0)
     {
-      Vec cmin = m_pointClouds[d]->tightOctreeMin();
-      Vec cmax = m_pointClouds[d]->tightOctreeMax();
+      m_coordMin = m_trisets[0]->bmin();
+      m_coordMax = m_trisets[0]->bmax();
+
+      for(int d=1; d<m_trisets.count(); d++)
+	{
+	  Vec cmin = m_trisets[d]->bmin();
+	  Vec cmax = m_trisets[d]->bmax();
+
+	  m_coordMin = StaticFunctions::minVec(cmin, m_coordMin);
+	  m_coordMax = StaticFunctions::maxVec(cmax, m_coordMax);
+
+//	  m_coordMin.x = qMin(cmin.x, m_coordMin.x);
+//	  m_coordMin.y = qMin(cmin.y, m_coordMin.y);
+//	  m_coordMin.z = qMin(cmin.z, m_coordMin.z);
+//	  
+//	  m_coordMax.x = qMax(cmax.x, m_coordMax.x);
+//	  m_coordMax.y = qMax(cmax.y, m_coordMax.y);
+//	  m_coordMax.z = qMax(cmax.z, m_coordMax.z);
+	}
+    }
+
+  if (m_pointClouds.count() > 0)
+    {
+      // calculate min and max coord
+      m_coordMin = m_pointClouds[0]->tightOctreeMin();
+      m_coordMax = m_pointClouds[0]->tightOctreeMax();
       
-      m_coordMin.x = qMin(cmin.x, m_coordMin.x);
-      m_coordMin.y = qMin(cmin.y, m_coordMin.y);
-      m_coordMin.z = qMin(cmin.z, m_coordMin.z);
-      
-      m_coordMax.x = qMax(cmax.x, m_coordMax.x);
-      m_coordMax.y = qMax(cmax.y, m_coordMax.y);
-      m_coordMax.z = qMax(cmax.z, m_coordMax.z);
+      for(int d=1; d<m_pointClouds.count(); d++)
+	{
+	  Vec cmin = m_pointClouds[d]->tightOctreeMin();
+	  Vec cmax = m_pointClouds[d]->tightOctreeMax();
+	  
+	  m_coordMin = StaticFunctions::minVec(cmin, m_coordMin);
+	  m_coordMax = StaticFunctions::maxVec(cmax, m_coordMax);
+
+//	  m_coordMin.x = qMin(cmin.x, m_coordMin.x);
+//	  m_coordMin.y = qMin(cmin.y, m_coordMin.y);
+//	  m_coordMin.z = qMin(cmin.z, m_coordMin.z);
+//	  
+//	  m_coordMax.x = qMax(cmax.x, m_coordMax.x);
+//	  m_coordMax.y = qMax(cmax.y, m_coordMax.y);
+//	  m_coordMax.z = qMax(cmax.z, m_coordMax.z);
+	}
     }
 
   int uid = 0;
@@ -381,10 +416,12 @@ Volume::postLoad(bool showInfo)
   // now lie within 0 and m_coordMax-m_coordMin
   if (m_zeroShift)
     {
+      for(int d=0; d<m_trisets.count(); d++)
+	m_trisets[d]->setGlobalMinMax(m_coordMin, m_coordMax);
+
       for(int d=0; d<m_pointClouds.count(); d++)
-	{
-	  m_pointClouds[d]->setGlobalMinMax(m_coordMin, m_coordMax);
-	}
+	m_pointClouds[d]->setGlobalMinMax(m_coordMin, m_coordMax);
+
       m_coordMax -= m_coordMin;
       m_coordMin = Vec(0,0,0);
     }
@@ -425,6 +462,10 @@ Volume::postLoad(bool showInfo)
 	}
     }
 
+  // get points from trisets
+  for(int d=0; d<m_trisets.count(); d++)
+    totpts += m_trisets[d]->numpoints();
+  
   m_npoints = totpts;
 
 
@@ -433,7 +474,7 @@ Volume::postLoad(bool showInfo)
   
   QString mesg;
 
-  mesg += QString("Number of points : %1\n\n").arg(m_npoints); 
+  mesg += QString("Number of points : %1\n\n").arg(m_npoints);
 
   mesg += QString("Min : %1 %2 %3\n")\
     .arg(m_coordMin.x)\
@@ -448,9 +489,14 @@ Volume::postLoad(bool showInfo)
   if (mt > 0)
     mesg += QString("MAX TIME STEP : %1\n\n").arg(mt);
 
-  mesg += QString("Point clouds : %1\n\n").arg(m_pointClouds.count()); 
-  mesg += QString("Tile node count : %1\n").arg(m_tiles.count()); 
-  mesg += QString("Octree node count : %1\n\n").arg(uid+1); 
+  if (m_pointClouds.count() > 0)
+    {
+      mesg += QString("Point clouds : %1\n\n").arg(m_pointClouds.count()); 
+      mesg += QString("Tile node count : %1\n").arg(m_tiles.count()); 
+      mesg += QString("Octree node count : %1\n\n").arg(uid+1);
+    }
+  if (m_trisets.count() > 0)
+    mesg += QString("Meshes : %1\n\n").arg(m_trisets.count()); 
   
   QMessageBox::information(0, "", mesg);
 }
@@ -734,3 +780,51 @@ Volume::loadTopJson(QString jsonfile)
 
     }
 }
+
+void
+Volume::loadAllPLY(QString dirname)
+{
+  QFileInfoList finfolist;
+
+  QStringList namefilters;
+  namefilters << "*.ply";
+
+  QDir topdir(dirname);
+  if (topdir.exists("staticData"))
+    {
+      QString staticDir = topdir.absoluteFilePath("staticData");
+      QDirIterator dirIter(staticDir,
+			      namefilters,
+			      QDir::Files | QDir::Readable,
+			      QDirIterator::Subdirectories);
+      while(dirIter.hasNext())
+	{
+	  QString plyFile = dirIter.next();
+	  Triset *triset = new Triset();
+	  triset->setFilename(plyFile);
+	  triset->load();
+
+	  m_trisets << triset;
+	}
+    }
+  
+  QDirIterator dirIter(dirname,
+			  namefilters,
+			  QDir::Files | QDir::Readable,
+			  QDirIterator::Subdirectories);
+
+  int time = 0;
+  while(dirIter.hasNext())
+    {
+      QString plyFile = dirIter.next();
+      Triset *triset = new Triset();
+      triset->setTime(time);
+      triset->setFilename(plyFile);
+      triset->load();
+      
+      m_trisets << triset;
+
+      time ++;
+    }
+}
+

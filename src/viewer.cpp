@@ -63,7 +63,8 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
 
   m_shadowShader = 0;
   m_smoothShader = 0;
-
+  m_meshShader = 0;
+  
   m_vbID = -1;
   m_vbPoints = 0;
   m_vertexBuffer[0] = 0;
@@ -107,7 +108,8 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   m_orderedTiles.clear();
 
   m_pointClouds.clear();
-
+  m_trisets.clear();
+  
   m_nearDist = 0;
   m_farDist = 1;
 
@@ -235,6 +237,7 @@ Viewer::reset()
   m_orderedTiles.clear();
 
   m_pointClouds.clear();
+  m_trisets.clear();
 
   m_nearDist = 0;
   m_farDist = 1;
@@ -396,6 +399,7 @@ Viewer::start()
   m_tiles.clear();
   m_orderedTiles.clear();
   m_pointClouds.clear();
+  m_trisets.clear();
   m_loadNodes.clear();
 
   genColorMap();
@@ -409,6 +413,7 @@ Viewer::start()
   m_maxTime = m_volume->maxTime();
 
   m_pointClouds = m_volume->pointClouds();
+  m_trisets = m_volume->trisets();
 
   if (m_vrMode && m_vr.vrEnabled())
     {
@@ -418,16 +423,10 @@ Viewer::start()
 	m_vr.setShowTimeseriesMenu(false);
     }
 
-  m_pointType = m_pointClouds[0]->pointType();
+  if (m_pointClouds.count() > 0)
+    m_pointType = m_pointClouds[0]->pointType();
   
   createMinMaxTexture();
-
-//  for(int d=0; d<m_pointClouds.count(); d++)
-//    {
-//      QList<OctreeNode*> allNodes = m_pointClouds[d]->allNodes();
-//      for(int od=0; od<allNodes.count(); od++)
-//	allNodes[od]->setColorMap(m_colorGrad);
-//    }
 
   m_coordMin = m_volume->coordMin();
   m_coordMax = m_volume->coordMax();
@@ -443,18 +442,25 @@ Viewer::start()
 
   if (m_vrMode && m_vr.vrEnabled())
     {
-      m_vr.setShowMap(m_pointClouds[0]->showMap());
-      m_vr.setGravity(m_pointClouds[0]->gravity());
-      m_vr.setSkybox(m_pointClouds[0]->skybox());
-      m_vr.setPlayButton(m_pointClouds[0]->playButton());
-      m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
-      m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
+      if (m_pointClouds.count() > 0)
+	{
+	  m_vr.setShowMap(m_pointClouds[0]->showMap());
+	  m_vr.setGravity(m_pointClouds[0]->gravity());
+	  m_vr.setSkybox(m_pointClouds[0]->skybox());
+	  m_vr.setPlayButton(m_pointClouds[0]->playButton());
+	  m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
+	  m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
+	  
+	  //----------------
+	  QString dataShown;
+	  dataShown = m_pointClouds[0]->name();
+	  m_vr.setDataShown(dataShown);
+	  //----------------
+	}
 
-      //----------------
-      QString dataShown;
-      dataShown = m_pointClouds[0]->name();
-      m_vr.setDataShown(dataShown);
-      //----------------
+      m_vr.setShowMap(false);
+      m_vr.setSkybox(true);
+      m_vr.setPlayButton(true);
     }
 
   if (!m_shadowShader)
@@ -515,9 +521,6 @@ Viewer::start()
     }
   else
     showEntireScene();
-
-//    if (m_vrMode && m_vr.vrEnabled())
-//      genDrawNodeListForVR();
 
   emit message("Ready to serve");
 }
@@ -774,6 +777,30 @@ Viewer::createShaders()
   m_depthParm[24] = glGetUniformLocation(m_depthShader, "xformScale");
   m_depthParm[25] = glGetUniformLocation(m_depthShader, "xformRot");
   //--------------------------
+
+  //--------------------------
+  if (!m_meshShader)
+    {
+      m_meshShader = glCreateProgramObjectARB();
+      if (! ShaderFactory::loadShadersFromFile(m_meshShader,
+					       "assets/shaders/mesh.vert",
+					       "assets/shaders/mesh.frag"))
+	{
+	  m_npoints = 0;
+	  return;
+	}
+
+      m_meshParm[0] = glGetUniformLocation(m_meshShader, "MVP");
+      m_meshParm[1] = glGetUniformLocation(m_meshShader, "eyepos");
+      m_meshParm[2] = glGetUniformLocation(m_meshShader, "viewDir");
+      m_meshParm[3] = glGetUniformLocation(m_meshShader, "ambient");
+      m_meshParm[4] = glGetUniformLocation(m_meshShader, "diffuse");
+      m_meshParm[5] = glGetUniformLocation(m_meshShader, "specular");
+      m_meshParm[6] = glGetUniformLocation(m_meshShader, "shadows");
+    }
+  //--------------------------
+
+
 }
 
 void
@@ -1047,7 +1074,8 @@ Viewer::mousePressEvent(QMouseEvent *event)
   if (m_vrMode && m_vr.vrEnabled())
     return;
 
-  if (m_pointClouds.count() == 0)
+  if (m_pointClouds.count() == 0 &&
+      m_trisets.count() == 0)
     return;
   
   m_prevPos = event->pos();
@@ -1136,7 +1164,8 @@ Viewer::mousePressEvent(QMouseEvent *event)
 void
 Viewer::mouseReleaseEvent(QMouseEvent *event)
 {
-  if (m_pointClouds.count() == 0)
+  if (m_pointClouds.count() == 0 &&
+      m_trisets.count() == 0)
     return;
 
   if (m_vrMode && m_vr.vrEnabled())
@@ -1161,7 +1190,8 @@ Viewer::mouseReleaseEvent(QMouseEvent *event)
 
   QGLViewer::mouseReleaseEvent(event);
 
-  genDrawNodeList();
+  if (m_pointClouds.count() > 0)
+    genDrawNodeList();
 }
 
 void
@@ -1170,7 +1200,8 @@ Viewer::mouseMoveEvent(QMouseEvent *event)
   if (m_vrMode && m_vr.vrEnabled())
     return;
 
-  if (m_pointClouds.count() == 0)
+  if (m_pointClouds.count() == 0 &&
+      m_trisets.count() == 0)
     return;
 
   if (m_editMode &&
@@ -1288,7 +1319,8 @@ Viewer::paintGL()
 
   if (!m_vrMode ||
       !m_vr.vrEnabled() ||
-      m_pointClouds.count() == 0)
+      (m_pointClouds.count() == 0 &&
+       m_trisets.count() == 0) )
     {
       // Clears screen, set model view matrix...
       preDraw();
@@ -1320,18 +1352,21 @@ Viewer::paintGL()
 
 	  m_vr.setTimeStep(QString("%1").arg(m_currTime));
 
-	  //----------------
-	  QString dataShown;
-	  for(int d=0; d<m_pointClouds.count(); d++)
-	    if (m_pointClouds[d]->visible())
-	      dataShown = dataShown + " " + m_pointClouds[d]->name();
-
-	  m_vr.setDataShown(dataShown);
-	  //----------------
-	  
-
-	  if (m_pointClouds[0]->showMap())
-	    m_firstImageDone = 0;
+	  if (m_pointClouds.count() > 0)
+	    {
+	      //----------------
+	      QString dataShown;
+	      for(int d=0; d<m_pointClouds.count(); d++)
+		if (m_pointClouds[d]->visible())
+		  dataShown = dataShown + " " + m_pointClouds[d]->name();
+	      
+	      m_vr.setDataShown(dataShown);
+	      //----------------
+	      
+	      
+	      if (m_pointClouds[0]->showMap())
+		m_firstImageDone = 0;
+	    }
 	}
 
       m_vr.resetGenDrawList();
@@ -1349,12 +1384,15 @@ Viewer::paintGL()
   m_hmdRV = -m_vr.rightDir();
 
 
-  if (m_pointClouds[0]->showMap())
-    m_vr.sendCurrPosToMenu();
+  if (m_pointClouds.count() > 0)
+    {
+      if (m_pointClouds[0]->showMap())
+	m_vr.sendCurrPosToMenu();
+    }
 
   //---------------------------
 
-  if (m_vbPoints == 0)
+  if (m_vbPoints == 0 && m_trisets.count() == 0)
     {
       // just for evaluation of projection matrices
       m_vr.viewProjection(vr::Eye_Left);
@@ -1374,65 +1412,70 @@ Viewer::paintGL()
       // left eye
       m_vr.bindLeftBuffer();
 
-      drawPointsWithShadows(vr::Eye_Left);
-      drawLabelsForVR(vr::Eye_Left);
+      if (m_trisets.count() > 0)
+	drawTrisets(vr::Eye_Left);
+		    
+      if (m_pointClouds.count() > 0)
+	{
+	  drawPointsWithShadows(vr::Eye_Left);
+	  drawLabelsForVR(vr::Eye_Left);
+	}
+      
       m_vr.postDrawLeftBuffer();
       
       
       // right eye
       m_vr.bindRightBuffer();
 
-      drawPointsWithShadows(vr::Eye_Right);
-      drawLabelsForVR(vr::Eye_Right);
+      if (m_trisets.count() > 0)
+	drawTrisets(vr::Eye_Right);
+		    
+      if (m_pointClouds.count() > 0)
+	{
+	  drawPointsWithShadows(vr::Eye_Right);
+	  drawLabelsForVR(vr::Eye_Right);
+	}
       m_vr.postDrawRightBuffer();
     }
 
   m_vr.postDraw();
 
   m_frames++;
-
-  //---------------------------
-  if (m_vr.reUpdateMap())
-    m_firstImageDone = 0;
-
-
-//  if (m_moveViewerToCenter &&
-//      m_vboLoadedAll &&
-//      m_pointClouds[0]->showMap()&&
-//      m_firstImageDone == 2)
-//    {
-//      m_vr.resetModel();
-//      m_moveViewerToCenter = false;
-//      m_firstImageDone++;
-//    }
   
-
-  if (m_vboLoadedAll &&
-      m_pointClouds[0]->showMap()&&
-      m_firstImageDone < 2)
+  //---------------------------
+  if (m_pointClouds.count() > 0)
     {
-      generateFirstImage();
-      m_firstImageDone++;
-
-      m_vr.resetUpdateMap();
-
-      //--------------
-      if (m_moveViewerToCenter && m_firstImageDone == 2) // do it only once
-	{
-	  m_vr.resetModel();
-	  m_moveViewerToCenter = false;
-	}
-      //--------------
-
-      //----------------
-      QString dataShown;
-      for(int d=0; d<m_pointClouds.count(); d++)
-	if (m_pointClouds[d]->visible())
-	  dataShown = dataShown + " " + m_pointClouds[d]->name();
+      if (m_vr.reUpdateMap())
+	m_firstImageDone = 0;
       
-      m_vr.setDataShown(dataShown);
-      //----------------
-    }  
+      
+      if (m_vboLoadedAll &&
+	  m_pointClouds[0]->showMap()&&
+	  m_firstImageDone < 2)
+	{
+	  generateFirstImage();
+	  m_firstImageDone++;
+	  
+	  m_vr.resetUpdateMap();
+	  
+	  //--------------
+	  if (m_moveViewerToCenter && m_firstImageDone == 2) // do it only once
+	    {
+	      m_vr.resetModel();
+	      m_moveViewerToCenter = false;
+	    }
+	  //--------------
+	  
+	  //----------------
+	  QString dataShown;
+	  for(int d=0; d<m_pointClouds.count(); d++)
+	    if (m_pointClouds[d]->visible())
+	      dataShown = dataShown + " " + m_pointClouds[d]->name();
+	  
+	  m_vr.setDataShown(dataShown);
+	  //----------------
+	}  
+    }
   //---------------------------
 
   update();
@@ -1462,20 +1505,26 @@ Viewer::draw()
       m_fastDraw = false;
       return;
     }
-
-  drawPointsWithReload();
-
-  drawLabels();
   
-  if (m_showBox || m_editMode)
-    drawAABB();
+  if (m_trisets.count() > 0)
+    drawTrisets();
 
-  if (m_editMode)
-    drawPointPairs();
+  if (m_pointClouds.count() > 0)
+    {
+      drawPointsWithReload();
+
+      drawLabels();
+  
+      if (m_showBox || m_editMode)
+	drawAABB();
+
+      if (m_editMode)
+	drawPointPairs();
+    }
 
   drawInfo();
 
-  if (Global::playFrames() && m_vboLoadedAll)
+  if (Global::playFrames() && (m_vboLoadedAll || m_pointClouds.count() == 0))
     {
       if (m_saveSnapshots)
 	saveImage();
@@ -1501,16 +1550,22 @@ Viewer::fastDraw()
   if (m_npoints <= 0)
     return;
 
-  drawPointsWithReload();
+  if (m_trisets.count() > 0)
+    drawTrisets();
+
+  if (m_pointClouds.count() > 0)
+    {
+      drawPointsWithReload();
   
-  drawLabels();
+      drawLabels();
 
-  if (m_showBox || m_editMode)
-    drawAABB();
+      if (m_showBox || m_editMode)
+	drawAABB();
 
-  if (m_editMode)
-    drawPointPairs();
-
+      if (m_editMode)
+	drawPointPairs();
+    }
+  
   drawInfo();
 
 
@@ -1557,9 +1612,12 @@ Viewer::drawInfo()
       //mesg += QString("Fps : %1    ").arg(currentFPS());
       //int ptsz = m_pointSize;
       //mesg += QString("PtSz : %1    ").arg(ptsz);
-      mesg += QString("Points : %1 (%2)  ").arg(m_pointBudget).arg(m_vbPoints);
-      mesg += QString("%1").arg(m_vboLoadedAll);
-
+      if (m_pointClouds.count() > 0)
+	{
+	  mesg += QString("Points : %1 (%2)  ").arg(m_pointBudget).arg(m_vbPoints);
+	  mesg += QString("%1").arg(m_vboLoadedAll);
+	}
+	    
       StaticFunctions::renderText(10, 30,
 				  mesg, tfont,
 				  Qt::black,
@@ -1580,30 +1638,6 @@ Viewer::drawInfo()
   stopScreenCoordinatesSystem();
 
   glEnable(GL_DEPTH_TEST);
-}
-
-void
-Viewer::loadNodeData()
-{
-  m_vbID = 0;
-
-  qint64 lpoints = 0;  
-
-  glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer[m_vbID]);
-  for(int i=0; i<m_loadNodes.count(); i++)
-    {
-      m_loadNodes[i]->loadData();
-      qint64 npts = m_loadNodes[i]->numpoints();
-      
-      glBufferSubData(GL_ARRAY_BUFFER,
-		      m_dpv*lpoints*sizeof(float),
-		      m_dpv*npts*sizeof(float),
-		      m_loadNodes[i]->coords());
-
-      lpoints += npts;
-    }
-
-  m_vbPoints = lpoints;
 }
 
 void
@@ -2047,8 +2081,8 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
   glUniform1i(m_shadowParm[3], m_vr.edges()); // showedges
   glUniform1i(m_shadowParm[4], m_vr.softShadows()); // softShadows
 
-  glUniform1f(m_shadowParm[5], m_nearDist);
-  glUniform1f(m_shadowParm[6], m_farDist);
+  glUniform1f(m_shadowParm[5], 1);
+  glUniform1f(m_shadowParm[6], 0);
 
   glUniform1i(m_shadowParm[7], m_vr.spheres());
 
@@ -2197,6 +2231,249 @@ Viewer::drawPoints(vr::Hmd_Eye eye)
   glActiveTexture(GL_TEXTURE0);
   glDisable(GL_TEXTURE_1D);
 }
+
+void
+Viewer::drawTrisets(vr::Hmd_Eye eye)
+{
+  glEnable(GL_DEPTH_TEST);
+
+  // model-view-projection matrix
+  QMatrix4x4 mvp = m_vr.viewProjection(eye);
+  Vec eyepos = Vec(m_hmdPos.x(),m_hmdPos.y(),m_hmdPos.z());
+  Vec viewDir = Vec(m_hmdVD.x(),m_hmdVD.y(),m_hmdVD.z());
+
+  glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			 GL_COLOR_ATTACHMENT0,
+			 GL_TEXTURE_RECTANGLE,
+			 m_depthTex[0],
+			 0);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			 GL_COLOR_ATTACHMENT1,
+			 GL_TEXTURE_RECTANGLE,
+			 m_depthTex[1],
+			 0);
+  GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT,
+		       GL_COLOR_ATTACHMENT1_EXT };
+  glDrawBuffers(2, buffers);
+
+  
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(m_meshShader);
+
+  glUniformMatrix4fv(m_meshParm[0], 1, GL_FALSE, mvp.data());
+
+  glUniform3f(m_meshParm[1], eyepos.x, eyepos.y, eyepos.z); // eyepos
+  glUniform3f(m_meshParm[2], viewDir.x, viewDir.y, viewDir.z); // viewDir
+
+  glUniform1f(m_meshParm[3], 0.9); // ambient
+  glUniform1f(m_meshParm[4], 0.1); // diffuse
+  glUniform1f(m_meshParm[5], 1.0); // specular
+
+  glUniform1i(m_meshParm[6], 1); // shadows
+
+  for(int i=0; i<m_trisets.count(); i++)
+    {
+      if (m_trisets[i]->time() == -1 ||
+	  m_trisets[i]->time() == m_currTime)
+	m_trisets[i]->draw();
+    }
+  
+  glUseProgram(0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+//--------------------------------------------
+//--------------------------------------------
+
+  m_vr.bindBuffer(eye);
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//--------------------------------------------
+//--------------------------------------------
+  glUseProgram(m_shadowShader);
+
+  glActiveTexture(GL_TEXTURE0);
+  glEnable(GL_TEXTURE_RECTANGLE);
+  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[0]); // colors
+
+  glActiveTexture(GL_TEXTURE1);
+  glEnable(GL_TEXTURE_RECTANGLE);
+  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[1]); // depth
+
+
+  int wd = m_vr.screenWidth();
+  int ht = m_vr.screenHeight();
+  mvp.setToIdentity();
+  mvp.ortho(0.0, wd, 0.0, ht, 0.0, 1.0);
+
+  glUniformMatrix4fv(m_shadowParm[0], 1, GL_FALSE, mvp.data());
+
+  glUniform1i(m_shadowParm[1], 0); // colors
+  glUniform1i(m_shadowParm[2], 1); // depthTex1
+
+  glUniform1i(m_shadowParm[3], m_vr.edges()); // showedges
+  glUniform1i(m_shadowParm[4], m_vr.softShadows()); // softShadows
+
+  glUniform1f(m_shadowParm[5], 1);
+  glUniform1f(m_shadowParm[6], 0);
+
+  glUniform1i(m_shadowParm[7], 0);
+
+  glUniform1i(m_shadowParm[8], false); // copyOnly false
+
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
+  glVertexAttribPointer(0,  // attribute 0
+			2,  // size
+			GL_FLOAT, // type
+			GL_FALSE, // normalized
+			0, // stride
+			(void*)0 ); // array buffer offset
+  glDrawArrays(GL_QUADS, 0, 8);
+
+  glDisableVertexAttribArray(0);
+
+  glActiveTexture(GL_TEXTURE1);
+  glDisable(GL_TEXTURE_RECTANGLE);
+
+  glActiveTexture(GL_TEXTURE0);
+  glDisable(GL_TEXTURE_RECTANGLE);
+//--------------------------------------------
+//--------------------------------------------
+
+  glUseProgram(0);
+}
+
+void
+Viewer::drawTrisets()
+{
+  glEnable(GL_DEPTH_TEST);
+
+  // model-view-projection matrix
+  GLdouble m[16];
+  camera()->getModelViewProjectionMatrix(m);
+  GLfloat mvp[16];
+  for(int i=0; i<16; i++) mvp[i] = m[i];
+
+  Vec eyepos = camera()->position();
+  Vec viewDir = camera()->viewDirection();
+
+  if (!m_selectActive)
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			     GL_COLOR_ATTACHMENT0,
+			     GL_TEXTURE_RECTANGLE,
+			     m_depthTex[0],
+			     0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+			     GL_COLOR_ATTACHMENT1,
+			     GL_TEXTURE_RECTANGLE,
+			     m_depthTex[1],
+			     0);
+      GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT,
+			   GL_COLOR_ATTACHMENT1_EXT };
+      glDrawBuffers(2, buffers);
+    }
+
+  
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(m_meshShader);
+
+  glUniformMatrix4fv(m_meshParm[0], 1, GL_FALSE, mvp);
+
+  glUniform3f(m_meshParm[1], eyepos.x, eyepos.y, eyepos.z); // eyepos
+  glUniform3f(m_meshParm[2], viewDir.x, viewDir.y, viewDir.z); // viewDir
+
+  glUniform1f(m_meshParm[3], 0.9); // ambient
+  glUniform1f(m_meshParm[4], 0.1); // diffuse
+  glUniform1f(m_meshParm[5], 1.0); // specular
+
+  if (m_selectActive)
+    glUniform1i(m_meshParm[6], 0); // no shadows
+  else
+    glUniform1i(m_meshParm[6], 1); // shadows
+
+  for(int i=0; i<m_trisets.count(); i++)
+    {
+      if (m_trisets[i]->time() == -1 ||
+	  m_trisets[i]->time() == m_currTime)
+	m_trisets[i]->draw();
+    }
+  
+  glUseProgram(0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  if (m_selectActive)
+    return;
+//--------------------------------------------
+//--------------------------------------------
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//--------------------------------------------
+//--------------------------------------------
+  glUseProgram(m_shadowShader);
+
+  glActiveTexture(GL_TEXTURE0);
+  glEnable(GL_TEXTURE_RECTANGLE);
+  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[0]); // colors
+
+  glActiveTexture(GL_TEXTURE1);
+  glEnable(GL_TEXTURE_RECTANGLE);
+  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[1]); // depth
+
+
+  int wd = camera()->screenWidth();
+  int ht = camera()->screenHeight();
+
+  QMatrix4x4 mvp4x4;
+  mvp4x4.setToIdentity();
+  mvp4x4.ortho(0.0, wd, 0.0, ht, 0.0, 1.0);
+
+  glUniformMatrix4fv(m_shadowParm[0], 1, GL_FALSE, mvp4x4.data());
+
+  glUniform1i(m_shadowParm[1], 0); // colors
+  glUniform1i(m_shadowParm[2], 1); // depthTex1
+
+  glUniform1i(m_shadowParm[3], m_showEdges); // showedges
+  glUniform1i(m_shadowParm[4], m_softShadows); // softShadows
+
+  glUniform1f(m_shadowParm[5], m_nearDist);
+  glUniform1f(m_shadowParm[6], m_farDist);
+
+  glUniform1i(m_shadowParm[7], 0);
+
+  glUniform1i(m_shadowParm[8], false); // copyOnly false
+
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
+  glVertexAttribPointer(0,  // attribute 0
+			2,  // size
+			GL_FLOAT, // type
+			GL_FALSE, // normalized
+			0, // stride
+			(void*)0 ); // array buffer offset
+  glDrawArrays(GL_QUADS, 0, 8);
+
+  glDisableVertexAttribArray(0);
+
+  glActiveTexture(GL_TEXTURE1);
+  glDisable(GL_TEXTURE_RECTANGLE);
+
+  glActiveTexture(GL_TEXTURE0);
+  glDisable(GL_TEXTURE_RECTANGLE);
+//--------------------------------------------
+//--------------------------------------------
+
+  glUseProgram(0);
+}
+
 
 void
 Viewer::drawPointsWithReload()
@@ -2872,6 +3149,39 @@ Viewer::genDrawNodeList()
 //  if (m_flyMode)
 //    m_minNodePixelSize = 150;
 
+  //-----------------------------
+  if (m_trisets.count() > 0)
+    {
+      Vec cpos = camera()->position();
+      float nearDist = -1;
+      float farDist = -1;
+      for (int l=0; l<m_trisets.count(); l++)
+	{
+	  for (int c=0; c<8; c++)
+	    {
+	      Vec bmin = m_trisets[l]->bmin();
+	      Vec bmax = m_trisets[l]->bmin();
+	      Vec pos((c&4)?bmin.x:bmax.x, (c&2)?bmin.y:bmax.y, (c&1)?bmin.z:bmax.z);
+	      
+	      float len = (pos - cpos).norm();
+	      if (nearDist < 0)
+		{
+		  nearDist = qMax(0.0f, len);
+		  farDist = qMax(0.0f, len);
+		}
+	      else
+		{
+		  nearDist = qMax(0.0f, qMin(nearDist, len));
+		  farDist = qMax(farDist, len);
+		}
+	    }    
+	}
+      setNearFar(nearDist, farDist);
+    }
+  //-----------------------------
+
+  if (m_pointClouds.count() == 0)
+    return;
 
   QList<OctreeNode*> oldLoadNodes = m_loadNodes;
 
@@ -2908,11 +3218,6 @@ Viewer::genDrawNodeList()
       if (m_pointsDrawn > m_pointBudget*0.1*(i+1))
 	fid ++;
     }  
-
-  // single threaded
-  //loadNodeData();
-
-  //createMinMaxTexture();
 
   //-------------------------------
   // sort currload based on distance to the viewer
@@ -3498,6 +3803,37 @@ Viewer::linkClicked(QMouseEvent *event)
 void
 Viewer::genDrawNodeListForVR()
 {
+  //-----------------------------
+  if (m_trisets.count() > 0)
+    {
+      Vec cpos = camera()->position();
+      float nearDist = -1;
+      float farDist = -1;
+      for (int l=0; l<m_trisets.count(); l++)
+	{
+	  for (int c=0; c<8; c++)
+	    {
+	      Vec bmin = m_trisets[l]->bmin();
+	      Vec bmax = m_trisets[l]->bmin();
+	      Vec pos((c&4)?bmin.x:bmax.x, (c&2)?bmin.y:bmax.y, (c&1)?bmin.z:bmax.z);
+	      
+	      float len = (pos - cpos).norm();
+	      if (nearDist < 0)
+		{
+		  nearDist = qMax(0.0f, len);
+		  farDist = qMax(0.0f, len);
+		}
+	      else
+		{
+		  nearDist = qMax(0.0f, qMin(nearDist, len));
+		  farDist = qMax(farDist, len);
+		}
+	    }    
+	}
+      setNearFar(nearDist, farDist);
+    }
+  //-----------------------------
+
   m_volume->setNewLoad(true);
 
   emit updateView();

@@ -61,6 +61,10 @@ class StaticFunctions
 
   static bool checkExtension(QString, const char*);
 
+  static Vec clampVec(Vec, Vec, Vec);
+  static Vec maxVec(Vec, Vec);
+  static Vec minVec(Vec, Vec);
+
 };
 
 #endif

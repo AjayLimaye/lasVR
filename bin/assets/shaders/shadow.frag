@@ -106,35 +106,50 @@ void main()
 
   float nearD1 = nearDist;
   float farD1 = nearDist+(farDist-nearDist)*0.3;
+
+  float justDoIt = step(farDist, nearDist);  
+  if (justDoIt > 0.0)
+    {
+      nearD1 = 0.0;
+      farD1 = 1.0;
+      dtex.x = 0.0;
+    }
+  
   if (softShadows && dtex.x < farD1)
    {
-    float stpfrc = smoothstep(nearD1, farD1, dtex.x);
-    int nsteps = int(200.0*max(0.1, 1.0-stpfrc));
+     float stpfrc = smoothstep(nearD1, farD1, dtex.x);
+     int nsteps = int(100.0*max(0.1, 1.0-stpfrc));
 
-    float sum = 0.0;
-    float tele = 0.0;
-    float r = 1.0;
-    float theta = 0.0;
-    int cnt = 4;
-    float ege = 0.0;
-    int j = 0;
-    for(int i=0; i<nsteps; i++)
-    {
-      r = 1.0 + float(i)/4.0;
-      vec2 pos = spos + vec2(r*cx[int(mod(i,8))],r*cy[int(mod(i,8))]);
-      float od = depth - texture2DRect(depthTex, pos).x;
-      float ege = r*0.005;
-      sum += step(ege, od);
-      tele ++;
-    } 
-    sum /= tele;
-    sum = 1.0-sum;
-    sum = pow(sum, 0.5);
-    color.rgb = mix(color.rgb*sum, color.rgb, smoothstep(nearD1, farD1, dtex.x));
+     float sum = 0.0;
+     float tele = 0.0;
+     float r = 1.0;
+     float theta = 0.0;
+     int cnt = 4;
+     float ege = 0.0;
+     int j = 0;
+     for(int i=0; i<nsteps; i++)
+       {
+	 r = 1.0 + float(i)/4.0;
+	 vec2 pos = spos + vec2(r*cx[int(mod(i,8))],r*cy[int(mod(i,8))]);
+	 float od = depth - texture2DRect(depthTex, pos).x;
+	 float ege = r*0.005;
+	 sum += step(ege, od);
+	 tele ++;
+       } 
+     sum /= tele;
+     sum = 1.0-sum;
+     sum = pow(sum, 0.5);
+     color.rgb = mix(color.rgb*sum, color.rgb, stpfrc);
    }
 
   float nearD2 = nearDist+(farDist-nearDist)*0.1;
   float farD2 = nearDist+(farDist-nearDist)*0.5;
+  if (justDoIt > 0.0)
+    {
+      nearD2 = 0.0;
+      farD2 = 1.0;
+      dtex.x = 0.0;
+    }
   if (showedges && dtex.x < farD2)
    {
     float response = 0.0;
