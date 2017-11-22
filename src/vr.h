@@ -48,7 +48,8 @@ class VR : public QObject
 
   void setShowMap(bool);
   void setGravity(bool g) { m_gravity = g; }
-  void setSkybox(bool sm) { m_showSkybox = sm; }
+  void setSkyBox(bool sm) { m_showSkybox = sm; }
+  void setSkyBoxType(int);
   void setPlayButton(bool sm) { m_leftMenu.setPlayButton(sm); }
   void setShowTimeseriesMenu(bool);
   void setGroundHeight(float gh) { m_groundHeight = gh; }
@@ -421,7 +422,7 @@ class VR : public QObject
   void nextMenu();
   void previousMenu();
   void renderMenu(vr::Hmd_Eye);
-  void checkOptions(bool);
+  void checkOptions(int);
 
   bool showRight() { return m_showRight; }
   bool showLeft() { return m_showLeft; }

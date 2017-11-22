@@ -31,7 +31,7 @@ class VrMenu : public QObject
 
   int checkTeleport(QMatrix4x4, QMatrix4x4);
 
-  int checkOptions(QMatrix4x4, QMatrix4x4, bool);
+  int checkOptions(QMatrix4x4, QMatrix4x4, int);
 
   QVector2D pinPoint2D();
 

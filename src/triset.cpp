@@ -7,6 +7,9 @@
 
 Triset::Triset()
 {
+  m_vboLoaded = false;
+  m_fileLoaded = false;
+  
   m_glVertBuffer = 0;
   m_glIndexBuffer = 0;
   m_glVertArray = 0;
@@ -34,6 +37,10 @@ Triset::Triset()
     }
 
   clear();
+
+  // generate VBO structures here
+  // so that they are created while in the main thread
+  genVBOs();
 }
 
 Triset::~Triset()
@@ -44,6 +51,9 @@ Triset::~Triset()
 void
 Triset::clear()
 {
+  m_vboLoaded = false;
+  m_fileLoaded = false;
+  
   m_time = -1;
   
   m_vertices.clear();
@@ -71,25 +81,29 @@ Triset::setGlobalMinMax(Vec gmin, Vec gmax)
   m_gmin = gmin;
   m_gmax = gmax;
 
-  loadVertexBufferData();
+  m_vboLoaded = false;
+  //loadVertexBufferData();
 }
 
 bool
 Triset::load()
 {
   bool loaded = loadPLY(m_fileName);
-
-  if (loaded)
-    {
-      loadVertexBufferData();
-      return true;
-    }
-  return false; 
+  return loaded;
+//  if (loaded)
+//    {
+//      loadVertexBufferData();
+//      return true;
+//    }
+//  return false; 
 }
 
 bool
 Triset::loadPLY(QString flnm)
 {
+  if (m_fileLoaded)
+    return true;
+    
   typedef struct Vertex {
     float x,y,z;
     float r,g,b;
@@ -285,12 +299,29 @@ Triset::loadPLY(QString flnm)
       m_bmax = StaticFunctions::maxVec(m_bmax, m_vertices[i]);
     }
 
+  m_fileLoaded = true;  
+
   return true;
 }
 
 void
+Triset::genVBOs()
+{
+  glGenVertexArrays(1, &m_glVertArray);
+  glGenBuffers(1, &m_glVertBuffer);
+  glGenBuffers(1, &m_glIndexBuffer);      
+}
+
+
+bool
 Triset::loadVertexBufferData()
 {
+  if (!m_fileLoaded)
+    return false;
+  
+  if (m_vboLoaded)
+    return true;
+
   int stride = 1;
   if (m_normals.count()) stride++; // per vertex normal
   if (m_vcolor.count()) stride++; // per vertex color
@@ -348,22 +379,19 @@ Triset::loadVertexBufferData()
     indexData[i] = m_triangles[i];
   //---------------------
 
-  if(m_glVertArray)
-    {
-      glDeleteBuffers(1, &m_glIndexBuffer);
-      glDeleteVertexArrays( 1, &m_glVertArray );
-      glDeleteBuffers(1, &m_glVertBuffer);
-      m_glIndexBuffer = 0;
-      m_glVertArray = 0;
-      m_glVertBuffer = 0;
-    }
+//  if(m_glVertArray)
+//    {
+//      glDeleteBuffers(1, &m_glIndexBuffer);
+//      glDeleteVertexArrays( 1, &m_glVertArray );
+//      glDeleteBuffers(1, &m_glVertBuffer);
+//      m_glIndexBuffer = 0;
+//      m_glVertArray = 0;
+//      m_glVertBuffer = 0;
+//    }
 
-  
-  glGenVertexArrays(1, &m_glVertArray);
   glBindVertexArray(m_glVertArray);
-      
+  
   // Populate a vertex buffer
-  glGenBuffers(1, &m_glVertBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
   glBufferData(GL_ARRAY_BUFFER,
 	       sizeof(float)*nv,
@@ -393,7 +421,6 @@ Triset::loadVertexBufferData()
     }
 
   // Create and populate the index buffer
-  glGenBuffers(1, &m_glIndexBuffer);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 	       sizeof(unsigned int)*ni,
@@ -404,11 +431,18 @@ Triset::loadVertexBufferData()
 
   delete [] vertData;
   delete [] indexData;
+
+  m_vboLoaded = true;  
+
+  return true;
 }
 
 void
 Triset::draw()
 {
+  if (!m_vboLoaded)
+    return;
+
   int ni = m_triangles.count();
 
   glBindVertexArray(m_glVertArray);

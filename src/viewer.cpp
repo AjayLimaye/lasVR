@@ -446,7 +446,8 @@ Viewer::start()
 	{
 	  m_vr.setShowMap(m_pointClouds[0]->showMap());
 	  m_vr.setGravity(m_pointClouds[0]->gravity());
-	  m_vr.setSkybox(m_pointClouds[0]->skybox());
+	  m_vr.setSkyBox(m_pointClouds[0]->skybox());
+	  m_vr.setSkyBoxType(0);
 	  m_vr.setPlayButton(m_pointClouds[0]->playButton());
 	  m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
 	  m_vr.setTeleportScale(m_pointClouds[0]->teleportScale());
@@ -457,10 +458,14 @@ Viewer::start()
 	  m_vr.setDataShown(dataShown);
 	  //----------------
 	}
-
-      m_vr.setShowMap(false);
-      m_vr.setSkybox(true);
-      m_vr.setPlayButton(true);
+      else
+	{
+	  m_vr.setShowMap(false);
+	  m_vr.setSkyBox(true);
+	  m_vr.setSkyBoxType(1);
+	  m_vr.setPlayButton(true);
+	  m_meshLoadedAll = false;
+	}
     }
 
   if (!m_shadowShader)
@@ -1524,7 +1529,7 @@ Viewer::draw()
 
   drawInfo();
 
-  if (Global::playFrames() && (m_vboLoadedAll || m_pointClouds.count() == 0))
+  if (Global::playFrames() && m_vboLoadedAll)
     {
       if (m_saveSnapshots)
 	saveImage();
@@ -1739,6 +1744,16 @@ Viewer::vboLoadedAll(int cvp, qint64 npts)
     m_vr.takeNextStep();
 
   //m_vboLoadedAll = true;
+}
+
+void
+Viewer::meshLoadedAll()
+{
+  if (m_vr.play())
+    {
+      m_vr.takeNextStep();
+      m_meshLoadedAll = false;
+    }
 }
 
 void
@@ -2267,19 +2282,31 @@ Viewer::drawTrisets(vr::Hmd_Eye eye)
   glUniform3f(m_meshParm[1], eyepos.x, eyepos.y, eyepos.z); // eyepos
   glUniform3f(m_meshParm[2], viewDir.x, viewDir.y, viewDir.z); // viewDir
 
-  glUniform1f(m_meshParm[3], 0.9); // ambient
-  glUniform1f(m_meshParm[4], 0.1); // diffuse
+  glUniform1f(m_meshParm[3], 0.5); // ambient
+  glUniform1f(m_meshParm[4], 0.5); // diffuse
   glUniform1f(m_meshParm[5], 1.0); // specular
 
   glUniform1i(m_meshParm[6], 1); // shadows
 
+  bool loadedAll = true;
   for(int i=0; i<m_trisets.count(); i++)
     {
       if (m_trisets[i]->time() == -1 ||
 	  m_trisets[i]->time() == m_currTime)
-	m_trisets[i]->draw();
+	{
+	  if (!m_trisets[i]->loadVertexBufferData())
+	    loadedAll = false;
+	  
+	  m_trisets[i]->draw();
+	}
     }
-  
+
+  if (m_vr.play() && loadedAll && !m_meshLoadedAll) // next step in 5 sec
+    {
+      m_meshLoadedAll = true;
+      QTimer::singleShot(10, this, SLOT(meshLoadedAll()));
+    }
+      
   glUseProgram(0);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2402,7 +2429,10 @@ Viewer::drawTrisets()
     {
       if (m_trisets[i]->time() == -1 ||
 	  m_trisets[i]->time() == m_currTime)
-	m_trisets[i]->draw();
+	{
+	  m_trisets[i]->loadVertexBufferData();
+	  m_trisets[i]->draw();
+	}
     }
   
   glUseProgram(0);
@@ -3132,54 +3162,55 @@ Viewer::orderTilesForCamera()
 }
 
 void
+Viewer::genTrisetsList()
+{
+  if (m_trisets.count() == 0)
+    return;
+
+  QList<int> tlist;
+  for(int i=0; i<m_trisets.count(); i++)
+    {
+      if (m_trisets[i]->time() == -1 ||
+	  m_trisets[i]->time() == m_currTime)
+	tlist << i;
+    }
+
+  Vec cpos = camera()->position();
+  float nearDist = -1;
+  float farDist = -1;
+  for (int tl=0; tl<tlist.count(); tl++)
+    {
+      int l = tlist[tl];
+
+      // find their min/max distances from camera
+      for (int c=0; c<8; c++)
+	{
+	  Vec bmin = m_trisets[l]->bmin();
+	  Vec bmax = m_trisets[l]->bmin();
+	  Vec pos((c&4)?bmin.x:bmax.x, (c&2)?bmin.y:bmax.y, (c&1)?bmin.z:bmax.z);
+	  
+	  float len = (pos - cpos).norm();
+	  if (nearDist < 0)
+	    {
+	      nearDist = qMax(0.0f, len);
+	      farDist = qMax(0.0f, len);
+	    }
+	  else
+	    {
+	      nearDist = qMax(0.0f, qMin(nearDist, len));
+	      farDist = qMax(farDist, len);
+	    }
+	}    
+    }
+  setNearFar(nearDist, farDist);
+}
+
+void
 Viewer::genDrawNodeList()
 {
-//---------------------------
-//---------------------------
-//
-//  genDrawNodeListForVR();
-//  return;
-//
-//---------------------------
-//---------------------------
+  genTrisetsList();
 
-//  emit stopLoading();
-
-//  m_minNodePixelSize = 100;
-//  if (m_flyMode)
-//    m_minNodePixelSize = 150;
-
-  //-----------------------------
-  if (m_trisets.count() > 0)
-    {
-      Vec cpos = camera()->position();
-      float nearDist = -1;
-      float farDist = -1;
-      for (int l=0; l<m_trisets.count(); l++)
-	{
-	  for (int c=0; c<8; c++)
-	    {
-	      Vec bmin = m_trisets[l]->bmin();
-	      Vec bmax = m_trisets[l]->bmin();
-	      Vec pos((c&4)?bmin.x:bmax.x, (c&2)?bmin.y:bmax.y, (c&1)?bmin.z:bmax.z);
-	      
-	      float len = (pos - cpos).norm();
-	      if (nearDist < 0)
-		{
-		  nearDist = qMax(0.0f, len);
-		  farDist = qMax(0.0f, len);
-		}
-	      else
-		{
-		  nearDist = qMax(0.0f, qMin(nearDist, len));
-		  farDist = qMax(farDist, len);
-		}
-	    }    
-	}
-      setNearFar(nearDist, farDist);
-    }
-  //-----------------------------
-
+  
   if (m_pointClouds.count() == 0)
     return;
 
@@ -3803,37 +3834,9 @@ Viewer::linkClicked(QMouseEvent *event)
 void
 Viewer::genDrawNodeListForVR()
 {
-  //-----------------------------
-  if (m_trisets.count() > 0)
-    {
-      Vec cpos = camera()->position();
-      float nearDist = -1;
-      float farDist = -1;
-      for (int l=0; l<m_trisets.count(); l++)
-	{
-	  for (int c=0; c<8; c++)
-	    {
-	      Vec bmin = m_trisets[l]->bmin();
-	      Vec bmax = m_trisets[l]->bmin();
-	      Vec pos((c&4)?bmin.x:bmax.x, (c&2)?bmin.y:bmax.y, (c&1)?bmin.z:bmax.z);
-	      
-	      float len = (pos - cpos).norm();
-	      if (nearDist < 0)
-		{
-		  nearDist = qMax(0.0f, len);
-		  farDist = qMax(0.0f, len);
-		}
-	      else
-		{
-		  nearDist = qMax(0.0f, qMin(nearDist, len));
-		  farDist = qMax(farDist, len);
-		}
-	    }    
-	}
-      setNearFar(nearDist, farDist);
-    }
-  //-----------------------------
+  genTrisetsList();
 
+  
   m_volume->setNewLoad(true);
 
   emit updateView();

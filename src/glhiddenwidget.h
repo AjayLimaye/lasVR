@@ -99,6 +99,7 @@ class GLHiddenWidget : public QGLWidget
 
     int m_ntiles, m_maxwd;
     void uploadVisTex();
+
 };
 
 #endif

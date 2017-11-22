@@ -23,7 +23,7 @@ class Menu01 : public QObject
 
   QVector3D pinPoint() { return m_pinPt; }
 
-  int checkOptions(QMatrix4x4, QMatrix4x4, bool);
+  int checkOptions(QMatrix4x4, QMatrix4x4, int);
 
   bool isVisible() { return m_visible; }
   void setVisible(bool v)

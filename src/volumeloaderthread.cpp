@@ -8,6 +8,15 @@ VolumeLoaderThread::VolumeLoaderThread() : QObject()
 }
 
 void
+VolumeLoaderThread::setTrisets(QList<Triset*> ts)
+{
+  if(m_loading)
+    m_stopLoading = true;
+  
+  m_trisets = ts;
+}
+
+void
 VolumeLoaderThread::setPointClouds(QList<PointCloud*> pc)
 {
   if(m_loading)
@@ -20,6 +29,15 @@ void
 VolumeLoaderThread::startLoading()
 {
   m_loading = true;
+
+  for(int d=0; d<m_trisets.count(); d++)
+    {
+      if (m_stopLoading)
+	break;
+
+      m_trisets[d]->load();
+    }
+
   for(int d=0; d<m_pointClouds.count(); d++)
     {
       if (m_stopLoading)

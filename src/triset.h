@@ -28,9 +28,15 @@ class Triset
 
   int numpoints() { return m_vertices.count(); }
   
+  bool loadVertexBufferData();
+  bool vboLoaded() { return m_vboLoaded; }
+  
  private :
   QString m_fileName;
 
+  bool m_fileLoaded;
+  bool m_vboLoaded;
+  
   int m_time;
   Vec m_bmin, m_bmax;
   Vec m_gmin, m_gmax;
@@ -50,8 +56,8 @@ class Triset
   void clear();
 
   bool loadPLY(QString);
-  
-  void loadVertexBufferData();
+
+  void genVBOs();
 };
 
 

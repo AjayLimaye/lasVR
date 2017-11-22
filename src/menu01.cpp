@@ -601,7 +601,7 @@ Menu01::showText(GLuint tex, QRectF geom,
 }
 
 int
-Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
+Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
 {
   m_pinPt = QVector3D(-1000,-1000,-1000);
   m_pointingToMenu = false;
@@ -688,14 +688,17 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
     m_selected = -1;
   //--------------------
   
-  if (triggered)
+  if (triggered == 1) // half way
     {
-      if (m_selected == 0) emit resetModel();
-      else if (m_selected == 1) emit updateMap();
-      else if (m_selected == 2) emit updatePointSize(-1);
+      if (m_selected == 2) emit updatePointSize(-1);
       else if (m_selected == 3) emit updatePointSize(1);
       else if (m_selected == 4) emit updateScale(-1);
       else if (m_selected == 5) emit updateScale(1);
+    }
+  if (triggered == 2) // full way
+    {
+      if (m_selected == 0) emit resetModel();
+      else if (m_selected == 1) emit updateMap();
       else if (m_selected == 6)
 	{
 	  m_softShadows = !m_softShadows;

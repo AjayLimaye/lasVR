@@ -68,6 +68,9 @@ Volume::reset()
 
   m_timeseries = false;
   m_ignoreScaling = false;
+
+  m_boxSizeMin = Vec(0,0,0);
+  m_boxSizeMax = Vec(0,0,0);
 }
 
 void
@@ -190,28 +193,31 @@ Volume::loadDir(QString dirname)
       QString dirnames;
       while(topDirIter.hasNext())
 	{
-	  PointCloud *pointCloud = new PointCloud();
-	  pointCloud->setShowMap(m_showMap);
-	  pointCloud->setGravity(m_gravity);
-	  pointCloud->setSkybox(m_skybox);
-	  pointCloud->setPlayButton(m_playbutton);
-	  pointCloud->setShowSphere(m_showSphere);
-	  pointCloud->setGroundHeight(m_groundHeight);
-	  pointCloud->setTeleportScale(m_teleportScale);
-	  pointCloud->setPointType(m_pointType);
-	  pointCloud->setColorPresent(m_colorPresent);
-
-	  m_pointClouds << pointCloud;
-
-	  if (!m_timeseries)
-	    step = -1;
-
 	  QString dirname = topDirIter.next();
-	  pointCloud->loadPoTreeMultiDir(dirname, step, m_ignoreScaling);
+	  if (!dirname.contains("StaticData"))
+	    {
+	      PointCloud *pointCloud = new PointCloud();
+	      pointCloud->setShowMap(m_showMap);
+	      pointCloud->setGravity(m_gravity);
+	      pointCloud->setSkybox(m_skybox);
+	      pointCloud->setPlayButton(m_playbutton);
+	      pointCloud->setShowSphere(m_showSphere);
+	      pointCloud->setGroundHeight(m_groundHeight);
+	      pointCloud->setTeleportScale(m_teleportScale);
+	      pointCloud->setPointType(m_pointType);
+	      pointCloud->setColorPresent(m_colorPresent);
+	      
+	      m_pointClouds << pointCloud;
+	      
+	      if (!m_timeseries)
+		step = -1;
+	      
+	      pointCloud->loadPoTreeMultiDir(dirname, step, m_ignoreScaling);
+	      
+	      step ++;
 
-	  step ++;
-
-	  dirnames = dirnames + "\n" + dirname;
+	      dirnames = dirnames + "\n" + dirname;
+	    }
 	}
 
     }
@@ -263,6 +269,7 @@ Volume::loadDir(QString dirname)
   // start volume loader thread if loadall detected
   if (m_loadall)
     {
+      m_lt->setTrisets(m_trisets);      
       m_lt->setPointClouds(m_pointClouds);      
       emit startLoading();
     }
@@ -392,6 +399,14 @@ Volume::postLoad(bool showInfo)
 	}
     }
 
+  if (m_coordMin.squaredNorm() == 0 &&
+      m_coordMax.squaredNorm() == 0)
+    {
+      m_coordMin = m_boxSizeMin;
+      m_coordMax = m_boxSizeMax;
+    }
+  
+  
   int uid = 0;
   for(int d=0; d<m_pointClouds.count(); d++)
     {
@@ -465,6 +480,12 @@ Volume::postLoad(bool showInfo)
   // get points from trisets
   for(int d=0; d<m_trisets.count(); d++)
     totpts += m_trisets[d]->numpoints();
+
+  
+  // maybe the points will be loaded later on
+  if (totpts == 0)
+    totpts = 1;
+  
   
   m_npoints = totpts;
 
@@ -778,6 +799,22 @@ Volume::loadTopJson(QString jsonfile)
 	    m_pointType = true;
 	}
 
+      if (jsonInfo.contains("box_size"))
+	{
+	  QString str = jsonInfo["box_size"].toString();
+	  QStringList vals = str.split(" ", QString::SkipEmptyParts);
+	  if (vals.count() == 6)
+	    {
+	      float minx = vals[0].toDouble();
+	      float miny = vals[1].toDouble();
+	      float minz = vals[2].toDouble();
+	      float maxx = vals[3].toDouble();
+	      float maxy = vals[4].toDouble();
+	      float maxz = vals[5].toDouble();
+	      m_boxSizeMin = Vec(minx, miny, minz);
+	      m_boxSizeMax = Vec(maxx, maxy, maxz);
+	    }
+	}
     }
 }
 
@@ -789,25 +826,6 @@ Volume::loadAllPLY(QString dirname)
   QStringList namefilters;
   namefilters << "*.ply";
 
-  QDir topdir(dirname);
-  if (topdir.exists("staticData"))
-    {
-      QString staticDir = topdir.absoluteFilePath("staticData");
-      QDirIterator dirIter(staticDir,
-			      namefilters,
-			      QDir::Files | QDir::Readable,
-			      QDirIterator::Subdirectories);
-      while(dirIter.hasNext())
-	{
-	  QString plyFile = dirIter.next();
-	  Triset *triset = new Triset();
-	  triset->setFilename(plyFile);
-	  triset->load();
-
-	  m_trisets << triset;
-	}
-    }
-  
   QDirIterator dirIter(dirname,
 			  namefilters,
 			  QDir::Files | QDir::Readable,
@@ -817,14 +835,23 @@ Volume::loadAllPLY(QString dirname)
   while(dirIter.hasNext())
     {
       QString plyFile = dirIter.next();
+
       Triset *triset = new Triset();
-      triset->setTime(time);
       triset->setFilename(plyFile);
-      triset->load();
+
+      if (plyFile.contains("StaticData"))
+	triset->setTime(-1);
+      else
+	{
+	  triset->setTime(time);
+	  time ++;
+	}	  
+
+      // if loadAll is not triggered load here itself
+      if (!m_loadall)
+	triset->load();
       
       m_trisets << triset;
-
-      time ++;
     }
 }
 

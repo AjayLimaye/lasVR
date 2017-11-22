@@ -126,6 +126,7 @@ class Volume : public QObject
   bool m_timeseries;
   bool m_ignoreScaling;
 
+  Vec m_boxSizeMin, m_boxSizeMax;
 
   void pruneOctreeNodesBasedOnPriority();
 

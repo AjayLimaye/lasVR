@@ -108,7 +108,7 @@ VrMenu::checkTeleport(QMatrix4x4 matL, QMatrix4x4 matR)
 }
 
 int
-VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, bool triggered)
+VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
 {
   if (m_currMenu == "01")
     ((Menu01*)(m_menus[m_currMenu]))->checkOptions(matL, matR, triggered);

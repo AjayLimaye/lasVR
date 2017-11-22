@@ -101,10 +101,15 @@ VR::VR() : QObject()
 void
 VR::updatePointSize(int sz)
 {
+//  if (m_showMap)
+//    m_pointSize = qMax(0.1f, m_pointSize + sz*0.1f);
+//  else
+//    m_pointSize = qMax(0.1f, m_pointSize + sz*0.2f);
+
   if (m_showMap)
-    m_pointSize = qMax(0.1f, m_pointSize + sz*0.1f);
+    m_pointSize = qMax(0.1f, m_pointSize + sz*0.01f);
   else
-    m_pointSize = qMax(0.1f, m_pointSize + sz*0.2f);
+    m_pointSize = qMax(0.1f, m_pointSize + sz*0.02f);
 }
 
 void VR::updateSpheres(bool b) { m_spheres = b; }
@@ -333,6 +338,12 @@ VR::initVR()
 
   buildAxesVB();
 
+  setSkyBoxType(0);
+}
+
+void
+VR::setSkyBoxType(int idx)
+{
 // loads a cubemap texture from 6 individual texture faces
 // order:
 // +X (right)
@@ -341,15 +352,31 @@ VR::initVR()
 // -Y (bottom)
 // +Z (front) 
 // -Z (back)
+
   QStringList clist;
-  clist << "assets/images/right.jpg";
-  clist << "assets/images/left.jpg";
-  clist << "assets/images/top.jpg";
-  clist << "assets/images/bottom.jpg";
-  clist << "assets/images/back.jpg";
-  clist << "assets/images/front.jpg";
+  if (idx == 0) // standard skybox
+    {
+      clist << "assets/images/right.jpg";
+      clist << "assets/images/left.jpg";
+      clist << "assets/images/top.jpg";
+      clist << "assets/images/bottom.jpg";
+      clist << "assets/images/back.jpg";
+      clist << "assets/images/front.jpg";
+    }
+
+  if (idx == 1) // grid skybox
+    {
+      clist << "assets/images/grid0.png";
+      clist << "assets/images/grid0.png";
+      clist << "assets/images/grid0.png";
+      clist << "assets/images/grid0.png";
+      clist << "assets/images/grid0.png";
+      clist << "assets/images/grid0.png";
+    }
+  
   m_skybox.loadCubemap(clist);
 }
+
 
 void
 VR::ProcessVREvent( const vr::VREvent_t & event )
@@ -526,7 +553,7 @@ VR::updateInput()
       if (m_showMap)
 	checkTeleport(false);
       
-      checkOptions(false);
+      checkOptions(0);
     }
 
   //touch
@@ -768,6 +795,14 @@ VR::rightTriggerMove()
   
   m_model_xform.setToIdentity();
   m_model_xform.translate(pos);
+
+  //----------------------
+  // check some options in the menu
+  if (pos.length() < 0.1)
+    {
+      if (!m_triggerActiveLeft) // check menu only if left trigger is not pressed
+	checkOptions(1); // check only some options
+    }
 }
 void
 VR::rightTriggerReleased()
@@ -791,7 +826,7 @@ VR::rightTriggerReleased()
 	  if (m_showMap)
 	    checkTeleport(true);
 	  
-	  checkOptions(true);
+	  checkOptions(2);
 	}
     }
 }
@@ -2272,9 +2307,13 @@ VR::teleport(QVector3D newPos)
 void
 VR::updateScale(int scl)
 {
-  float sf = 1.5;
+//  float sf = 1.5;
+//  if (scl < 0)
+//    sf = 0.67;
+
+  float sf = 1.01;
   if (scl < 0)
-    sf = 0.67;
+    sf = 0.99;
   
 
   // pivot point for scaling is the leftcontroller position
@@ -2558,7 +2597,7 @@ VR::checkTeleport(bool triggered)
 }
 
 void
-VR::checkOptions(bool triggered)
+VR::checkOptions(int triggered)
 {
   QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];

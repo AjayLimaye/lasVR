@@ -113,6 +113,8 @@ class Viewer : public QGLViewer
     void vboLoaded(int, qint64);
     void vboLoadedAll(int, qint64);
 
+    void meshLoadedAll();
+    
     void loadLinkOnTop(QString);
     void loadLink(QString);
     void loadLink(QStringList);
@@ -165,13 +167,15 @@ class Viewer : public QGLViewer
     bool m_moveViewerToCenter;
     bool m_vboLoadedAll;
 
-    QList<Triset*> m_trisets;
-
     QList<PointCloud*> m_pointClouds;
     QList<OctreeNode*> m_tiles;
     QList<OctreeNode*> m_orderedTiles;
     QList<OctreeNode*> m_loadNodes;
     QMultiMap<float, OctreeNode*> m_priorityQueue;
+
+    bool m_meshLoadedAll;    
+    QList<Triset*> m_trisets;
+
 
     GLhandleARB m_shadowShader;
     GLint m_shadowParm[10];
@@ -363,6 +367,7 @@ class Viewer : public QGLViewer
 
     void drawPointPairs();
 
+    void genTrisetsList();
     void drawTrisets();
     void drawTrisets(vr::Hmd_Eye);
 };
