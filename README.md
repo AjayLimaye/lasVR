@@ -16,17 +16,17 @@ Example fly-through movie: https://youtu.be/OXQyATxcxTM
 
 
 Instructions
-Unzip with 7-zip
-Run /Srishti_v1.04/bin/shrishti.exe 
-Drag and drop the UQ-Time-Series folder onto Shrishti window
-Wait a bit for it to load. It may appear frozen for a few seconds. A dialog box pops up that you have to click ok on; sometimes it get blocked by another window so after you've waited about 15-sec, click on Shristi again or alt-tab away from it and then back again, and it should pop up.
+* Unzip with 7-zip
+* Run /Srishti_v1.04/bin/shrishti.exe 
+* Drag and drop the UQ-Time-Series folder onto Shrishti window
+   * Wait a bit for it to load. It may appear frozen for a few seconds. A dialog box pops up that you have to click ok on; sometimes it get blocked by another window so after you've waited about 15-sec, click on Shristi again or alt-tab away from it and then back again, and it should pop up.
 
-Use L/R mouse buttons for navigation
-Mouse wheel to zoom in/out
-L/R Arrow keys to navigate through time
-Up/Down Arrow keys to change point size
-
-Menu->Options->FlyMode to use the mouse to fly around
+Navigation
+* Use L/R mouse buttons for navigation
+* Mouse wheel to zoom in/out
+* L/R Arrow keys to navigate through time
+* Up/Down Arrow keys to change point size
+* Menu->Options->FlyMode to use the mouse to fly around
 
 Point Budget:
 Use: Menu->Options->PointBudget to reduce point budget depending on your graphics card. 
