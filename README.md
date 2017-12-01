@@ -11,6 +11,12 @@ You can also very easily generate fly-through movies of the point clouds.
 Example fly-through movie: https://youtu.be/OXQyATxcxTM
 
 
+Notes on top.json settings:
+* gravity : true, == Ground following (tries to prevent you from going through the ground)
+* ground_height : 1.8,  == Height of user when at ground level
+* teleport_scale : 1.0  == Affects travel speed. Keep to around 1
+
+
 ![Sample screen capture in desktop mode](/media/Shristi-screen-cap-1.jpg)
 
 
