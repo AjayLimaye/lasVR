@@ -29,6 +29,8 @@ class GLHiddenWidget : public QGLWidget
 
   void setPointBlockSize(qint64 pbs) { m_pointBlockSize = pbs; }
 
+  void clearPrevNodes() { m_prevNodes.clear(); }
+  
   public slots:
     void switchVolume();
     void setVBOs(GLuint, GLuint);  
@@ -37,11 +39,13 @@ class GLHiddenWidget : public QGLWidget
     void stopLoading();
     void updateView();
     void removeEditedNodes();
-    
+
  signals :
     void vboLoaded(int, qint64);
     void vboLoadedAll(int, qint64);
     void message(QString);
+
+    void meshLoadedAll();
     
  protected:
     virtual void glInit();
@@ -76,6 +80,10 @@ class GLHiddenWidget : public QGLWidget
     int m_currTime;
     float m_fov, m_slope, m_projFactor;
 
+    
+    QList<Triset*> m_trisets;
+    
+      
     QList<PointCloud*> m_pointClouds;
     QList<OctreeNode*> m_tiles;
     QList<OctreeNode*> m_orderedTiles;
@@ -83,7 +91,7 @@ class GLHiddenWidget : public QGLWidget
     QMultiMap<float, OctreeNode*> m_priorityQueue;
 
     bool m_firstLoad;
-    
+
     GLuint m_visibilityTex;
     uchar *m_visibilityMap;
 

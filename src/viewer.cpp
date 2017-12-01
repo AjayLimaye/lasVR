@@ -71,6 +71,9 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   m_vertexBuffer[1] = 0;
   m_vertexArrayID = 0;
 
+  m_numTrisetVBOs = 0;
+  m_trisetVBOs = 0;
+  
   m_blurShader = 0;
 
   m_vertexScreenBuffer = 0;
@@ -257,14 +260,16 @@ Viewer::genColorMap()
   if (m_colorMap)
     return;
 
-  m_colorGrad << Vec(47 ,173,0  )/255.0; 
+  //m_colorGrad << Vec(47 ,173,0  )/255.0; 
+  m_colorGrad << Vec(47 ,100,0  )/255.0; 
   m_colorGrad << Vec(80 ,183,20	)/255.0;
   m_colorGrad << Vec(112,194,42	)/255.0;
   m_colorGrad << Vec(143,205,67	)/255.0;
   m_colorGrad << Vec(172,216,94	)/255.0;
   m_colorGrad << Vec(199,227,124)/255.0;
   m_colorGrad << Vec(223,238,156)/255.0;
-  m_colorGrad << Vec(253,255,209)/255.0;
+  m_colorGrad << Vec(255,230,180)/255.0;
+  //m_colorGrad << Vec(253,255,209)/255.0;
   
 
 //  m_colorGrad << Vec(1,102, 94)/255.0f;
@@ -915,6 +920,7 @@ Viewer::undo()
 void
 Viewer::saveModInfo()
 {
+  m_pointClouds[0]->saveModInfo("", false);
   m_pointClouds[1]->saveModInfo("Time step for modified point cloud", true);
 }
 
@@ -1677,12 +1683,6 @@ Viewer::drawVAO()
 			    GL_FALSE, // normalized
 			    20, // stride
 			    (void*)0 ); // array buffer offset
-//      glVertexAttribPointer(0,  // attribute 0
-//			    3,  // size
-//			    GL_FLOAT, // type
-//			    GL_FALSE, // normalized
-//			    16, // stride
-//			    (void*)0 ); // array buffer offset
 
       glEnableVertexAttribArray(1);
       glVertexAttribPointer(1,  // attribute 1
@@ -1691,12 +1691,6 @@ Viewer::drawVAO()
 			    GL_FALSE, // normalized
 			    20, // stride
 			    (char *)NULL+12 ); // array buffer offset
-//      glVertexAttribPointer(1,  // attribute 1
-//			    4,  // size
-//			    GL_UNSIGNED_BYTE, // type
-//			    GL_FALSE, // normalized
-//			    16, // stride
-//			    (char *)NULL+12 ); // array buffer offset
 
       glDrawArrays(GL_POINTS, 0, m_vbPoints);  
 
@@ -2296,8 +2290,8 @@ Viewer::drawTrisets(vr::Hmd_Eye eye)
 	{
 	  if (!m_trisets[i]->loadVertexBufferData())
 	    loadedAll = false;
-	  
-	  m_trisets[i]->draw();
+	  else	  
+	    m_trisets[i]->draw();
 	}
     }
 
@@ -2306,7 +2300,9 @@ Viewer::drawTrisets(vr::Hmd_Eye eye)
       m_meshLoadedAll = true;
       QTimer::singleShot(10, this, SLOT(meshLoadedAll()));
     }
-      
+  else
+    m_meshLoadedAll = false;
+          
   glUseProgram(0);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2416,8 +2412,8 @@ Viewer::drawTrisets()
   glUniform3f(m_meshParm[1], eyepos.x, eyepos.y, eyepos.z); // eyepos
   glUniform3f(m_meshParm[2], viewDir.x, viewDir.y, viewDir.z); // viewDir
 
-  glUniform1f(m_meshParm[3], 0.9); // ambient
-  glUniform1f(m_meshParm[4], 0.1); // diffuse
+  glUniform1f(m_meshParm[3], 0.5); // ambient
+  glUniform1f(m_meshParm[4], 0.5); // diffuse
   glUniform1f(m_meshParm[5], 1.0); // specular
 
   if (m_selectActive)
@@ -2430,8 +2426,17 @@ Viewer::drawTrisets()
       if (m_trisets[i]->time() == -1 ||
 	  m_trisets[i]->time() == m_currTime)
 	{
-	  m_trisets[i]->loadVertexBufferData();
-	  m_trisets[i]->draw();
+	  m_trisets[i]->load();
+
+//	  GLuint va, vb, ib;
+//	  va = Global::trisetVBO(i,0);
+//	  vb = Global::trisetVBO(i,1);
+//	  ib = Global::trisetVBO(i,2);
+//	  if (m_trisets[i]->loadVertexBufferData(va, vb, ib))
+//	    m_trisets[i]->draw(va, vb, ib);
+
+	  if (m_trisets[i]->loadVertexBufferData())
+	    m_trisets[i]->draw();
 	}
     }
   
@@ -3698,8 +3703,29 @@ Viewer::loadLink(QString dirname)
 {
   if (m_volume)
     {
-      loadLinkOnTop(dirname);
-      return;
+      QWidget *pw = 0;
+      QWidgetList wlist = QApplication::topLevelWidgets();
+      for (int w=0; w<wlist.count(); w++)
+	{
+	  if (wlist[w]->isVisible())
+	    {
+	      pw = wlist[w];
+	      break;
+	    }      
+	}
+      QStringList items;
+      items << "No" << "Yes";
+      bool ok;
+      QString item = QInputDialog::getItem(pw, "Replace",
+			   "Are you loading the point cloud for alignment ?",
+					   items, 0, false, &ok);
+
+      if (ok && item == "Yes")
+	{
+	  loadLinkOnTop(dirname);
+	  emit showToolbar();
+	  return;
+	}
     }
 
   m_dataDir = dirname;
@@ -3835,7 +3861,6 @@ void
 Viewer::genDrawNodeListForVR()
 {
   genTrisetsList();
-
   
   m_volume->setNewLoad(true);
 

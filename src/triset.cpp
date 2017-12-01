@@ -4,12 +4,16 @@
 #include "ply.h"
 
 #include <QMessageBox>
+#include <QFile>
 
 Triset::Triset()
 {
   m_vboLoaded = false;
   m_fileLoaded = false;
   
+  m_vertData = 0;
+  m_indexData = 0;
+
   m_glVertBuffer = 0;
   m_glIndexBuffer = 0;
   m_glVertArray = 0;
@@ -55,12 +59,20 @@ Triset::clear()
   m_fileLoaded = false;
   
   m_time = -1;
+
+  m_ntri = 0;
+  m_nvert = 0;
   
   m_vertices.clear();
   m_normals.clear();
   m_vcolor.clear();
   m_triangles.clear();
 
+  if (m_vertData) delete [] m_vertData;
+  if (m_indexData) delete [] m_indexData;
+  m_vertData = 0;
+  m_indexData = 0;
+  
   m_bmin = m_bmax = Vec(0,0,0);
   m_gmin = m_gmax = Vec(0,0,0);
   
@@ -82,20 +94,22 @@ Triset::setGlobalMinMax(Vec gmin, Vec gmax)
   m_gmax = gmax;
 
   m_vboLoaded = false;
-  //loadVertexBufferData();
 }
 
 bool
 Triset::load()
 {
-  bool loaded = loadPLY(m_fileName);
+  if (m_fileLoaded)
+    return true;
+
+  bool loaded = false;
+
+  if (StaticFunctions::checkExtension(m_fileName, ".ply"))
+    loaded = loadPLY(m_fileName);
+  else
+    loaded = loadVBO(m_fileName);
+
   return loaded;
-//  if (loaded)
-//    {
-//      loadVertexBufferData();
-//      return true;
-//    }
-//  return false; 
 }
 
 bool
@@ -103,7 +117,7 @@ Triset::loadPLY(QString flnm)
 {
   if (m_fileLoaded)
     return true;
-    
+
   typedef struct Vertex {
     float x,y,z;
     float r,g,b;
@@ -299,6 +313,14 @@ Triset::loadPLY(QString flnm)
       m_bmax = StaticFunctions::maxVec(m_bmax, m_vertices[i]);
     }
 
+  m_nvert = m_vertices.count();
+  m_ntri = m_triangles.count();
+
+  QString vboflnm = m_fileName;
+  vboflnm.chop(3);
+  vboflnm += QString("vbo");
+  saveVBO(vboflnm);
+  
   m_fileLoaded = true;  
 
   return true;
@@ -312,130 +334,181 @@ Triset::genVBOs()
   glGenBuffers(1, &m_glIndexBuffer);      
 }
 
+QList<GLuint>
+Triset::vbObject()
+{
+  QList<GLuint> vbo;
+  vbo << m_glVertArray;
+  vbo << m_glVertBuffer;
+  vbo << m_glIndexBuffer;
+
+  return vbo;
+}
 
 bool
 Triset::loadVertexBufferData()
 {
+  if (m_vboLoaded)
+    return true;
+  
+  return loadVertexBufferData(m_glVertArray,
+			      m_glVertBuffer,
+			      m_glIndexBuffer);
+}
+
+bool
+Triset::loadVertexBufferData(GLuint glVA,
+			     GLuint glVB,
+			     GLuint glIB)
+{
   if (!m_fileLoaded)
+    return false;
+
+  if (glVA == 0 ||
+      glVB == 0 ||
+      glIB == 0)
     return false;
   
   if (m_vboLoaded)
     return true;
 
-  int stride = 1;
-  if (m_normals.count()) stride++; // per vertex normal
-  if (m_vcolor.count()) stride++; // per vertex color
-  
-  int nvert = m_vertices.count();
-  int nv = 3*stride*nvert;
-  int ni = m_triangles.count();
-  //---------------------
-
-  //---------------------
-  float *vertData;
-  vertData = new float[nv];
-  for(int i=0; i<nvert; i++)
+  // update for m_gmin
+  int nv = 9*m_nvert;
+  for(int i=0; i<m_nvert; i++)
     {
-      vertData[9*i + 0] = m_vertices[i].x - m_gmin.x;
-      vertData[9*i + 1] = m_vertices[i].y - m_gmin.y;
-      vertData[9*i + 2] = m_vertices[i].z - m_gmin.z;
-      vertData[9*i + 3] = m_normals[i].x;
-      vertData[9*i + 4] = m_normals[i].y;
-      vertData[9*i + 5] = m_normals[i].z;
-      vertData[9*i + 6] = m_vcolor[i].x;
-      vertData[9*i + 7] = m_vcolor[i].y;
-      vertData[9*i + 8] = m_vcolor[i].z;
+      m_vertData[9*i+0] -= m_gmin.x;
+      m_vertData[9*i+1] -= m_gmin.y;
+      m_vertData[9*i+2] -= m_gmin.z;
     }
 
-//  for(int i=0; i<nvert; i++)
-//    {
-//      vertData[stride*3*i + 0] = m_vertices[i].x + m_position.x;
-//      vertData[stride*3*i + 1] = m_vertices[i].y + m_position.y;
-//      vertData[stride*3*i + 2] = m_vertices[i].z + m_position.z;
-//
-//      if (m_normals.count() > 0)
-//	{
-//	  vertData[stride*3*i + 3] = m_normals[i].x;
-//	  vertData[stride*3*i + 4] = m_normals[i].y;
-//	  vertData[stride*3*i + 5] = m_normals[i].z;
-//	  if (m_vcolor.count() > 0)
-//	    {
-//	      vertData[stride*3*i + 6] = m_vcolor[i].x;
-//	      vertData[stride*3*i + 7] = m_vcolor[i].y;
-//	      vertData[stride*3*i + 8] = m_vcolor[i].z;
-//	    }
-//	}
-//      else if (m_vcolor.count() > 0)
-//	{
-//	  vertData[stride*3*i + 3] = m_vcolor[i].x;
-//	  vertData[stride*3*i + 4] = m_vcolor[i].y;
-//	  vertData[stride*3*i + 5] = m_vcolor[i].z;
-//	}
-//    }
-
-  unsigned int *indexData;
-  indexData = new unsigned int[ni];
-  for(int i=0; i<m_triangles.count(); i++)
-    indexData[i] = m_triangles[i];
-  //---------------------
-
-//  if(m_glVertArray)
-//    {
-//      glDeleteBuffers(1, &m_glIndexBuffer);
-//      glDeleteVertexArrays( 1, &m_glVertArray );
-//      glDeleteBuffers(1, &m_glVertBuffer);
-//      m_glIndexBuffer = 0;
-//      m_glVertArray = 0;
-//      m_glVertBuffer = 0;
-//    }
-
-  glBindVertexArray(m_glVertArray);
+  glBindVertexArray(glVA);
   
   // Populate a vertex buffer
-  glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, glVB);
   glBufferData(GL_ARRAY_BUFFER,
 	       sizeof(float)*nv,
-	       vertData,
+	       m_vertData,
 	       GL_STATIC_DRAW);
 
   // Identify the components in the vertex buffer
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-			sizeof(float)*3*stride, // stride
+			sizeof(float)*9, // stride
 			(void *)0); // starting offset
 
-  if (stride > 1)
-    {
-      glEnableVertexAttribArray(1);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-			    sizeof(float)*3*stride,
-			    (char *)NULL + sizeof(float)*3);
-    }
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+			sizeof(float)*9,
+			(char *)NULL + sizeof(float)*3);
   
-  if (stride > 2)
-    {
-      glEnableVertexAttribArray(2);
-      glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 
-			    sizeof(float)*3*stride,
-			    (char *)NULL + sizeof(float)*6);
-    }
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 
+			sizeof(float)*9,
+			(char *)NULL + sizeof(float)*6);
 
   // Create and populate the index buffer
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glIB);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	       sizeof(unsigned int)*ni,
-	       indexData,
+	       sizeof(unsigned int)*m_ntri,
+	       m_indexData,
 	       GL_STATIC_DRAW);
   
   glBindVertexArray(0);
 
-  delete [] vertData;
-  delete [] indexData;
-
+  delete [] m_vertData;
+  delete [] m_indexData;
+  m_vertData = 0;
+  m_indexData = 0;
+  
   m_vboLoaded = true;  
 
   return true;
 }
+
+bool
+Triset::loadVBO(QString flnm)
+{
+  if (m_fileLoaded)
+    return true;
+ 
+  if (m_vertData) delete [] m_vertData;
+  if (m_indexData) delete [] m_indexData;
+  m_vertData = 0;
+  m_indexData = 0;
+
+  QFile fd(flnm);
+  fd.open(QFile::ReadOnly);
+
+  fd.read((char*)&m_nvert, sizeof(int));
+  fd.read((char*)&m_ntri, sizeof(int));
+  
+  fd.read((char*)&m_bmin, 3*sizeof(float));
+  fd.read((char*)&m_bmax, 3*sizeof(float));
+
+  int nvnc = m_nvert*9;
+  m_vertData = new float[nvnc];
+  fd.read((char*)m_vertData, sizeof(float)*nvnc);
+
+  //unsigned int *indexData;
+  m_indexData = new unsigned int[m_ntri];
+  fd.read((char*)m_indexData, sizeof(unsigned int)*m_ntri);
+
+  fd.close();
+
+  m_fileLoaded = true;  
+  return true;
+}
+
+void
+Triset::saveVBO(QString flnm)
+{  
+  int nvnc = 9*m_nvert;
+
+  if (m_vertData) delete [] m_vertData;
+  if (m_indexData) delete [] m_indexData;
+  m_vertData = 0;
+  m_indexData = 0;
+
+  //---------------------
+  m_vertData = new float[nvnc];
+  for(int i=0; i<m_nvert; i++)
+    {
+      m_vertData[9*i + 0] = m_vertices[i].x;
+      m_vertData[9*i + 1] = m_vertices[i].y;
+      m_vertData[9*i + 2] = m_vertices[i].z;
+      m_vertData[9*i + 3] = m_normals[i].x;
+      m_vertData[9*i + 4] = m_normals[i].y;
+      m_vertData[9*i + 5] = m_normals[i].z;
+      m_vertData[9*i + 6] = m_vcolor[i].x;
+      m_vertData[9*i + 7] = m_vcolor[i].y;
+      m_vertData[9*i + 8] = m_vcolor[i].z;
+    }
+
+  m_indexData = new unsigned int[m_ntri];
+  for(int i=0; i<m_ntri; i++)
+    m_indexData[i] = m_triangles[i];
+  //---------------------
+
+  QFile fd(flnm);
+  fd.open(QFile::WriteOnly);
+
+  fd.write((char*)&m_nvert, sizeof(int));
+  fd.write((char*)&m_ntri, sizeof(int));
+  
+  fd.write((char*)&m_bmin, 3*sizeof(float));
+  fd.write((char*)&m_bmax, 3*sizeof(float));
+
+  fd.write((char*)m_vertData, sizeof(float)*nvnc);
+  fd.write((char*)m_indexData, sizeof(unsigned int)*m_ntri);
+
+  fd.close();
+
+  m_vertices.clear();
+  m_normals.clear();
+  m_vcolor.clear();
+  m_triangles.clear();
+}
+
 
 void
 Triset::draw()
@@ -443,19 +516,32 @@ Triset::draw()
   if (!m_vboLoaded)
     return;
 
-  int ni = m_triangles.count();
+  draw(m_glVertArray,
+       m_glVertBuffer,
+       m_glIndexBuffer);
+}
 
-  glBindVertexArray(m_glVertArray);
-  glBindBuffer(GL_ARRAY_BUFFER, m_glVertBuffer);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
+void
+Triset::draw(GLuint glVA,
+	     GLuint glVB,
+	     GLuint glIB)
+{
+  if (!m_vboLoaded)
+    return;
+  
+  glBindVertexArray(glVA);
+
+  glBindBuffer(GL_ARRAY_BUFFER, glVB);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glIB);  
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glEnableVertexAttribArray(2);
 
-  glDrawElements(GL_TRIANGLES, ni, GL_UNSIGNED_INT, 0);  
+  glDrawElements(GL_TRIANGLES, m_ntri, GL_UNSIGNED_INT, 0);  
 
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);
+
   glBindVertexArray(0);
 }

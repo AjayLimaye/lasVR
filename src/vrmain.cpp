@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QWidgetAction>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QPushButton>
 
 VrMain::VrMain(QWidget *parent) :
@@ -42,7 +43,7 @@ VrMain::VrMain(QWidget *parent) :
 
 
   //-------------------------
-  m_dockTimeStamps = new QDockWidget("Time Stamp Editor", this);
+  m_dockTimeStamps = new QDockWidget("Information Editor", this);
   m_dockTimeStamps->setAllowedAreas(Qt::RightDockWidgetArea | 
 				    Qt::LeftDockWidgetArea);
   
@@ -63,12 +64,19 @@ VrMain::VrMain(QWidget *parent) :
   QWidget *wdg = new QWidget();
   
   QVBoxLayout *vbox = new QVBoxLayout();
+  QHBoxLayout *hbox = new QHBoxLayout();
 
   QPushButton *sTs = new QPushButton("Save");
   connect(sTs, SIGNAL(clicked()),
 	  this, SLOT(saveTimeStamps()));
 
-  vbox->addWidget(sTs);
+  QPushButton *rld = new QPushButton("Reload");
+  connect(rld, SIGNAL(clicked()),
+	  this, SLOT(reloadData()));
+
+  hbox->addWidget(sTs);
+  hbox->addWidget(rld);
+  vbox->addLayout(hbox);
   vbox->addWidget(m_tableWidget);
 
   wdg->setLayout(vbox);
@@ -154,8 +162,8 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_keyFrameEditor, SIGNAL(removeKeyFrame(int)),
 	  m_keyFrame, SLOT(removeKeyFrame(int)));
 
-connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
-	m_keyFrame, SLOT(removeKeyFrames(int, int)));
+  connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
+	  m_keyFrame, SLOT(removeKeyFrames(int, int)));
 
   connect(m_keyFrameEditor, SIGNAL(copyFrame(int)),
 	  m_keyFrame, SLOT(copyFrame(int)));
@@ -217,6 +225,9 @@ connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
   connect(m_lt, &LoaderThread::message,
 	  this, &VrMain::showMessage);
 
+  connect(m_lt, SIGNAL(meshLoadedAll()),
+	  m_viewer, SIGNAL(meshLoadedAll()));
+
   m_thread->start();
   //============================
 
@@ -261,8 +272,13 @@ connect(m_keyFrameEditor, SIGNAL(removeKeyFrames(int, int)),
   ui.menuOptions->addAction(timeStep);
   //============================
 
-  //ui.toolBar->hide();
+  connect(m_viewer, SIGNAL(showToolbar()),
+	  this, SLOT(showToolbar()));
+
+    ui.toolBar->hide();
 }
+
+void VrMain::showToolbar() { ui.toolBar->show(); }
 
 void
 VrMain::closeEvent(QCloseEvent*)
@@ -334,6 +350,12 @@ VrMain::keyPressEvent(QKeyEvent*)
 void
 VrMain::on_actionQuit_triggered()
 {
+  QList<QDockWidget*> dw = findChildren<QDockWidget *>();
+  for(int i=0; i<dw.count(); i++)
+    {
+      dw[i]->setFloating(false);
+    }
+
   m_keyFrameEditor->setPlayFrames(false);
 
   m_thread->quit();
@@ -384,6 +406,8 @@ VrMain::loadTiles(QStringList flnms)
 {
   if (flnms.count() == 1)
     {
+      ui.toolBar->hide();
+
       m_viewer->loadLink(flnms[0]);
 
       QFileInfo f(flnms[0]);
@@ -409,18 +433,24 @@ VrMain::modifyTableWidget()
       m_tableWidget->removeRow(0);
     }
   
-  m_tableWidget->setColumnCount(2);
+  m_tableWidget->setColumnCount(5);
 
   QStringList item;
   item << "Time";
   item << "Name";
+  item << "Color";
+  item << "Color Min Ht";
+  item << "Color Max Ht";
 
   m_tableWidget->setHorizontalHeaderLabels(item);
 
-  m_tableWidget->setColumnWidth(0, 50);
-  m_tableWidget->setColumnWidth(1, 150);
+  m_tableWidget->setColumnWidth(0, 45);
+  //m_tableWidget->setColumnWidth(1, 70);
+  m_tableWidget->setColumnWidth(2, 45);
   m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
   m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
+  m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
+  m_tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Interactive);
 
   QList<PointCloud*> pcl = m_viewer->pointCloudList();
   for(int i=0; i<pcl.count(); i++)
@@ -430,13 +460,30 @@ VrMain::modifyTableWidget()
 
       QString name = pcl[i]->name();
       int time = pcl[i]->time();
-
+      float minHt, maxHt;
+      pcl[i]->zBounds(minHt, maxHt);
+      
       QTableWidgetItem *wi = new QTableWidgetItem(QString("%1").arg(time));
       wi->setTextAlignment(Qt::AlignCenter);
       m_tableWidget->setItem(i, 0, wi);
       
       wi = new QTableWidgetItem(name);
       m_tableWidget->setItem(i, 1, wi);
+
+      wi = new QTableWidgetItem();
+      if (pcl[i]->colorPresent())
+	wi->setCheckState(Qt::Checked);
+      else
+	wi->setCheckState(Qt::Unchecked);
+      m_tableWidget->setItem(i, 2, wi);
+
+      wi = new QTableWidgetItem(QString("%1").arg(minHt));
+      wi->setTextAlignment(Qt::AlignCenter);
+      m_tableWidget->setItem(i, 3, wi);
+
+      wi = new QTableWidgetItem(QString("%1").arg(maxHt));
+      wi->setTextAlignment(Qt::AlignCenter);
+      m_tableWidget->setItem(i, 4, wi);
     }
 }
 
@@ -448,12 +495,17 @@ VrMain::saveTimeStamps()
   for(int i=0; i<pcl.count(); i++)
     {
       int time = m_tableWidget->item(i, 0)->text().toInt();
-      QString name = m_tableWidget->item(i, 01)->text();
+      QString name = m_tableWidget->item(i, 1)->text();
+      Qt::CheckState cp = m_tableWidget->item(i, 2)->checkState();
+      float minHt = m_tableWidget->item(i, 3)->text().toFloat();
+      float maxHt = m_tableWidget->item(i, 4)->text().toFloat();
       pcl[i]->setTime(time);
       pcl[i]->setName(name);
+      pcl[i]->setColorPresent(cp == Qt::Checked);
+      pcl[i]->setZBounds(minHt, maxHt);
       pcl[i]->saveModInfo("",false);
     }
-  QMessageBox::information(0, "Save Time Stamps", "Saved time stamps to respective mod.json files.");
+  QMessageBox::information(0, "Save mod.json", "Saved information to respective mod.json files.");
 
 
   int maxTime = 0;
@@ -682,4 +734,18 @@ VrMain::on_actionSave_Keyframes_triggered()
   QFile saveFile(flnm);
   saveFile.open(QIODevice::WriteOnly);
   saveFile.write(saveDoc.toJson()); 
+}
+
+void
+VrMain::reloadData()
+{
+  QList<PointCloud*> pcl = m_viewer->pointCloudList();
+  for(int i=0; i<pcl.count(); i++)
+    {
+      pcl[i]->reload();
+    }
+
+  m_hiddenGL->clearPrevNodes();
+  m_viewer->clearLoadNodeList();
+  m_viewer->update();
 }

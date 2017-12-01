@@ -38,6 +38,7 @@ class OctreeNode
   void setTightMin(Vec bmin) { m_tightMin = m_tightMinO = bmin; }
   void setTightMax(Vec bmax) { m_tightMax = m_tightMaxO = bmax; }
   void setNumPoints(qint64 n) { m_numpoints = n; }
+  void setZBounds(float z0, float z1) { m_bminZ = z0, m_bmaxZ = z1; }
 
   void setPointAttributes(QStringList s) { m_pointAttrib = s; }
   void setAttribBytes(int a) { m_attribBytes = a; }
@@ -116,6 +117,7 @@ class OctreeNode
   QString m_levelString;
   Vec m_offset;
   Vec m_bmin, m_bmax;
+  float m_bminZ, m_bmaxZ;
   Vec m_tightMin, m_tightMax;
   Vec m_bminO, m_bmaxO;
   Vec m_tightMinO, m_tightMaxO;

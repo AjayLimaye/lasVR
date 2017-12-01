@@ -61,6 +61,10 @@ class Global
   static void setColorMap(QList<Vec>);
   static QList<Vec> getColorMap();
 
+  static void clearTrisetVBOs();
+  static void setTrisetVBOs(QList<GLuint>);
+  static GLuint trisetVBO(int, int);
+
  private :
   static GLuint m_circleSpriteTexture;
   static GLuint m_infoSpriteTexture;
@@ -81,6 +85,8 @@ class Global
   static QString m_previousDirectory;
 
   static QList<Vec> m_colorMap;
+
+  static QList<GLuint> m_trisetVBOs;
 };
 
 #endif

@@ -135,7 +135,10 @@ class Viewer : public QGLViewer
 
     void setTimeStep(int);
 
+    void clearLoadNodeList() { m_loadNodes.clear(); }
+    
  signals :
+    void showToolbar();
     void nextFrame();
     void nextKeyFrame();
     void loadLinkedData(QString);
@@ -173,6 +176,9 @@ class Viewer : public QGLViewer
     QList<OctreeNode*> m_loadNodes;
     QMultiMap<float, OctreeNode*> m_priorityQueue;
 
+
+    int m_numTrisetVBOs;
+    GLuint *m_trisetVBOs;
     bool m_meshLoadedAll;    
     QList<Triset*> m_trisets;
 

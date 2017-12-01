@@ -50,6 +50,9 @@ OctreeNode::OctreeNode()
   m_attribBytes = 0;
 
   m_editMode = false;
+
+  m_bminZ = 1;
+  m_bmaxZ = 0;
 }
 
 OctreeNode::~OctreeNode()
@@ -91,6 +94,9 @@ OctreeNode::~OctreeNode()
   m_attribBytes = 0;
 
   m_editMode = false;
+
+  m_bminZ = 1;
+  m_bmaxZ = 0;
 }
 
 void
@@ -323,13 +329,17 @@ OctreeNode::loadDataFromBINFile()
   float gminZ,gmaxZ;
   if (!m_editMode)
     {
+      //gminZ = 0;
+      //gmaxZ = m_globalMax.z - m_globalMin.z;
       gminZ = 0;
-      gmaxZ = m_globalMax.z - m_globalMin.z;
+      gmaxZ = m_bmaxZ - m_bminZ;
     }
   else
     {
-      gminZ = m_globalMin.z;
-      gmaxZ = m_globalMax.z;
+      //gminZ = m_globalMin.z;
+      //gmaxZ = m_globalMax.z;
+      gminZ = m_bminZ;
+      gmaxZ = m_bmaxZ;
     }
 
   for(qint64 np = 0; np < m_numpoints; np++)
@@ -459,13 +469,17 @@ OctreeNode::loadDataFromLASFile()
   float gminZ,gmaxZ;
   if (!m_editMode)
     {
+      //gminZ = 0;
+      //gmaxZ = m_globalMax.z - m_globalMin.z;
       gminZ = 0;
-      gmaxZ = m_globalMax.z - m_globalMin.z;
+      gmaxZ = m_bmaxZ - m_bminZ;
     }
   else
     {
-      gminZ = m_globalMin.z;
-      gmaxZ = m_globalMax.z;
+      //gminZ = m_globalMin.z;
+      //gmaxZ = m_globalMax.z;
+      gminZ = m_bminZ;
+      gmaxZ = m_bmaxZ;
     }
 
   qint64 np = 0;

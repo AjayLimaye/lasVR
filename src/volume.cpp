@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QFileDialog>
+#include <QApplication>
 
 #include "laszip_dll.h"
 
@@ -519,7 +520,17 @@ Volume::postLoad(bool showInfo)
   if (m_trisets.count() > 0)
     mesg += QString("Meshes : %1\n\n").arg(m_trisets.count()); 
   
-  QMessageBox::information(0, "", mesg);
+
+  // now show this message over a visible widget
+  QWidgetList wlist = QApplication::topLevelWidgets();
+  for (int w=0; w<wlist.count(); w++)
+    {
+      if (wlist[w]->isVisible())
+	{
+	  QMessageBox::information(wlist[w], "Information", mesg);
+	  break;
+	}      
+    }
 }
 
 
@@ -757,7 +768,8 @@ Volume::loadTopJson(QString jsonfile)
       if (jsonInfo.contains("show_map"))
 	m_showMap = jsonInfo["show_map"].toBool();
 
-      if (jsonInfo.contains("gravity"))
+      if (jsonInfo.contains("gravity") ||
+	  jsonInfo.contains("ground"))
 	m_gravity = jsonInfo["gravity"].toBool();
 
       if (jsonInfo.contains("skybox"))
@@ -825,12 +837,16 @@ Volume::loadAllPLY(QString dirname)
 
   QStringList namefilters;
   namefilters << "*.ply";
+  namefilters << "*.vbo";
 
   QDirIterator dirIter(dirname,
 			  namefilters,
 			  QDir::Files | QDir::Readable,
 			  QDirIterator::Subdirectories);
 
+  QList<Triset*> strisets;
+  QList<Triset*> dtrisets;
+  
   int time = 0;
   while(dirIter.hasNext())
     {
@@ -840,18 +856,24 @@ Volume::loadAllPLY(QString dirname)
       triset->setFilename(plyFile);
 
       if (plyFile.contains("StaticData"))
-	triset->setTime(-1);
+	{
+	  triset->setTime(-1);
+	  strisets << triset;
+	}
       else
 	{
 	  triset->setTime(time);
 	  time ++;
+	  strisets << triset;
 	}	  
 
       // if loadAll is not triggered load here itself
       if (!m_loadall)
 	triset->load();
       
-      m_trisets << triset;
     }
+
+  m_trisets << strisets;
+  m_trisets << dtrisets;
 }
 

@@ -25,12 +25,17 @@ class Triset
   Vec bmax() { return m_bmax; }  
   
   void draw();
+  void draw(GLuint, GLuint, GLuint);
 
   int numpoints() { return m_vertices.count(); }
   
   bool loadVertexBufferData();
+  bool loadVertexBufferData(GLuint, GLuint, GLuint);
+
   bool vboLoaded() { return m_vboLoaded; }
-  
+
+  QList<GLuint> vbObject();
+    
  private :
   QString m_fileName;
 
@@ -43,11 +48,16 @@ class Triset
   
   QList<char*> plyStrings;
 
+  int m_ntri, m_nvert;
+  
   QVector<Vec> m_vertices;
   QVector<Vec> m_normals;
   QVector<Vec> m_vcolor;
   QVector<uint> m_triangles;
 
+  float *m_vertData;
+  unsigned int *m_indexData;
+  
   GLuint m_glVertBuffer;
   GLuint m_glIndexBuffer;
   GLuint m_glVertArray;
@@ -57,6 +67,9 @@ class Triset
 
   bool loadPLY(QString);
 
+  bool loadVBO(QString);
+  void saveVBO(QString);
+  
   void genVBOs();
 };
 

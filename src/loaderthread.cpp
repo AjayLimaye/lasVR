@@ -13,6 +13,9 @@ LoaderThread::start(QGLFormat format, QWidget *parent, QGLWidget *sw)
 	  this, SIGNAL(vboLoadedAll(int, qint64)));
   connect(m_gl, SIGNAL(message(QString)),
 	  this, SIGNAL(message(QString)));
+
+  connect(m_gl, SIGNAL(meshLoadedAll()),
+	  this, SIGNAL(meshLoadedAll()));
 }
 
 void

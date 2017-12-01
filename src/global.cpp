@@ -233,3 +233,32 @@ void Global::showProgressBar() { m_statusBar->show(); }
 QList<Vec> Global::m_colorMap;
 void Global::setColorMap(QList<Vec> cm) { m_colorMap = cm; }
 QList<Vec> Global::getColorMap() { return m_colorMap; }
+
+
+QList<GLuint> Global::m_trisetVBOs;
+void
+Global::setTrisetVBOs(QList<GLuint> vbo)
+{
+  clearTrisetVBOs();
+  m_trisetVBOs = vbo;
+}
+void
+Global::clearTrisetVBOs()
+{
+  for(int i=0; i<m_trisetVBOs.count()/3; i++)
+    {
+      glDeleteVertexArrays(1, &m_trisetVBOs[3*i+0]);
+      glDeleteBuffers(1, &m_trisetVBOs[3*i+1]);
+      glDeleteBuffers(1, &m_trisetVBOs[3*i+2]);
+    }
+  
+  m_trisetVBOs.clear();
+}
+GLuint
+Global::trisetVBO(int i, int j)
+{
+  if (3*i+j < m_trisetVBOs.count())
+    return m_trisetVBOs[3*i+j];
+  else
+    return 0;
+}

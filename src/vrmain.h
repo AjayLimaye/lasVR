@@ -31,7 +31,10 @@ class VrMain : public QMainWindow
   void keyPressEvent(QKeyEvent*);
 
  private slots :
+   void showToolbar();
    void saveTimeStamps();
+   void reloadData();
+   
    void on_actionLoad_LAS_triggered();
    void on_actionQuit_triggered();
    void on_actionFly_triggered();

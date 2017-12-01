@@ -105,10 +105,16 @@ class PointCloud
   bool pointType() { return m_pointType; }
 
   void setColorPresent(bool b) { m_colorPresent = b; }
+  bool colorPresent() { return m_colorPresent; }
 
+  void zBounds(float& bminz, float& bmaxz) { bminz = m_bminZ; bmaxz = m_bmaxZ; }
+  void setZBounds(float, float);
+  
   void setLoadAll(bool b) { m_loadAll = b; }  
   void loadAll();
 
+  void reload();
+  
   void translate(Vec);
   void setScale(float);
   float getScale() { return m_scale; }

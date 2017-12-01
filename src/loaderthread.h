@@ -17,11 +17,13 @@ class LoaderThread : public QObject
    void loadPointsToVBO();
    void stopLoading();
    void updateView();
-       
+
  signals :
    void vboLoaded(int, qint64);
    void vboLoadedAll(int, qint64);
    void message(QString);
+       
+   void meshLoadedAll();
    
  private :
   GLHiddenWidget *m_gl;

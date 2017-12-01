@@ -84,6 +84,7 @@ GLHiddenWidget::setVolume(Volume *v)
   m_dpv = m_volume->dataPerVertex();
 
   m_pointClouds = m_volume->pointClouds();
+  m_trisets = m_volume->trisets();
 
   int ht;
   if (m_viewer->vrMode() && m_vr->vrEnabled())
@@ -206,6 +207,7 @@ GLHiddenWidget::switchVolume()
   m_currVBO = 0;
 
   m_pointClouds = m_volume->pointClouds();
+  m_trisets = m_volume->trisets();
 
   int ht;
   if (m_viewer->vrMode() && m_vr->vrEnabled())
@@ -484,6 +486,26 @@ GLHiddenWidget::updateView()
 {
   m_currTime = m_viewer->currentTime();
 
+  if (m_trisets.count() > 0)
+    {
+      bool loadedAll = true;
+      for(int i=0; i<m_trisets.count(); i++)
+	{
+	  if (m_trisets[i]->time() == -1 ||
+	      m_trisets[i]->time() == m_currTime)
+	    {
+	      GLuint va, vb, ib;
+	      va = Global::trisetVBO(i,0);
+	      vb = Global::trisetVBO(i,1);
+	      ib = Global::trisetVBO(i,2);
+	      if (!m_trisets[i]->loadVertexBufferData(va, vb, ib))
+		loadedAll = false;
+	    }
+	}
+      if (loadedAll)
+	emit meshLoadedAll();
+    }
+  
   if (m_pointClouds.count() == 0)
     return;
   

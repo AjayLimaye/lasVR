@@ -325,6 +325,16 @@ PointCloud::loadTileOctree(QString dirnameO)
 
 
   //-----------------------
+  // just make sure that height limits are in right order
+  if (m_bminZ > m_bmaxZ)
+    {
+      m_bminZ = m_tightOctreeMinO.z;
+      m_bmaxZ = m_tightOctreeMaxO.z;
+    }
+  //-----------------------
+
+  
+  //-----------------------
   // check existance of octree.json file
   if (jsondir.exists("octree.json"))
     {
@@ -396,8 +406,6 @@ PointCloud::loadTileOctree(QString dirnameO)
   if (m_ignoreScaling)
     scale = 1.0;
   Quaternion rotate = m_rotation;
-  float bminZ = m_bminZ;
-  float bmaxZ = m_bmaxZ;
   int priority = m_priority;
   int time = m_time;
   bool colorPresent = m_colorPresent;
@@ -435,16 +443,13 @@ PointCloud::loadTileOctree(QString dirnameO)
 	  oNode->setTightMin(m_tightOctreeMinO);
 	  oNode->setTightMax(m_tightOctreeMaxO);
 	  oNode->setPriority(priority);
-	  //oNode->setTime(time);
-	  //oNode->setShift(shift);
-	  //oNode->setXformCen(xformCen);
-	  //oNode->setRotation(rotate);
 	  oNode->setScale(scale, m_scaleCloudJs);
 	  oNode->setSpacing(m_spacing*scale);
 	  oNode->setPointAttributes(m_pointAttrib);
 	  oNode->setAttribBytes(m_attribBytes);
 	  oNode->setColorPresent(colorPresent);
 	  oNode->setClassPresent(classPresent);
+	  oNode->setZBounds(m_bminZ, m_bmaxZ);
 	}
       else
 	{
@@ -506,16 +511,13 @@ PointCloud::loadTileOctree(QString dirnameO)
 	      tnode->setTightMin(m_tightOctreeMinO);
 	      tnode->setTightMax(m_tightOctreeMaxO);
 	      tnode->setPriority(priority);
-	      //tnode->setTime(time);
-	      //tnode->setShift(shift);
-	      //tnode->setXformCen(xformCen);
-	      //tnode->setRotation(rotate);
 	      tnode->setScale(scale, m_scaleCloudJs);
 	      tnode->setSpacing(m_spacing*scale);
 	      tnode->setPointAttributes(m_pointAttrib);
 	      tnode->setAttribBytes(m_attribBytes);
 	      tnode->setColorPresent(colorPresent);
 	      tnode->setClassPresent(classPresent);
+	      tnode->setZBounds(m_bminZ, m_bmaxZ);
 	    }
 	}
     }
@@ -624,6 +626,11 @@ PointCloud::loadCloudJson(QString dirname)
 	}
     }
 
+  if (m_bminZ > m_bmaxZ)
+    {
+      m_bminZ = m_tightOctreeMinO.z;
+      m_bmaxZ = m_tightOctreeMaxO.z;
+    }
 }
 
 void
@@ -690,11 +697,11 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       if (jsonInfo.contains("scale"))
 	scale = jsonInfo["scale"].toDouble();
 
-      if (jsonInfo.contains("bmin.z"))
-	bminZ = jsonInfo["bmin.z"].toDouble();
+      if (jsonInfo.contains("min_height"))
+	bminZ = jsonInfo["min_height"].toDouble();
 
-      if (jsonInfo.contains("bmax.z"))
-	bmaxZ = jsonInfo["bmax.z"].toDouble();
+      if (jsonInfo.contains("max_height"))
+	bmaxZ = jsonInfo["max_height"].toDouble();
 
       if (jsonInfo.contains("color"))
 	{
@@ -727,18 +734,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       QString flnm = jsonInfo["filename"].toString();
       flnm = jsondir.absoluteFilePath(flnm);
       
-//      str = jsonInfo["bmin"].toString();
-//      xyz = str.split(" ", QString::SkipEmptyParts);
-//      Vec bmin = Vec(xyz[0].toFloat(),
-//		     xyz[1].toFloat(),
-//		     xyz[2].toFloat());
-//
-//      str = jsonInfo["bmax"].toString();
-//      xyz = str.split(" ", QString::SkipEmptyParts);
-//      Vec bmax = Vec(xyz[0].toFloat(),
-//		     xyz[1].toFloat(),
-//		     xyz[2].toFloat());
-
       qint64 numpt = jsonInfo["numpoints"].toDouble();
 
       int levelsBelow = jsonInfo["levelsbelow"].toInt();
@@ -779,21 +774,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
 	  m_allNodes << tnode;
 	}
-      
-
-//      //---------------------------
-//      // modify box height
-//      if (bmaxZ > bminZ)
-//	{
-//	  bmax.z = qMin(bmax.z, (double)bmaxZ/m_scale);
-//	  bmin.z = qMax(bmin.z, (double)bminZ/m_scale);
-//	  if (bmax.z-bmin.z < 0.1)
-//	    {
-//	      bmin.z -= 0.05;
-//	      bmax.z += 0.05;
-//	    }
-//	}
-//      //---------------------------
 
       tnode->setFileName(flnm);
       tnode->setOffset(bmin);
@@ -807,10 +787,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setDataPerVertex(m_dpv);
 
       tnode->setPriority(priority);
-      //tnode->setTime(time);
-      //tnode->setShift(shift);
-      //tnode->setXformCen(xformCen);
-      //tnode->setRotation(rotate);
       tnode->setScale(scale, m_scaleCloudJs);      
       tnode->setSpacing(m_spacing*scale);
 
@@ -819,6 +795,8 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       tnode->setColorPresent(colorPresent);
       tnode->setClassPresent(classPresent);
+
+      tnode->setZBounds(m_bminZ, m_bmaxZ);
     }
 
   setXform(m_scale, m_shift, m_rotation, m_xformCen);
@@ -994,11 +972,11 @@ PointCloud::loadModJson(QString jsonfile)
       if (jsonInfo.contains("scale"))
 	m_scale = jsonInfo["scale"].toDouble();
 
-      if (jsonInfo.contains("bmin.z"))
-	m_bminZ = jsonInfo["bmin.z"].toDouble();
+      if (jsonInfo.contains("min_height"))
+	m_bminZ = jsonInfo["min_height"].toDouble();
 
-      if (jsonInfo.contains("bmax.z"))
-	m_bmaxZ = jsonInfo["bmax.z"].toDouble();
+      if (jsonInfo.contains("max_height"))
+	m_bmaxZ = jsonInfo["max_height"].toDouble();
 
       if (jsonInfo.contains("color"))
 	{
@@ -1553,6 +1531,19 @@ PointCloud::xformPoint(Vec v)
 }
 
 void
+PointCloud::setZBounds(float bminz, float bmaxz)
+{
+  m_bminZ = bminz;
+  m_bmaxZ = bmaxz;
+
+  for(int d=0; d<m_allNodes.count(); d++)
+    {
+      OctreeNode *node = m_allNodes[d];
+      node->setZBounds(m_bminZ, m_bmaxZ);
+    }
+}
+
+void
 PointCloud::setGlobalMinMax(Vec gmin, Vec gmax)
 {
   m_gmin = gmin;
@@ -1732,6 +1723,9 @@ PointCloud::saveModInfo(QString askString, bool askTime)
     arg(m_rotation[3], 12, 'f', 8); 
   jsonInfo["rotation"] = str.simplified();
 
+  jsonInfo["min_height"] = m_bminZ;
+  jsonInfo["max_height"] = m_bmaxZ;
+  
   jsonMod["mod"] = jsonInfo;
 
   QJsonDocument saveDoc(jsonMod);
@@ -1752,6 +1746,17 @@ PointCloud::setEditMode(bool b)
   for(int d=0; d<m_allNodes.count(); d++)
     {
       m_allNodes[d]->setEditMode(b);
+      m_allNodes[d]->reloadData();
+    }
+}
+
+void
+PointCloud::reload()
+{
+  for(int d=0; d<m_allNodes.count(); d++)
+    {
+      m_allNodes[d]->setColorPresent(m_colorPresent);
+      m_allNodes[d]->setZBounds(m_bminZ, m_bmaxZ);
       m_allNodes[d]->reloadData();
     }
 }

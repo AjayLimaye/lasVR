@@ -467,8 +467,8 @@ VR::updateInput()
   if (!rightValid)
     return false;
 
-  bool xActive = isXTriggered(m_stateLeft);
-  bool yActive = isYTriggered(m_stateLeft);
+  bool xActive = isXYTriggered(m_stateRight);
+  bool yActive = isXYTriggered(m_stateLeft);
 
 
   bool leftTriggerActive = isTriggered(m_stateLeft);
@@ -1337,14 +1337,7 @@ VR::bothTriggerReleased()
 
 //---------------------------------------
 bool
-VR::isXTriggered(vr::VRControllerState_t &state)
-{
-  return (state.ulButtonPressed &
-	  vr::ButtonMaskFromId(vr::k_EButton_A));
-}
-
-bool
-VR::isYTriggered(vr::VRControllerState_t &state)
+VR::isXYTriggered(vr::VRControllerState_t &state)
 {
   return (state.ulButtonPressed &
 	  vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu));
