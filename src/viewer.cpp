@@ -449,9 +449,11 @@ Viewer::start()
     {
       if (m_pointClouds.count() > 0)
 	{
+	  //m_skybox = m_pointClouds[0]->skybox();
 	  m_vr.setShowMap(m_pointClouds[0]->showMap());
 	  m_vr.setGravity(m_pointClouds[0]->gravity());
-	  m_vr.setSkyBox(m_pointClouds[0]->skybox());
+	  //m_vr.setSkyBox(m_pointClouds[0]->skybox());
+	  m_vr.setSkyBox(m_skybox);
 	  m_vr.setSkyBoxType(0);
 	  m_vr.setPlayButton(m_pointClouds[0]->playButton());
 	  m_vr.setGroundHeight(m_pointClouds[0]->groundHeight());
@@ -466,7 +468,7 @@ Viewer::start()
       else
 	{
 	  m_vr.setShowMap(false);
-	  m_vr.setSkyBox(true);
+	  m_vr.setSkyBox(m_skybox);
 	  m_vr.setSkyBoxType(1);
 	  m_vr.setPlayButton(true);
 	  m_meshLoadedAll = false;
@@ -1636,15 +1638,15 @@ Viewer::drawInfo()
 				  true);
     }
 
-  if (m_volumeFactory->stackSize() > 0)
-    {
-      tfont.setPointSize(20);
-      StaticFunctions::renderText(m_backButtonPos.x(), m_backButtonPos.y(),
-				  "BACK", tfont,
-				  Qt::black,
-				  QColor(128, 200, 255),
-				  true);
-    }
+//  if (m_volumeFactory->stackSize() > 0)
+//    {
+//      tfont.setPointSize(20);
+//      StaticFunctions::renderText(m_backButtonPos.x(), m_backButtonPos.y(),
+//				  "BACK", tfont,
+//				  Qt::black,
+//				  QColor(128, 200, 255),
+//				  true);
+//    }
 
   stopScreenCoordinatesSystem();
 
@@ -3703,20 +3705,11 @@ Viewer::loadLink(QString dirname)
 {
   if (m_volume)
     {
-      QWidget *pw = 0;
-      QWidgetList wlist = QApplication::topLevelWidgets();
-      for (int w=0; w<wlist.count(); w++)
-	{
-	  if (wlist[w]->isVisible())
-	    {
-	      pw = wlist[w];
-	      break;
-	    }      
-	}
       QStringList items;
       items << "No" << "Yes";
       bool ok;
-      QString item = QInputDialog::getItem(pw, "Replace",
+      QString item = QInputDialog::getItem(StaticFunctions::visibleWidget(),
+					   "Replace",
 			   "Are you loading the point cloud for alignment ?",
 					   items, 0, false, &ok);
 
@@ -3814,27 +3807,27 @@ Viewer::linkClicked(QMouseEvent *event)
 
   QPoint pos = event->pos();
 
-  if (m_volumeFactory->stackSize() > 0)
-    {
-      if (qAbs(m_backButtonPos.x() - pos.x()) < 100 &&
-	  qAbs(m_backButtonPos.y() - pos.y()) < 100)
-	{
-	  // save camera parameters for this volume
-	  // we can use them if we return to this volume again
-	  m_volume->setCamera(camera());
-
-	  start();
-
-	  QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
-				 QPointF(0,0),
-				 Qt::LeftButton,
-				 Qt::LeftButton,
-				 Qt::NoModifier);
-	  mouseReleaseEvent(&dummyEvent);
-
-	  return true;
-	}
-    }
+//  if (m_volumeFactory->stackSize() > 0)
+//    {
+//      if (qAbs(m_backButtonPos.x() - pos.x()) < 100 &&
+//	  qAbs(m_backButtonPos.y() - pos.y()) < 100)
+//	{
+//	  // save camera parameters for this volume
+//	  // we can use them if we return to this volume again
+//	  m_volume->setCamera(camera());
+//
+//	  start();
+//
+//	  QMouseEvent dummyEvent(QEvent::MouseButtonRelease,
+//				 QPointF(0,0),
+//				 Qt::LeftButton,
+//				 Qt::LeftButton,
+//				 Qt::NoModifier);
+//	  mouseReleaseEvent(&dummyEvent);
+//
+//	  return true;
+//	}
+//    }
 
   
   for(int d=0; d<m_pointClouds.count(); d++)

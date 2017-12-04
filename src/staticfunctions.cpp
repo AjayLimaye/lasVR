@@ -2,6 +2,23 @@
 #include <QtMath>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QApplication>
+
+QWidget*
+StaticFunctions::visibleWidget()
+{
+  QWidget *pw = 0;
+  QWidgetList wlist = QApplication::topLevelWidgets();
+  for (int w=0; w<wlist.count(); w++)
+    {
+      if (wlist[w]->isVisible())
+	{
+	  pw = wlist[w];
+	  break;
+	}      
+    }
+  return pw;
+}
 
 void
 StaticFunctions::drawBox(QList<Vec> v)
@@ -527,3 +544,4 @@ StaticFunctions::minVec(Vec a, Vec b)
 
   return cv;
 }
+

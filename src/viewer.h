@@ -67,6 +67,8 @@ class Viewer : public QGLViewer
 
   void setFlyMode(bool f) { m_flyMode = f; toggleCameraMode(); }
 
+  void setSkybox(bool f) { m_skybox = f; m_vr.setSkyBox(m_skybox); }
+
   VR* vrPointer() { return &m_vr; }
 
   int currentTime() { return m_currTime; }
@@ -192,6 +194,7 @@ class Viewer : public QGLViewer
     bool m_fastDraw;
 
     bool m_pointType;
+    bool m_skybox;
     bool m_flyMode;
     bool m_showInfo;
     bool m_showPoints;

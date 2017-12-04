@@ -366,6 +366,12 @@ VrMain::on_actionQuit_triggered()
 }
 
 void
+VrMain::on_actionSkybox_triggered()
+{
+  m_viewer->setSkybox(ui.actionSkybox->isChecked());
+}
+
+void
 VrMain::on_actionFly_triggered()
 {
   m_viewer->setFlyMode(ui.actionFly->isChecked());
@@ -443,7 +449,9 @@ VrMain::modifyTableWidget()
   item << "Color Max Ht";
 
   m_tableWidget->setHorizontalHeaderLabels(item);
-
+  m_tableWidget->setSortingEnabled(true);
+  m_tableWidget->horizontalHeader()->sortIndicatorOrder();
+  
   m_tableWidget->setColumnWidth(0, 45);
   //m_tableWidget->setColumnWidth(1, 70);
   m_tableWidget->setColumnWidth(2, 45);
@@ -541,10 +549,10 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("SRISHTI");
+      setWindowTitle("Srishti v1.05");
     }
   else
-    setWindowTitle(mesg);
+    setWindowTitle("Srishti v1.05 - "+mesg);
 }
 
 void VrMain::on_actionEditMode_triggered()

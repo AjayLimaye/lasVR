@@ -234,7 +234,8 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
   for (int d=0; d<dcount; d++)
     {
       Global::progressBar()->setValue(100*(float)d/(float)dcount);
-	  
+      qApp->processEvents();
+      
       QFileInfo finfo(dirnames[d]);
       if (finfo.isDir())
 	{
@@ -375,6 +376,7 @@ PointCloud::loadTileOctree(QString dirnameO)
 	{
 	  float pg = nfl%100;
 	  Global::progressBar()->setValue(pg);
+	  qApp->processEvents();
 	}
     }
 
@@ -385,6 +387,7 @@ PointCloud::loadTileOctree(QString dirnameO)
   for (int i=0; i<finfolist.count(); i++)
     {
       Global::progressBar()->setValue(100*(float)i/(float)finfolist.count());
+      qApp->processEvents();
 
       QString basename = finfolist[i].baseName();
       minNameSize = qMin(minNameSize, basename.count());
@@ -416,6 +419,7 @@ PointCloud::loadTileOctree(QString dirnameO)
   for(int l=0; l<=maxOct; l++)
     {
       Global::progressBar()->setValue(100*(float)l/(float)(maxOct+1));
+      qApp->processEvents();
 
       QStringList flist;
       for (int i=0; i<finfolist.count(); i++)
@@ -722,9 +726,16 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       jstart = 1;
     }
 
-  
-  for (int i=jstart; i<jsonOctreeData.count(); i++)
+  Global::statusBar()->showMessage(dirname, 2000);
+  Global::progressBar()->show();
+
+  int jend = jsonOctreeData.count();
+  for (int i=jstart; i<jend; i++)
     {
+      Global::progressBar()->setValue(100*(float)(i-jstart)/(float)(jend-jstart+1));
+      qApp->processEvents();
+
+
       QJsonObject jsonOctreeNode = jsonOctreeData[i].toObject();
       QJsonObject jsonInfo = jsonOctreeNode["node"].toObject();
 

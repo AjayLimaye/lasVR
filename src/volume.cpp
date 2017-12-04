@@ -6,6 +6,7 @@
 #include <QProgressDialog>
 #include <QFileDialog>
 #include <QApplication>
+#include <QInputDialog>
 
 #include "laszip_dll.h"
 
@@ -170,12 +171,42 @@ Volume::loadDir(QString dirname)
   m_teleportScale = 1.0;
   m_showMap = true;
   m_gravity = false;
-  m_skybox = true;
+  m_skybox = false;
   m_playbutton = false;
   m_showSphere = false;
   m_pointType = true; // adaptive point size
   m_loadall = false;
   m_colorPresent = true;
+
+
+  QStringList subdir = QDir(dirname).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+  if (subdir.count() > 1 &&
+      !QDir(dirname).exists("cloud.js"))
+    {
+      // if top.json exists ask whether to create one
+      if (!QDir(dirname).exists("top.json"))
+	{
+	  QStringList items;
+	  items << "Yes" << "No";
+	  bool ok;
+	  QString item = QInputDialog::getItem(StaticFunctions::visibleWidget(),
+					       "top.json",
+					       "Are you loading timeseries of point cloud ?",
+					       items, 0, false, &ok);
+
+	  if (!ok || item == "Yes")
+	    {
+	      // create top.json
+	      QString jsonfile = QDir(dirname).absoluteFilePath("top.json");
+	      QFile jfl(jsonfile);
+	      jfl.open(QIODevice::WriteOnly | QIODevice::Text);
+	      jfl.close();
+	    }
+
+	}
+
+    }
+    
 
   //---------------------------------
   if (QDir(dirname).exists("top.json"))
@@ -183,8 +214,8 @@ Volume::loadDir(QString dirname)
       QString jsonfile = QDir(dirname).absoluteFilePath("top.json");
       loadTopJson(jsonfile);
 
-      loadAllPLY(dirname);
-	
+      //loadAllPLY(dirname);
+
       // top directory contains PoTree tiles for multiple data
       QDirIterator topDirIter(dirname,
 			      QDir::Dirs | QDir::Readable |

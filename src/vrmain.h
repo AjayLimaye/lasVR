@@ -48,7 +48,8 @@ class VrMain : public QMainWindow
    void on_actionUndo_triggered();
    void on_actionSaveInfo_triggered();
    void on_actionVRMode_triggered();
-
+   void on_actionSkybox_triggered();
+   
    void on_actionSoftShadow_triggered();
    void on_actionEdges_triggered();
    void on_actionSpheres_triggered();

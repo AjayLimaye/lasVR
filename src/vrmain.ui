@@ -46,6 +46,7 @@
     <addaction name="actionEdges"/>
     <addaction name="actionSpheres"/>
     <addaction name="actionFly"/>
+    <addaction name="actionSkybox"/>
     <addaction name="separator"/>
     <addaction name="actionVRMode"/>
     <addaction name="separator"/>
@@ -68,7 +69,7 @@
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>true</bool>
+    <bool>false</bool>
    </attribute>
    <addaction name="actionEditMode"/>
    <addaction name="actionAlign"/>
@@ -216,6 +217,14 @@
    </property>
    <property name="text">
     <string>Spheres</string>
+   </property>
+  </action>
+  <action name="actionSkybox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Skybox</string>
    </property>
   </action>
  </widget>

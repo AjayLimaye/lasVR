@@ -11,6 +11,9 @@ using namespace qglviewer;
 class StaticFunctions
 {
  public :
+
+  static QWidget* visibleWidget();
+
   static void drawBox(Vec, Vec);
   static void drawBox(QList<Vec>);
 
@@ -64,7 +67,6 @@ class StaticFunctions
   static Vec clampVec(Vec, Vec, Vec);
   static Vec maxVec(Vec, Vec);
   static Vec minVec(Vec, Vec);
-
 };
 
 #endif
