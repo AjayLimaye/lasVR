@@ -124,7 +124,7 @@ class Viewer : public QGLViewer
     void updateFramerate();
     void setPointBudget(int);
 
-    void setVRMode(bool);
+    bool setVRMode(bool);
     bool vrMode() { return m_vrMode; }
 
     void setKeyFrame(int);

@@ -340,7 +340,7 @@ Viewer::GlewInit()
 //  emit message(QString("VRMode %1").arg(m_vr.vrEnabled()));
 }
 
-void
+bool
 Viewer::setVRMode(bool b)
 {
   if (b)
@@ -360,14 +360,14 @@ Viewer::setVRMode(bool b)
       else
 	{
 	  QMessageBox::information(0, "", "Cannot enable VR mode");
-	  return;
+	  return false;
 	}
     }
   
   m_vrMode = b;
 
   if (!m_volume)
-    return;
+    return false;
 
   m_volumeFactory->pushVolume(m_volume);
 
@@ -396,6 +396,8 @@ Viewer::setVRMode(bool b)
 			 Qt::LeftButton,
 			 Qt::NoModifier);
   mouseReleaseEvent(&dummyEvent);
+
+  return true;
 }
 
 void

@@ -275,7 +275,7 @@ VrMain::VrMain(QWidget *parent) :
   connect(m_viewer, SIGNAL(showToolbar()),
 	  this, SLOT(showToolbar()));
 
-    ui.toolBar->hide();
+  ui.toolBar->hide();
 }
 
 void VrMain::showToolbar() { ui.toolBar->show(); }
@@ -549,10 +549,10 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("Srishti v1.05");
+      setWindowTitle("Srishti v1.06");
     }
   else
-    setWindowTitle("Srishti v1.05 - "+mesg);
+    setWindowTitle("Srishti v1.06 - "+mesg);
 }
 
 void VrMain::on_actionEditMode_triggered()
@@ -574,7 +574,10 @@ void VrMain::on_actionSpheres_triggered() { m_viewer->setSpheres(ui.actionSphere
 void
 VrMain::on_actionVRMode_triggered()
 {
-  m_viewer->setVRMode(ui.actionVRMode->isChecked());
+  bool inVR = m_viewer->setVRMode(ui.actionVRMode->isChecked());
+
+  if (!inVR && ui.actionVRMode->isChecked())
+    ui.actionVRMode->setChecked(false);
 
   if (ui.actionVRMode->isChecked())
     {
@@ -589,11 +592,7 @@ VrMain::on_actionVRMode_triggered()
 	  ui.actionCamMode->setChecked(false);
 	  m_viewer->toggleCamMode();
 	}
-
-      ui.toolBar->hide();
     }
-  else
-    ui.toolBar->show();
 }
 
 void

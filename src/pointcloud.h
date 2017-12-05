@@ -208,6 +208,8 @@ class PointCloud
 
   void loadLabelsJson(QString);
   void loadLabelsCSV(QString);
+
+  void loadLowerTiles(QStringList);
 };
 
 #endif

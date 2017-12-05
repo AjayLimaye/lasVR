@@ -189,10 +189,9 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
 			      QDirIterator::NoIteratorFlags);
       
       while(topDirIter.hasNext())
-	{
-	  dirnames << topDirIter.next();
-	  
-	}
+	dirnames << topDirIter.next();
+
+      
     }
   
   loadMultipleTiles(dirnames);
@@ -230,9 +229,79 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
 {
   Global::statusBar()->showMessage("Loading tiles", 2000);
   Global::progressBar()->show();
+
   int dcount = dirnames.count();
   for (int d=0; d<dcount; d++)
-    {
+    {	
+      Global::progressBar()->setValue(100*(float)d/(float)dcount);
+      qApp->processEvents();
+      
+      //-----------------------
+      // drill down till you hit directory containing cloud.js
+      QString dnm = dirnames[d];
+      if (!QDir(dnm).exists("cloud.js"))
+	{
+	  QStringList sd;
+	  QStringList dlist;
+	  dlist << dnm;
+	  while(dlist.count() > 0)
+	    {
+	      for(int di=0; di<dlist.count(); di++)
+		{
+		  //-----
+		  // load mod.json if present in the directory
+		  // this will overwrite earlier values
+		  if (QDir(dlist[di]).exists("mod.json"))
+		    {
+		      QString jsonfile = QDir(dlist[di]).absoluteFilePath("mod.json");
+		      loadModJson(jsonfile);
+		    }
+		  //-----
+
+		  //-----
+		  // now parse the subdirectories
+		  QStringList subdir = QDir(dlist[di]).entryList(QDir::AllDirs |
+								 QDir::NoDotAndDotDot);
+		  QStringList dnames;
+		  for(int si=0; si<subdir.count(); si++)
+		    {
+		      QString dname = QDir(dnm).absoluteFilePath(subdir[si]);
+		      if (QDir(dname).exists("cloud.js"))
+			dnames << dname;
+		      else
+			sd << dname;
+		    }
+
+		  if (dnames.count() > 0) // load these PoTrees
+		    loadLowerTiles(dnames);
+
+		}
+	      if (sd.count() > 0)
+		dlist = sd;
+	      else
+		dlist.clear();		  
+	    }
+	}
+      else
+	{
+	  QStringList dnames;
+	  dnames << dnm;
+	  loadLowerTiles(dnames);
+	}
+    }
+
+  Global::progressBar()->hide();
+  Global::statusBar()->showMessage("Start", 100);
+
+  return true;
+}
+
+void
+PointCloud::loadLowerTiles(QStringList dirnames)
+{
+  int dcount = dirnames.count();
+  for (int d=0; d<dcount; d++)
+    {	
       Global::progressBar()->setValue(100*(float)d/(float)dcount);
       qApp->processEvents();
       
@@ -263,11 +332,6 @@ PointCloud::loadMultipleTiles(QStringList dirnames)
 	    }
 	}
     }
-
-  Global::progressBar()->hide();
-  Global::statusBar()->showMessage("Start", 100);
-
-  return true;
 }
 
 bool
