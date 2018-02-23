@@ -12,14 +12,18 @@ Example fly-through movie: https://youtu.be/OXQyATxcxTM
 
 
 
+Point cloud of the National Arboretum in Canberra, ACT, Australia:
 ![Sample screen capture in desktop mode](/media/Shristi-screen-cap-1.jpg)
 
+Point cloud of a sorghum crop LiDAR scan from the TERRA-REF site in Maricopa, AZ, USA:
+![Sample screen capture in desktop mode](/media/3D-point-cloud-of-maricopa-cropped.jpg)
 
 Instructions
 * Unzip with 7-zip
 * Run /Srishti_v1.04/bin/shrishti.exe 
 * Drag and drop the UQ-Time-Series folder onto Shrishti window
    * Wait a bit for it to load. It may appear frozen for a few seconds. A dialog box pops up that you have to click ok on; sometimes it get blocked by another window so after you've waited about 15-sec, click on Shristi again or alt-tab away from it and then back again, and it should pop up.
+
 
 Navigation
 * Use L/R mouse buttons for navigation
