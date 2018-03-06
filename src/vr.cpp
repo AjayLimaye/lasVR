@@ -11,6 +11,7 @@
 #define NEAR_CLIP 0.1f
 #define FAR_CLIP 2.0f
 
+#define VERBOSE 0
 
 VR::VR() : QObject()
 {
@@ -339,6 +340,9 @@ VR::initVR()
   buildAxesVB();
 
   setSkyBoxType(0);
+  
+  if (VERBOSE)
+    QMessageBox::information(0, "Init VR", "Init VR done");
 }
 
 void
@@ -386,17 +390,20 @@ VR::ProcessVREvent( const vr::VREvent_t & event )
     case vr::VREvent_TrackedDeviceActivated:
       {
 	setupRenderModelForTrackedDevice( event.trackedDeviceIndex );
-	//QMessageBox::information(0, "", QString("Device %1 attached.").arg(event.trackedDeviceIndex));
+	if (VERBOSE)
+	  QMessageBox::information(0, "", QString("Device %1 attached.").arg(event.trackedDeviceIndex));
       }
       break;
     case vr::VREvent_TrackedDeviceDeactivated:
       {
-	//QMessageBox::information(0, "", QString("Device %1 detached.").arg(event.trackedDeviceIndex));
+	if (VERBOSE)
+	  QMessageBox::information(0, "", QString("Device %1 detached.").arg(event.trackedDeviceIndex));
       }
       break;
     case vr::VREvent_TrackedDeviceUpdated:
       {
-	//QMessageBox::information(0, "", QString("Device %1 updated.").arg(event.trackedDeviceIndex));
+	if (VERBOSE)
+	  QMessageBox::information(0, "", QString("Device %1 updated.").arg(event.trackedDeviceIndex));
       }
       break;
     }
@@ -458,14 +465,24 @@ VR::updateInput()
 					      &m_stateLeft,
 					      sizeof(m_stateLeft));
   if (!leftValid)
-    return false;
+    {
+      if (VERBOSE)
+	QMessageBox::information(0, "Left Controller", "Left controller : invalid state");
+	  
+	return false;
+    }
 
   bool rightValid = m_hmd->GetControllerState(m_rightController,
 					       &m_stateRight,
 					       sizeof(m_stateRight));
 
   if (!rightValid)
-    return false;
+    {
+      if (VERBOSE)
+	QMessageBox::information(0, "Right Controller", "Right controller : invalid state");
+	  
+	return false;
+    }
 
   bool xActive = isXYTriggered(m_stateRight);
   bool yActive = isXYTriggered(m_stateLeft);
