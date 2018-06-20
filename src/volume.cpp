@@ -279,7 +279,8 @@ Volume::loadDir(QString dirname)
       m_pointClouds << pointCloud;
 
 
-      pointCloud->loadMultipleTiles(dirnames);
+      pointCloud->loadPoTreeMultiDir(dirname, -1, false);
+      //pointCloud->loadMultipleTiles(dirnames);
     }
   else
     {

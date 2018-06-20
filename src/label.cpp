@@ -10,6 +10,7 @@ Label::Label()
 {
   m_caption.clear();
   m_position = Vec(0,0,0);
+  m_positionO = Vec(0,0,0);
   m_proximity = -1;
   m_color = Vec(1,1,1);
   m_fontSize = 20;
@@ -22,12 +23,20 @@ Label::Label()
   m_texWd = m_texHt = 0;
 
   m_hitDur = 0;
+
+  m_rotation = Quaternion();
+  m_scale = 1.0;
+  m_scaleCloudJs = 1.0;
+  m_shift = Vec(0,0,0);
+  m_offset = Vec(0,0,0);
+  m_xformCen = Vec(0,0,0);
 }
 
 Label::~Label()
 {
   m_caption.clear();
   m_position = Vec(0,0,0);
+  m_positionO = Vec(0,0,0);
   m_proximity = -1;
   m_color = Vec(1,1,1);
   m_fontSize = 20;
@@ -44,6 +53,48 @@ Label::~Label()
       m_glVertArray = 0;
       m_glVertBuffer = 0;
     }
+}
+
+void
+Label::setXform(float scale, float scaleCloudJs,
+		Vec shift, Vec offset,
+		Quaternion rotate, Vec xformCen)
+{
+  m_scale = scale;
+  m_scaleCloudJs = scaleCloudJs;
+  m_shift = shift;
+  m_offset = offset;
+  m_rotation = rotate.normalized();
+  m_xformCen = xformCen;
+
+  m_position = xformPoint(m_positionO);
+}
+
+Vec
+Label::xformPoint(Vec v)
+{
+  Vec ov = v;
+  //ov = ov * m_scaleCloudJs + m_offset;
+  //ov = ov * m_scaleCloudJs;
+  ov = ov - m_xformCen;
+  ov = m_rotation.rotate(ov);
+  ov = ov *m_scale;
+  ov = ov + m_xformCen; 
+  ov = ov + m_shift;
+  ov = ov - m_globalMin;
+  return ov;
+}
+
+void
+Label::setGlobalMinMax(Vec gmin, Vec gmax)
+{
+  m_globalMin = gmin;
+  
+  //m_position -= gmin;
+  m_position = xformPoint(m_positionO);
+  
+  if (m_vertData)
+    QMessageBox::information(0, "", "Label : regenerate vertData");
 }
 
 void
@@ -117,12 +168,6 @@ Label::setTreeInfo(QList<float> ti)
 }
 
 void
-Label::setGlobalMinMax(Vec gmin, Vec gmax)
-{
-  m_position -= gmin;
-}
-
-void
 Label::drawLabel(Camera* cam)
 {
   Vec cpos = cam->position();
@@ -158,7 +203,9 @@ Label::drawLabel(Camera* cam)
 void
 Label::stickToGround()
 {
+  // use m_position instead of original m_positionO
   m_position = Global::stickToGround(m_position);
+
   createBox();
 }
 
@@ -168,13 +215,18 @@ Label::checkHit(QMatrix4x4 matR,
 		float deadRadius,
 		QVector3D deadPoint)
 {
-  if (deadRadius <= 0)
+  if (deadRadius <= 0 || m_treeInfo.count() > 0) // draw box
     {
+      if (!m_boxData)
+	createBox();
+      
       // we are showing info icon
       QVector3D vp = QVector3D(m_position.x, m_position.y, m_position.z);
-      QVector3D sz = QVector3D(0.002,0.002,0.002);
-      QVector3D bmin = vp - sz;
-      QVector3D bmax = vp + sz;
+      //QVector3D sz = QVector3D(0.002,0.002,0.002);
+      //QVector3D bmin = vp - sz;
+      //QVector3D bmax = vp + sz;
+      QVector3D bmin = QVector3D(m_boxData[0],m_boxData[1],m_boxData[2]);
+      QVector3D bmax = QVector3D(m_boxData[48],m_boxData[49],m_boxData[50]);
       
       QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
       QVector3D cenR = finalxformInv.map(centerR);
@@ -366,35 +418,43 @@ Label::drawLabel(QVector3D cpos,
 
   if (m_treeInfo.count() > 0)
     {
-      QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-      QVector3D frontR;
-      frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
-      QVector3D pinPoint = centerR + frontR;
-      QVector3D fxvp = finalxform.map(vp);
-
-      if (fxvp.distanceToLine(pinPoint, frontR) > 0.02)
-	{
-	  Vec vp2d(vp.x(), vp.y(), 0);
-	  Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
-	  
-	  if (deadRadius <= 0 ||
-	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
-	    {
-	      // show icon only if we are close
-	      if ((cpos-vp).lengthSquared() < 1)
-		showTreeInfoPosition(mvp, glow);
-	    }
-	  else
-	    drawBox(mvp, vDir, glow, true);
-	  
-	  return;
-	}
+      drawBox(mvp, vDir, glow, true);
+      return;
     }
   else if ((cpos-vp).length() > m_proximity)
     return;
 
+//  if (m_treeInfo.count() > 0)
+//    {
+//      QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+//      QVector3D frontR;
+//      frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
+//      QVector3D pinPoint = centerR + frontR;
+//      QVector3D fxvp = finalxform.map(vp);
+//
+//      if (fxvp.distanceToLine(pinPoint, frontR) > 0.02)
+//	{
+//	  Vec vp2d(vp.x(), vp.y(), 0);
+//	  Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
+//	  
+//	  if (deadRadius <= 0 ||
+//	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
+//	    {
+//	      // show icon only if we are close
+//	      if ((cpos-vp).lengthSquared() < 1)
+//		showTreeInfoPosition(mvp, glow);
+//	    }
+//	  else
+//	    {
+//	      drawBox(mvp, vDir, glow, true);
+//	    }
+//	  return;
+//	}
+//    }
+//  else if ((cpos-vp).length() > m_proximity)
+//    return;
 
-  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+
   //glDisable(GL_DEPTH_TEST);
 
 
@@ -517,7 +577,6 @@ Label::drawLabel(QVector3D cpos,
   glUseProgram( 0 );
 
 //  glDisable(GL_BLEND);
-  //glDepthMask(GL_TRUE); // enable writing to depth buffer
   //glEnable(GL_DEPTH_TEST);
 
 //  if (!m_linkData.isEmpty())
@@ -556,7 +615,7 @@ Label::checkLink(Camera *cam, QPoint pos)
 void
 Label::showTreeInfoPosition(QMatrix4x4 mvp, bool glow)
 {
-  glDepthMask(GL_FALSE); // disable writing to depth buffer
+  //glDepthMask(GL_FALSE); // disable writing to depth buffer
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -642,26 +701,31 @@ Label::showTreeInfoPosition(QMatrix4x4 mvp, bool glow)
   glUseProgram( 0 );
 
   glDisable(GL_BLEND);
-  glDepthMask(GL_TRUE); // enable writing to depth buffer
+  //glDepthMask(GL_TRUE); // enable writing to depth buffer
 }
 
 void
 Label::createBox()
 {
   // use area parameter for side length of box
-  float sz = qSqrt(m_treeInfo[1])/2;
   //float sz = qSqrt(m_treeInfo[1]);
+
+  float sz = qSqrt(m_treeInfo[1])/2;
+  sz /= m_scaleCloudJs;
+
+  float ht = m_treeInfo[0];
+  ht /= m_scaleCloudJs;
 
   Vec bmin, bmax;
   bmin = Vec(-sz, -sz, 0);
-  bmax = Vec(sz, sz, m_treeInfo[0]);
+  bmax = Vec( sz,  sz, ht);
 
   bmin *= 0.01;
   bmax *= 0.01;
 
   bmin += m_position;
   bmax += m_position;
- 
+    
   if (!m_boxData)
     m_boxData = new float[24*8];
 
@@ -753,17 +817,15 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
   glEnable(GL_TEXTURE_2D);
 
 
-  glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
-  glBufferSubData(GL_ARRAY_BUFFER,
-		  0,
-		  sizeof(float)*8*24,
-		  &m_boxData[0]);
-
   glEnable(GL_TEXTURE_2D);
 
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
+  glBufferSubData(GL_ARRAY_BUFFER,
+		  0,
+		  sizeof(float)*8*24,
+		  &m_boxData[0]);
 
   // Identify the components in the vertex buffer
   glEnableVertexAttribArray( 0 );
@@ -822,7 +884,7 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
   if (box)
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);  
   else // draw only bottom square
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 
   glBindVertexArray(0);
 

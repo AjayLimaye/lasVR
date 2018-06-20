@@ -639,11 +639,11 @@ Viewer::createFBO()
       glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[dt]);
       glTexImage2D(GL_TEXTURE_RECTANGLE,
 		   0,
-		   GL_RGBA16F,
+		   GL_RGBA32F,
 		   wd, ht,
 		   0,
 		   GL_RGBA,
-		   GL_UNSIGNED_BYTE,
+		   GL_FLOAT,
 		   0);
     }
   glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1426,6 +1426,8 @@ Viewer::paintGL()
       
       // left eye
       m_vr.bindLeftBuffer();
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
 
       if (m_trisets.count() > 0)
 	drawTrisets(vr::Eye_Left);
@@ -1433,6 +1435,8 @@ Viewer::paintGL()
       if (m_pointClouds.count() > 0)
 	{
 	  drawPointsWithShadows(vr::Eye_Left);
+	  //drawPoints(vr::Eye_Left);
+
 	  drawLabelsForVR(vr::Eye_Left);
 	}
       
@@ -1441,6 +1445,8 @@ Viewer::paintGL()
       
       // right eye
       m_vr.bindRightBuffer();
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
 
       if (m_trisets.count() > 0)
 	drawTrisets(vr::Eye_Right);
@@ -1448,6 +1454,8 @@ Viewer::paintGL()
       if (m_pointClouds.count() > 0)
 	{
 	  drawPointsWithShadows(vr::Eye_Right);
+	  //drawPoints(vr::Eye_Right);
+
 	  drawLabelsForVR(vr::Eye_Right);
 	}
       m_vr.postDrawRightBuffer();
@@ -2068,7 +2076,7 @@ Viewer::drawPointsWithShadows(vr::Hmd_Eye eye)
 //--------------------------------------------
   m_vr.bindBuffer(eye);
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 //--------------------------------------------
@@ -2746,54 +2754,54 @@ Viewer::drawPointsWithReload()
 void
 Viewer::drawLabels()
 {
-  QMatrix4x4 mvp;
-  GLdouble m[16];
-  camera()->getModelViewProjectionMatrix(m);
-  for(int i=0; i<16; i++) mvp.data()[i] = m[i];
-
-  QVector3D cpos, hup, hvd, hrv;
-
-  Vec cp = camera()->position();
-  cpos = QVector3D(cp.x, cp.y, cp.z);
-
-  Vec viewDir = camera()->viewDirection();
-  hvd = QVector3D(viewDir.x,viewDir.y,viewDir.z);
-
-  Vec upVec = camera()->upVector();
-  hup = QVector3D(upVec.x,upVec.y,upVec.z);
-
-  Vec rtVec = camera()->rightVector();
-  hrv = QVector3D(rtVec.x,rtVec.y, rtVec.z);
-  
-  for(int d=0; d<m_pointClouds.count(); d++)
-    {
-      if (m_pointClouds[d]->visible())
-	m_pointClouds[d]->drawLabels(cpos,
-				     hvd,
-				     hup,
-				     hrv,
-				     mvp,
-				     mvp,
-				     mvp,
-				     mvp,
-				     -1,
-				     QVector3D(-1,-1,-1));
-    }
-
-//  glDisable(GL_DEPTH_TEST);
+//  QMatrix4x4 mvp;
+//  GLdouble m[16];
+//  camera()->getModelViewProjectionMatrix(m);
+//  for(int i=0; i<16; i++) mvp.data()[i] = m[i];
 //
-//  startScreenCoordinatesSystem();
+//  QVector3D cpos, hup, hvd, hrv;
 //
-//  Vec cpos = camera()->position();
+//  Vec cp = camera()->position();
+//  cpos = QVector3D(cp.x, cp.y, cp.z);
+//
+//  Vec viewDir = camera()->viewDirection();
+//  hvd = QVector3D(viewDir.x,viewDir.y,viewDir.z);
+//
+//  Vec upVec = camera()->upVector();
+//  hup = QVector3D(upVec.x,upVec.y,upVec.z);
+//
+//  Vec rtVec = camera()->rightVector();
+//  hrv = QVector3D(rtVec.x,rtVec.y, rtVec.z);
+//  
 //  for(int d=0; d<m_pointClouds.count(); d++)
 //    {
 //      if (m_pointClouds[d]->visible())
-//	m_pointClouds[d]->drawLabels(camera());
+//	m_pointClouds[d]->drawLabels(cpos,
+//				     hvd,
+//				     hup,
+//				     hrv,
+//				     mvp,
+//				     mvp,
+//				     mvp,
+//				     mvp,
+//				     -1,
+//				     QVector3D(-1,-1,-1));
 //    }
-//
-//  stopScreenCoordinatesSystem();
-//
-//  glEnable(GL_DEPTH_TEST);
+
+  glDisable(GL_DEPTH_TEST);
+
+  startScreenCoordinatesSystem();
+
+  Vec cpos = camera()->position();
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	m_pointClouds[d]->drawLabels(camera());
+    }
+
+  stopScreenCoordinatesSystem();
+
+  glEnable(GL_DEPTH_TEST);
 }
 void
 Viewer::drawLabelsForVR(vr::Hmd_Eye eye)

@@ -11,10 +11,10 @@ GLHiddenWidget::GLHiddenWidget(QGLFormat format,
 			       QGLWidget *shareWidget):
   QGLWidget(format, parent, shareWidget)
 {
-  QGLContext *glContext = new QGLContext(format, this);
-  if (shareWidget != NULL)
-    glContext->create(shareWidget->context());
-  setContext(glContext);
+//  QGLContext *glContext = new QGLContext(format, this);
+//  if (shareWidget != NULL)
+//    glContext->create(shareWidget->context());
+//  setContext(glContext);
   
   makeCurrent();
   
@@ -155,7 +155,7 @@ GLHiddenWidget::uploadVisTex()
 	       GL_RGBA,
 	       GL_UNSIGNED_BYTE,
 	       m_visibilityMap); 
-
+  
   m_newVisTex = false;
 }
 
@@ -515,7 +515,9 @@ GLHiddenWidget::updateView()
 
   createVisibilityTexture();
 
-  loadPointsToVBO();  
+  makeCurrent();
+  loadPointsToVBO();
+  doneCurrent();
 }
 
 void

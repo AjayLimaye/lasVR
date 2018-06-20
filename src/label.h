@@ -15,7 +15,7 @@ class Label
   ~Label();
 
   void setCaption(QString cap) { m_caption = cap; }
-  void setPosition(Vec pos) { m_position = pos; }
+  void setPosition(Vec pos) { m_positionO = m_position = pos; }
   void setProximity(float p) { m_proximity = p; }
   void setColor(Vec col) { m_color = col; }
   void setFontSize(float fs) { m_fontSize = fs; }
@@ -36,6 +36,10 @@ class Label
 
   void setGlobalMinMax(Vec, Vec);
 
+  void setXform(float, float,
+		Vec, Vec,
+		Quaternion, Vec);
+
   void stickToGround();
   float checkHit(QMatrix4x4, QMatrix4x4,
 		float, QVector3D);
@@ -48,6 +52,7 @@ class Label
   QList<float> m_treeInfo;
 
   QString m_caption;
+  Vec m_positionO;
   Vec m_position;
   float m_proximity;
   Vec m_color;
@@ -67,12 +72,20 @@ class Label
   int m_hitDur;
   Vec m_hitC;
 
+  Vec m_globalMin;
+  Quaternion m_rotation;
+  Vec m_shift, m_offset;
+  float m_scale, m_scaleCloudJs;
+  Vec m_xformCen;
+
   void genVertData();
 
   void showTreeInfoPosition(QMatrix4x4, bool);
 
   void createBox();
   void drawBox(QMatrix4x4, QVector3D, bool, bool);
+
+  Vec xformPoint(Vec);
 };
 
 #endif

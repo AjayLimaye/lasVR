@@ -35,7 +35,7 @@ LoaderThread::loadPointsToVBO()
 void
 LoaderThread::updateView()
 {
-  m_gl->makeCurrent();
+  //m_gl->makeCurrent();
   m_gl->updateView();
-  m_gl->doneCurrent();
+  //m_gl->doneCurrent();
 }

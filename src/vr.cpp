@@ -22,6 +22,15 @@ VR::VR() : QObject()
   m_rightBuffer = 0;
   m_mapBuffer = 0;
 
+  m_leftController = vr::k_unTrackedDeviceIndexInvalid;
+  m_rightController = vr::k_unTrackedDeviceIndexInvalid;
+  m_leftControllerName.clear();
+  m_rightControllerName.clear();
+  m_leftComponentNames.clear();
+  m_rightComponentNames.clear();
+  m_leftRenderModels.clear();
+  m_rightRenderModels.clear();
+
   m_gripActiveRight = false;
   m_gripActiveLeft = false;
   m_touchActiveRight = false;
@@ -102,11 +111,6 @@ VR::VR() : QObject()
 void
 VR::updatePointSize(int sz)
 {
-//  if (m_showMap)
-//    m_pointSize = qMax(0.1f, m_pointSize + sz*0.1f);
-//  else
-//    m_pointSize = qMax(0.1f, m_pointSize + sz*0.2f);
-
   if (m_showMap)
     m_pointSize = qMax(0.1f, m_pointSize + sz*0.01f);
   else
@@ -335,7 +339,8 @@ VR::initVR()
 
   createShaders();
 
-  setupRenderModels();
+  getControllers();
+  //setupRenderModels();
 
   buildAxesVB();
 
@@ -344,6 +349,31 @@ VR::initVR()
   if (VERBOSE)
     QMessageBox::information(0, "Init VR", "Init VR done");
 }
+
+bool
+VR::getControllers()
+{
+  m_leftController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
+  
+  m_rightController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
+
+
+  // setup the render models for controllers
+  if (m_hmd->GetControllerState(m_leftController,
+				 &m_stateLeft,
+				sizeof(m_stateLeft)) &&
+      m_hmd->GetControllerState(m_rightController,
+				&m_stateRight,
+				sizeof(m_stateRight)))
+    
+    {
+      setupRenderModels();
+      return true;
+    }
+  
+  return false;
+}
+
 
 void
 VR::setSkyBoxType(int idx)
@@ -389,7 +419,14 @@ VR::ProcessVREvent( const vr::VREvent_t & event )
     {
     case vr::VREvent_TrackedDeviceActivated:
       {
-	setupRenderModelForTrackedDevice( event.trackedDeviceIndex );
+	//setupRenderModelForTrackedDevice( event.trackedDeviceIndex );
+
+	if (m_leftController == event.trackedDeviceIndex)
+	  setupRenderModelForTrackedDevice( 0, event.trackedDeviceIndex );
+
+	if (m_rightController == event.trackedDeviceIndex)
+	  setupRenderModelForTrackedDevice( 1, event.trackedDeviceIndex );
+
 	if (VERBOSE)
 	  QMessageBox::information(0, "", QString("Device %1 attached.").arg(event.trackedDeviceIndex));
       }
@@ -456,33 +493,45 @@ VR::updateInput()
   //----------------------------------
   
 
-  m_leftController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
+  if (!m_hmd->GetControllerState(m_leftController,
+				&m_stateLeft,
+				sizeof(m_stateLeft)) ||
+      !m_hmd->GetControllerState(m_rightController,
+				&m_stateRight,
+				sizeof(m_stateRight)))
+    {
+      if (!getControllers())
+	return false;
+    }
   
-  m_rightController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
 
-
-  bool leftValid = m_hmd->GetControllerState(m_leftController,
-					      &m_stateLeft,
-					      sizeof(m_stateLeft));
-  if (!leftValid)
-    {
-      if (VERBOSE)
-	QMessageBox::information(0, "Left Controller", "Left controller : invalid state");
-	  
-	return false;
-    }
-
-  bool rightValid = m_hmd->GetControllerState(m_rightController,
-					       &m_stateRight,
-					       sizeof(m_stateRight));
-
-  if (!rightValid)
-    {
-      if (VERBOSE)
-	QMessageBox::information(0, "Right Controller", "Right controller : invalid state");
-	  
-	return false;
-    }
+//  m_leftController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
+//  
+//  m_rightController = m_hmd->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
+//
+//
+//  bool leftValid = m_hmd->GetControllerState(m_leftController,
+//					      &m_stateLeft,
+//					      sizeof(m_stateLeft));
+//  if (!leftValid)
+//    {
+//      if (VERBOSE)
+//	QMessageBox::information(0, "Left Controller", "Left controller : invalid state");
+//	  
+//	return false;
+//    }
+//
+//  bool rightValid = m_hmd->GetControllerState(m_rightController,
+//					       &m_stateRight,
+//					       sizeof(m_stateRight));
+//
+//  if (!rightValid)
+//    {
+//      if (VERBOSE)
+//	QMessageBox::information(0, "Right Controller", "Right controller : invalid state");
+//	  
+//	return false;
+//    }
 
   bool xActive = isXYTriggered(m_stateRight);
   bool yActive = isXYTriggered(m_stateLeft);
@@ -688,12 +737,12 @@ VR::leftGripPressed()
 void
 VR::leftGripMove()
 {
-  QVector3D cen = vrHmdPosition();
-  m_model_xform.setToIdentity();
-  m_model_xform.translate(cen);
-  m_model_xform.rotate(0.25, 0, 1, 0); // rotate 1 degree
-  m_model_xform.translate(-cen);
-  m_final_xform = m_model_xform * m_final_xform;
+//  QVector3D cen = vrHmdPosition();
+//  m_model_xform.setToIdentity();
+//  m_model_xform.translate(cen);
+//  m_model_xform.rotate(0.25, 0, 1, 0); // rotate 1 degree
+//  m_model_xform.translate(-cen);
+//  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::leftGripReleased()
@@ -727,20 +776,17 @@ VR::rightGripMove()
 //    }
 //  //---------------------------
 
-  QVector3D cen = vrHmdPosition();
-  m_model_xform.setToIdentity();
-  m_model_xform.translate(cen);
-  m_model_xform.rotate(-0.25, 0, 1, 0); // rotate 1 degree
-  m_model_xform.translate(-cen);
-  m_final_xform = m_model_xform * m_final_xform;
+//  QVector3D cen = vrHmdPosition();
+//  m_model_xform.setToIdentity();
+//  m_model_xform.translate(cen);
+//  m_model_xform.rotate(-0.25, 0, 1, 0); // rotate 1 degree
+//  m_model_xform.translate(-cen);
+//  m_final_xform = m_model_xform * m_final_xform;
 }
 void
 VR::rightGripReleased()
 {
   m_gripActiveRight = false;
-
-//  m_final_xform = m_model_xform * m_final_xform;
-//  m_model_xform.setToIdentity();
   
   // generate the drawlist each time changes are made
   m_genDrawList = true;
@@ -922,64 +968,12 @@ VR::rightTouchMove()
   QVector3D moveD = QVector3D(center-point);
   moveD.normalize();
 
-  //float throttle = qBound(0.01f, 0.2f, m_speedDamper*m_flightSpeed);
-
-//  // change speed based on height above ground
-//  {
-//    int wd = screenWidth();
-//    int ht = screenHeight();
-//    
-//    QVector3D hpos = hmdPosition();
-//    QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
-//    int dx = hp.x();
-//    int dy = hp.y();
-//    
-//    if (dx > 0 && dx < wd-1 &&
-//	dy > 0 && dy < ht-1)
-//      {
-//	float z = m_depthBuffer[(ht-1-dy)*wd + dx];
-//	if (z > 0.0 && z < 1.0)
-//	  {
-//	    float sf = m_teleportScale/m_scaleFactor;
-//	    QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
-//	    QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
-//	    
-//	    // increase speed when away from normal height
-//	    float speed = qAbs(pos.z()-hpos.z())/(m_groundHeight*sf);
-//	    speed += 1.0;
-//	    throttle *= speed;
-//	  }
-//      }
-//  }
-
 
   QVector3D move = moveD;
-  //move *= throttle;
   move *= acc;
 
   m_model_xform.translate(-move);
   
-//--------------------------------------------
-// change scaling based on where viewer is moving
-//--------------------------------------------
-//  float sf = 1.0-qBound(-0.005, 0.005, qPow(moveD.y(),5));
-//  if (m_scaleFactor*sf > m_coordScale &&
-//      m_scaleFactor*sf < m_teleportScale)
-//    {
-//      QVector3D cen;
-//      if (m_pinPt.x() >= 0)
-//	cen = m_final_xform.map(m_projectedPinPt);
-//      else 
-//	cen = getPosition(m_rightController);
-//      
-//      m_model_xform.translate(cen);
-//      m_model_xform.scale(sf);
-//      m_model_xform.translate(-cen);
-//      
-//      m_scaleFactor *= sf;
-//      m_flightSpeed *= sf;
-//    }
-//--------------------------------------------
 
   m_final_xform = m_model_xform * m_final_xform;
 
@@ -991,7 +985,7 @@ VR::rightTouchMove()
 
     // modulate angle based on tilt above/below horizon
     // parallel with horizon means take the full effect
-    // more the tile less the effect
+    // more the tilt less the effect
     angle *= (1.0-StaticFunctions::smoothstep(0.0, 0.5, qAbs(moveD.y())));
 
     QQuaternion q = QQuaternion::fromAxisAndAngle(axis, qRadiansToDegrees(angle*0.005));
@@ -1086,10 +1080,6 @@ VR::leftTouchPressed()
 
   m_startTouchX = m_stateLeft.rAxis[0].x;
   m_startTouchY = m_stateLeft.rAxis[0].y;
-
-//  // save teleport when both touchpads pressed
-//  if (m_touchPressActiveRight)
-//    saveTeleportNode();
 }
 void
 VR::leftTouchPressMove()
@@ -1115,13 +1105,9 @@ void
 VR::rightTouchPressed()
 {
   m_touchPressActiveRight = true;
-
-//  m_flightActive = true;
   
   m_touchX = m_stateRight.rAxis[0].x;
   m_touchY = m_stateRight.rAxis[0].y;
-  
-//  m_flyTimer.start(5000); // generate new draw list every 5 sec
 
   // save teleport when both touchpads pressed
   if (m_touchPressActiveLeft)
@@ -1130,126 +1116,6 @@ VR::rightTouchPressed()
 void
 VR::rightTouchPressMove()
 {
-//  //---------------------------
-//  // point cloud distortion to show underlying data
-//  if (m_showMap && m_pinPt.x() >= 0)
-//    {
-//      m_deadRadius = 0.5;
-//      m_deadPoint = m_projectedPinPt;
-//    }
-//  //---------------------------
-
-//  m_model_xform.setToIdentity(); 
-//
-//  QMatrix4x4 mat = m_matrixDevicePose[m_rightController];    
-//  QVector4D center = mat * QVector4D(0,0,0,1);
-//  QVector4D point = mat * QVector4D(0,0,1,1);
-//  QVector3D moveD = QVector3D(center-point);
-//
-//  moveD.normalize();
-//  float throttle = qBound(0.01f, 0.1f, m_flightSpeed*m_speedDamper);
-//  QVector3D move = moveD*throttle;
-//  
-//  if (m_touchY < 0) // move backward
-//    move = -move;
-//  
-//  m_model_xform.translate(-move);
-//
-//  bool changeScale = false;
-//  float sf = 1.0;
-//  if (moveD.y() > 0.8) // moving up
-//    {
-//      // scale down while going up in the sky
-//      sf = 0.99;
-//      changeScale = true;
-//    }
-//  else if (moveD.y() < -0.4) // moving down
-//    {
-//      // scale up while going down to ground
-//      // but only if below threshold 
-//      sf = m_teleportScale/m_scaleFactor;
-//      if (sf > 1.0)
-//	{
-//	  sf = qPow(sf, 0.01f);
-//	  changeScale = true;
-//	}
-//    }
-//
-//  if (changeScale)
-//    {
-//      QVector3D cen;
-//      if (m_pinPt.x() >= 0)
-//	cen = m_final_xform.map(m_projectedPinPt);
-//      else 
-//	cen = getPosition(m_rightController);
-//      
-//      m_model_xform.translate(cen);
-//      m_model_xform.scale(sf);
-//      m_model_xform.translate(-cen);
-//      
-//      m_scaleFactor *= sf;
-//      m_flightSpeed *= sf;
-//    }
-//
-//  
-//  m_final_xform = m_model_xform * m_final_xform;
-//
-//  m_final_xformInverted = m_final_xform.inverted();
-//      
-//
-//  //------------------  
-//  // keep head above ground
-//  if (m_showMap && m_depthBuffer)
-//    {
-//      int wd = screenWidth();
-//      int ht = screenHeight();
-//
-//      QVector3D hpos = hmdPosition();
-//      QVector3D hp = Global::menuCamProjectedCoordinatesOf(hpos);
-//      int dx = hp.x();
-//      int dy = hp.y();
-//
-//      if (dx > 0 && dx < wd-1 &&
-//	  dy > 0 && dy < ht-1)
-//	{
-//	  float z = m_depthBuffer[(ht-1-dy)*wd + dx];
-//	  if (z > 0.0 && z < 1.0)
-//	    {
-//	      float sf = m_teleportScale/m_scaleFactor;
-//	      QVector3D hitP = Global::menuCamUnprojectedCoordinatesOf(QVector3D(dx, dy, z));
-//	      QVector3D pos = hitP+QVector3D(0,0,m_groundHeight*sf); // raise the height
-//
-//	      if (m_gravity || // stick close to ground
-//		  pos.z() > hpos.z()) // push it above the ground
-//		{
-//		  float mup = (m_final_xform.map(pos)-m_final_xform.map(hpos)).y();
-//
-//		  // move only vertically
-//		  if (pos.z() > hpos.z())
-//		    mup *= 0.1; // move quickly above ground
-//		  else
-//		    mup*=0.05; // come down slowly
-//
-//		  QVector3D move(0,mup,0);
-//		  m_model_xform.setToIdentity();
-//		  m_model_xform.translate(-move);
-//		  m_final_xform = m_model_xform * m_final_xform;
-//		}
-//	    }
-//	}
-//    }
-//  //------------------  
-//
-//
-//  genEyeMatrices();
-//
-//  
-//  // generate the drawlist each time changes are made
-//  if (!m_flyTimer.isActive())
-//    {
-//      m_genDrawList = true;
-//      m_flyTimer.start(5000); // generate new draw list every 5 sec
-//    }
 }
 void
 VR::rightTouchPressReleased()
@@ -2007,200 +1873,6 @@ VR::buildAxesVB()
   //------------------------
 }
 
-CGLRenderModel*
-VR::findOrLoadRenderModel(QString pchRenderModelName)
-{
-  CGLRenderModel *pRenderModel = NULL;
-  for(int i=0; i<m_vecRenderModels.count(); i++)
-    {
-      if(m_vecRenderModels[i]->GetName() == pchRenderModelName)
-	{
-	  pRenderModel = m_vecRenderModels[i];
-	  break;
-	}
-    }
-
-  // load the model if we didn't find one
-  if( !pRenderModel )
-    {
-      vr::RenderModel_t *pModel;
-      vr::EVRRenderModelError error;
-      while ( 1 )
-	{
-	  error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName.toLatin1(),
-							       &pModel );
-	  if ( error != vr::VRRenderModelError_Loading )
-	    break;
-	  
-	  Sleep( 1 );
-	}
-      
-      if ( error != vr::VRRenderModelError_None )
-	{
-	  QMessageBox::information(0, "", QString("Unable to load render model %1 - %2").\
-				   arg(pchRenderModelName).\
-				   arg(vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error)));
-	  return NULL; // move on to the next tracked device
-	}
-      
-      vr::RenderModel_TextureMap_t *pTexture;
-      while ( 1 )
-	{
-	  error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
-	  if ( error != vr::VRRenderModelError_Loading )
-	    break;
-	  
-	  Sleep( 1 );
-	}
-      
-      if ( error != vr::VRRenderModelError_None )
-	{
-	  QMessageBox::information(0, "", QString("Unable to load render texture id:%1 for render model %2"). \
-				   arg(pModel->diffuseTextureId).arg(pchRenderModelName));
-	  vr::VRRenderModels()->FreeRenderModel( pModel );
-	  return NULL; // move on to the next tracked device
-	}
-      
-      pRenderModel = new CGLRenderModel( pchRenderModelName );
-      if ( !pRenderModel->BInit( *pModel, *pTexture ) )
-	{
-	  QMessageBox::information(0, "", "Unable to create GL model from render model " + pchRenderModelName);
-	  delete pRenderModel;
-	  pRenderModel = NULL;
-	}
-      else
-	{
-	  m_vecRenderModels << pRenderModel;
-	}
-      vr::VRRenderModels()->FreeRenderModel( pModel );
-      vr::VRRenderModels()->FreeTexture( pTexture );
-    }
-  return pRenderModel;
-}
-
-
-void
-VR::setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-{
-  if(unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
-    return;
-
-  // try to find a model we've already set up
-  QString sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex,
-						    vr::Prop_RenderModelName_String);
-
-  CGLRenderModel *pRenderModel = findOrLoadRenderModel( sRenderModelName);
-  if( !pRenderModel )
-    {
-      QString sTrackingSystemName = getTrackedDeviceString(unTrackedDeviceIndex,
-							   vr::Prop_TrackingSystemName_String);
-      QMessageBox::information(0, "", QString("Unable to load render model for tracked device %1 (%2.%3)").\
-			       arg(unTrackedDeviceIndex).arg(sTrackingSystemName).arg(sRenderModelName));
-    }
-  else
-    {
-      m_rTrackedDeviceToRenderModel[ unTrackedDeviceIndex ] = pRenderModel;
-      m_rbShowTrackedDevice[ unTrackedDeviceIndex ] = true;
-    }
-}
-
-
-void
-VR::setupRenderModels()
-{
-  memset( m_rTrackedDeviceToRenderModel, 0, sizeof( m_rTrackedDeviceToRenderModel ) );
-
-  if( !m_hmd )
-    return;
-
-  for( uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++ )
-    {
-      if( !m_hmd->IsTrackedDeviceConnected( unTrackedDevice ) )
-	continue;
-      
-      setupRenderModelForTrackedDevice( unTrackedDevice );
-    }  
-}
-
-void
-VR::renderControllers(vr::Hmd_Eye eye)
-{
-  if (!m_hmd)
-    return;
-  
-  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
-  if(bIsInputCapturedByAnotherProcess)
-    return;
-
-  if( !m_hmd->IsTrackedDeviceConnected(m_leftController) ||
-      !m_hmd->IsTrackedDeviceConnected(m_rightController) )
-    return;
-  
-
-  QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
-  QVector4D center = mat * QVector4D(0,0,0,1);
-  QVector4D point = mat * QVector4D(0,0,1,1);
-  QVector3D vd = QVector3D(center-point);
-  vd.normalize();
-  
-//-------------------------------------------------
-//-------------------------------------------------
-  glUseProgram(ShaderFactory::rcShader());
-
-  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
-  QMatrix4x4 matDeviceToTracking = m_matrixDevicePose[m_leftController];
-  QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;  
-  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  glUniform1i(rcShaderParm[1], 0); // texture
-  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // color
-  glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
-  glUniform1f(rcShaderParm[4], 1); // opacity modulator
-  glUniform1i(rcShaderParm[5], 2); // applytexture
-  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
-  if( m_rTrackedDeviceToRenderModel[m_leftController])
-    m_rTrackedDeviceToRenderModel[m_leftController]->Draw();
-
-
-  matDeviceToTracking = m_matrixDevicePose[m_rightController];
-  mvp = currentViewProjection(eye) * matDeviceToTracking;
-  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
-  if(m_rTrackedDeviceToRenderModel[m_rightController])
-    m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
-
-
-  glUseProgram( 0 );
-//-------------------------------------------------
-//-------------------------------------------------
-
-////  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
-////
-//  glUseProgram( m_rcShader );
-//  
-//  for( uint32_t i = 0; i < vr::k_unMaxTrackedDeviceCount; i++ )
-//    {
-//      if( !m_rTrackedDeviceToRenderModel[i])
-//	continue;
-//     
-//      const vr::TrackedDevicePose_t & pose = m_trackedDevicePose[i];
-//      if( !pose.bPoseIsValid )
-//	continue;
-//      
-//      if(m_hmd->GetTrackedDeviceClass(i) == vr::TrackedDeviceClass_Controller )
-//	continue;
-//      
-//      QMatrix4x4 matDeviceToTracking = m_matrixDevicePose[i];
-//      QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;
-//
-//      glUniformMatrix4fv(m_rcShaderParm[0], 1, GL_FALSE, mvp.data() );
-//      glUniform3f(m_rcShaderParm[1], 0.5,0.5,0.5); // mix color
-//      glUniform3f(m_rcShaderParm[2], vd.x(), vd.y(), vd.z()); // view direction
-//
-//      m_rTrackedDeviceToRenderModel[i]->Draw();
-//    }
-//  
-//  glUseProgram( 0 );
-}
 
 void
 VR::genEyeMatrices()
@@ -3067,7 +2739,7 @@ void
 VR::showHUD(vr::Hmd_Eye eye,
 	    GLuint texId, QSize texSize)
 {
-//  //glDepthMask(GL_FALSE); // disable writing to depth buffer
+  //glDepthMask(GL_FALSE); // disable writing to depth buffer
   glDisable(GL_DEPTH_TEST);
 
   glEnable(GL_BLEND);
@@ -3096,7 +2768,8 @@ VR::showHUD(vr::Hmd_Eye eye,
   int texWd = texSize.width();
   int texHt = texSize.height();
   float frc = 1.0/qMax(texWd, texHt);
-
+  //QMessageBox::information(0, "", QString("%1 %2").arg(texWd).arg(texHt));
+  
   QVector3D rDir = (cx-cen).normalized();
   QVector3D uDir = (cy-cen).normalized();
   QVector3D vDir = (cz-cen).normalized();
@@ -3212,4 +2885,438 @@ VR::showHUD(vr::Hmd_Eye eye,
 
   //glDepthMask(GL_TRUE); // enable writing to depth buffer
   glEnable(GL_DEPTH_TEST);
+}
+
+//----------------
+//----------------
+
+//CGLRenderModel*
+//VR::findOrLoadRenderModel(QString pchRenderModelName)
+//{
+//  CGLRenderModel *pRenderModel = NULL;
+//  for(int i=0; i<m_vecRenderModels.count(); i++)
+//    {
+//      if(m_vecRenderModels[i]->GetName() == pchRenderModelName)
+//	{
+//	  pRenderModel = m_vecRenderModels[i];
+//	  break;
+//	}
+//    }
+//
+//  // load the model if we didn't find one
+//  if( !pRenderModel )
+//    {
+//      vr::RenderModel_t *pModel;
+//      vr::EVRRenderModelError error;
+//      while ( 1 )
+//	{
+//	  error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName.toLatin1(),
+//							       &pModel );
+//	  if ( error != vr::VRRenderModelError_Loading )
+//	    break;
+//	  
+//	  Sleep( 1 );
+//	}
+//      
+//      if ( error != vr::VRRenderModelError_None )
+//	{
+//	  QMessageBox::information(0, "", QString("Unable to load render model %1 - %2").\
+//				   arg(pchRenderModelName).\
+//				   arg(vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error)));
+//	  return NULL; // move on to the next tracked device
+//	}
+//      
+//      vr::RenderModel_TextureMap_t *pTexture;
+//      while ( 1 )
+//	{
+//	  error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
+//	  if ( error != vr::VRRenderModelError_Loading )
+//	    break;
+//	  
+//	  Sleep( 1 );
+//	}
+//      
+//      if ( error != vr::VRRenderModelError_None )
+//	{
+//	  QMessageBox::information(0, "", QString("Unable to load render texture id:%1 for render model %2"). \
+//				   arg(pModel->diffuseTextureId).arg(pchRenderModelName));
+//	  vr::VRRenderModels()->FreeRenderModel( pModel );
+//	  return NULL; // move on to the next tracked device
+//	}
+//      
+//      pRenderModel = new CGLRenderModel( pchRenderModelName );
+//      if ( !pRenderModel->BInit( *pModel, *pTexture ) )
+//	{
+//	  QMessageBox::information(0, "", "Unable to create GL model from render model " + pchRenderModelName);
+//	  delete pRenderModel;
+//	  pRenderModel = NULL;
+//	}
+//      else
+//	{
+//	  m_vecRenderModels << pRenderModel;
+//	}
+//      vr::VRRenderModels()->FreeRenderModel( pModel );
+//      vr::VRRenderModels()->FreeTexture( pTexture );
+//    }
+//  return pRenderModel;
+//}
+//
+//
+//void
+//VR::setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
+//{
+//  if(unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
+//    return;
+//
+//  // try to find a model we've already set up
+//  QString sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex,
+//						    vr::Prop_RenderModelName_String);
+//
+//  CGLRenderModel *pRenderModel = findOrLoadRenderModel( sRenderModelName);
+//  if( !pRenderModel )
+//    {
+//      QString sTrackingSystemName = getTrackedDeviceString(unTrackedDeviceIndex,
+//							   vr::Prop_TrackingSystemName_String);
+//      QMessageBox::information(0, "", QString("Unable to load render model for tracked device %1 (%2.%3)").\
+//			       arg(unTrackedDeviceIndex).arg(sTrackingSystemName).arg(sRenderModelName));
+//    }
+//  else
+//    {
+//      m_rTrackedDeviceToRenderModel[ unTrackedDeviceIndex ] = pRenderModel;
+//      m_rbShowTrackedDevice[ unTrackedDeviceIndex ] = true;
+//    }
+//}
+//
+//void
+//VR::setupRenderModels()
+//{
+//  memset( m_rTrackedDeviceToRenderModel, 0, sizeof( m_rTrackedDeviceToRenderModel ) );
+//
+//  if( !m_hmd )
+//    return;
+//
+//  for( uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++ )
+//    {
+//      if( !m_hmd->IsTrackedDeviceConnected( unTrackedDevice ) )
+//	continue;
+//      
+//      setupRenderModelForTrackedDevice( unTrackedDevice );
+//    }  
+//}
+//
+//void
+//VR::renderControllers(vr::Hmd_Eye eye)
+//{
+//  if (!m_hmd)
+//    return;
+//  
+//  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
+//  if(bIsInputCapturedByAnotherProcess)
+//    return;
+//
+//  if( !m_hmd->IsTrackedDeviceConnected(m_leftController) ||
+//      !m_hmd->IsTrackedDeviceConnected(m_rightController) )
+//    return;
+//  
+//
+//  QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
+//  QVector4D center = mat * QVector4D(0,0,0,1);
+//  QVector4D point = mat * QVector4D(0,0,1,1);
+//  QVector3D vd = QVector3D(center-point);
+//  vd.normalize();
+//  
+////-------------------------------------------------
+////-------------------------------------------------
+//  glUseProgram(ShaderFactory::rcShader());
+//
+//  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
+//  QMatrix4x4 matDeviceToTracking = m_matrixDevicePose[m_leftController];
+//  QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;  
+//  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
+//  glUniform1i(rcShaderParm[1], 0); // texture
+//  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // color
+//  glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
+//  glUniform1f(rcShaderParm[4], 1); // opacity modulator
+//  glUniform1i(rcShaderParm[5], 2); // applytexture
+//  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
+//  if( m_rTrackedDeviceToRenderModel[m_leftController])
+//    m_rTrackedDeviceToRenderModel[m_leftController]->Draw();
+//
+//
+//  matDeviceToTracking = m_matrixDevicePose[m_rightController];
+//  mvp = currentViewProjection(eye) * matDeviceToTracking;
+//  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
+//  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
+//  if(m_rTrackedDeviceToRenderModel[m_rightController])
+//    m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
+//
+//
+//  glUseProgram( 0 );
+////-------------------------------------------------
+////-------------------------------------------------
+//}
+
+CGLRenderModel*
+VR::findOrLoadRenderModel(QString pchRenderModelName)
+{
+  CGLRenderModel *pRenderModel = NULL;
+  for(int i=0; i<m_vecRenderModels.count(); i++)
+    {
+      if(m_vecRenderModels[i]->GetName() == pchRenderModelName)
+	{
+	  pRenderModel = m_vecRenderModels[i];
+	  break;
+	}
+    }
+
+  // load the model if we didn't find one
+  if( !pRenderModel )
+    {
+      vr::RenderModel_t *pModel;
+      vr::EVRRenderModelError error;
+      while ( 1 )
+	{
+	  error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName.toLatin1(),
+							       &pModel );
+	  if ( error != vr::VRRenderModelError_Loading )
+	    break;
+	  
+	  Sleep( 1 );
+	}
+      
+      if ( error != vr::VRRenderModelError_None )
+	{
+	  QMessageBox::information(0, "", QString("Unable to load render model %1 - %2").\
+				   arg(pchRenderModelName).\
+				   arg(vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error)));
+	  return NULL; // move on to the next tracked device
+	}
+      
+      vr::RenderModel_TextureMap_t *pTexture;
+      while ( 1 )
+	{
+	  error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
+	  if ( error != vr::VRRenderModelError_Loading )
+	    break;
+	  
+	  Sleep( 1 );
+	}
+      
+      if ( error != vr::VRRenderModelError_None )
+	{
+	  QMessageBox::information(0, "", QString("Unable to load render texture id:%1 for render model %2"). \
+				   arg(pModel->diffuseTextureId).arg(pchRenderModelName));
+	  vr::VRRenderModels()->FreeRenderModel( pModel );
+	  return NULL; // move on to the next tracked device
+	}
+      
+      pRenderModel = new CGLRenderModel( pchRenderModelName );
+      if ( !pRenderModel->BInit( *pModel, *pTexture ) )
+	{
+	  QMessageBox::information(0, "", "Unable to create GL model from render model " + pchRenderModelName);
+	  delete pRenderModel;
+	  pRenderModel = NULL;
+	}
+      else
+	{
+	  m_vecRenderModels << pRenderModel;
+	}
+      vr::VRRenderModels()->FreeRenderModel( pModel );
+      vr::VRRenderModels()->FreeTexture( pTexture );
+    }
+  return pRenderModel;
+}
+
+
+void
+VR::setupRenderModelForTrackedDevice(int type, vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
+{
+  if(unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
+    return;
+  
+
+  QString sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex,
+						    vr::Prop_RenderModelName_String);
+
+  if (type == 0)
+    m_leftControllerName = sRenderModelName;
+  else
+    m_rightControllerName = sRenderModelName;
+
+  int cc = m_pRenderModels->GetComponentCount(sRenderModelName.toLatin1());
+
+  QStringList cnames;
+  for(int i=0; i<cc; i++)
+    {
+      char cnm[1024];
+      int nb = m_pRenderModels->GetComponentName(sRenderModelName.toLatin1(),
+						 i,
+						 &cnm[0], 1024);      
+      if (nb > 0)
+	cnames << QString(cnm);
+    }
+
+  
+  QList< CGLRenderModel* > cglRM;  
+  for(int i=0; i<cnames.count(); i++)
+    {
+      char crmnm[1024];
+      int idx = m_pRenderModels->GetComponentRenderModelName(sRenderModelName.toLatin1(),
+							     cnames[i].toLatin1(),
+							     &crmnm[0], 1024);
+      //QMessageBox::information(0, "", QString("%1 %2 [ %3 ]").arg(cnames[i]).arg(idx).arg(crmnm));
+      if (idx > 0)
+	{
+	  CGLRenderModel *pRenderModel = findOrLoadRenderModel( QString(crmnm) );
+	  if (pRenderModel)
+	    {
+	      cglRM << pRenderModel;
+	      if (type == 0)
+		{
+		  m_leftComponentNames << cnames[i];
+		  m_leftRenderModels << pRenderModel;
+		}
+	      else
+		{
+		  m_rightComponentNames << cnames[i];
+		  m_rightRenderModels << pRenderModel;
+		}
+	    }
+	}
+    }
+}
+
+void
+VR::setupRenderModels()
+{
+  memset( m_rTrackedDeviceToRenderModel, 0, sizeof( m_rTrackedDeviceToRenderModel ) );
+
+  if( !m_hmd )
+    return;
+
+  setupRenderModelForTrackedDevice( 0, m_leftController );
+  setupRenderModelForTrackedDevice( 1, m_rightController );
+}
+
+void
+VR::renderControllers(vr::Hmd_Eye eye)
+{
+  if (!m_hmd)
+    return;
+  
+  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
+  if(bIsInputCapturedByAnotherProcess)
+    return;
+
+  if( !m_hmd->IsTrackedDeviceConnected(m_leftController) ||
+      !m_hmd->IsTrackedDeviceConnected(m_rightController) )
+    return;
+  
+
+  QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
+  QVector4D center = mat * QVector4D(0,0,0,1);
+  QVector4D point = mat * QVector4D(0,0,1,1);
+  QVector3D vd = QVector3D(center-point);
+  vd.normalize();
+  
+//-------------------------------------------------
+//-------------------------------------------------
+  glUseProgram(ShaderFactory::rcShader());
+
+  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
+  glUniform1i(rcShaderParm[1], 0); // texture
+  glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
+  glUniform1f(rcShaderParm[4], 1); // opacity modulator
+  glUniform1i(rcShaderParm[5], 2); // applytexture
+  glUniform1f(rcShaderParm[7], 0.2); // mixcolor
+
+
+  //---------------------------------------
+  // draw left controller
+  QMatrix4x4 matDeviceToTracking = m_matrixDevicePose[m_leftController];
+  QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;  
+  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // color
+  for(int ic=0; ic<m_leftRenderModels.count(); ic++)
+    {
+      vr::VRControllerState_t pControllerState;
+      m_hmd->GetControllerState(m_leftController, &pControllerState, sizeof(pControllerState));
+      vr::RenderModel_ControllerMode_State_t pState;
+      pState.bScrollWheelVisible = false;
+      vr::RenderModel_ComponentState_t pComponentState;
+      if (m_pRenderModels->GetComponentState(m_leftControllerName.toLatin1(),
+					     m_leftComponentNames[ic].toLatin1(),
+					     &pControllerState,
+					     &pState,
+					     &pComponentState))
+	{
+	  if (pComponentState.uProperties & vr::VRComponentProperty_IsVisible)
+	    {
+	      QMatrix4x4 cmvp;
+	      cmvp = mvp * vrMatrixToQt(pComponentState.mTrackingToComponentRenderModel);
+	      glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, cmvp.data() );  
+	      
+	      QVector3D clr = QVector3D(0,0.4,0.5);
+	      if (!(pComponentState.uProperties & vr::VRComponentProperty_IsStatic))
+	      {
+		if (pComponentState.uProperties & vr::VRComponentProperty_IsTouched)
+		  clr = QVector3D(0.0,0.8,1.0);
+		if (pComponentState.uProperties & vr::VRComponentProperty_IsPressed)
+		  clr = QVector3D(0.0,0.5,1.0);
+	      }
+	      
+	      glUniform3f(rcShaderParm[2], clr.x(), clr.y(), clr.z()); // color
+	      
+	      m_leftRenderModels[ic]->Draw();
+	    }
+	}
+    }
+  //---------------------------------------
+  
+
+  //---------------------------------------
+  // draw right controller
+  matDeviceToTracking = m_matrixDevicePose[m_rightController];
+  mvp = currentViewProjection(eye) * matDeviceToTracking;
+  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
+  for(int ic=0; ic<m_rightRenderModels.count(); ic++)
+    {
+      vr::VRControllerState_t pControllerState;
+      m_hmd->GetControllerState(m_rightController, &pControllerState, sizeof(pControllerState));
+      vr::RenderModel_ControllerMode_State_t pState;
+      pState.bScrollWheelVisible = false;
+      vr::RenderModel_ComponentState_t pComponentState;
+      if (m_pRenderModels->GetComponentState(m_rightControllerName.toLatin1(),
+					     m_rightComponentNames[ic].toLatin1(),
+					     &pControllerState,
+					     &pState,
+					     &pComponentState))
+	{
+	  if (pComponentState.uProperties & vr::VRComponentProperty_IsVisible)
+	    {
+	      QMatrix4x4 cmvp;
+	      cmvp = mvp * vrMatrixToQt(pComponentState.mTrackingToComponentRenderModel);
+	      glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, cmvp.data() );  
+	      
+	      QVector3D clr = QVector3D(0.5,0.4,0.0);
+	      
+	      if (!(pComponentState.uProperties & vr::VRComponentProperty_IsStatic))
+		{
+		  if (pComponentState.uProperties & vr::VRComponentProperty_IsTouched)
+		    clr = QVector3D(1.0,0.8,0.0);
+		  if (pComponentState.uProperties & vr::VRComponentProperty_IsPressed)
+		    clr = QVector3D(1.0,0.5,0.0);
+		}
+	      
+	      glUniform3f(rcShaderParm[2], clr.x(), clr.y(), clr.z()); // color
+	      
+	      m_rightRenderModels[ic]->Draw();
+	    }
+	}
+    }
+  //---------------------------------------
+
+
+  glUseProgram( 0 );
+//-------------------------------------------------
+//-------------------------------------------------
 }

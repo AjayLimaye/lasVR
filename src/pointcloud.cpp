@@ -1207,10 +1207,13 @@ PointCloud::loadLabelsCSV(QString csvfile)
 	  float x, y, z;
 	  float treeHeight, treeArea, treePointCount;
 	  float r,g,b;
-	  x = words[2].toFloat() * 0.01;
-	  y = words[3].toFloat() * 0.01;
-	  z = words[7].toFloat() * 0.01;
-	  z -= 0.3; // reduce height in order to match the trees
+	  x = words[2].toFloat();
+	  y = words[3].toFloat();
+	  z = words[7].toFloat();
+//	  x = words[2].toFloat() * 0.01;
+//	  y = words[3].toFloat() * 0.01;
+//	  z = words[7].toFloat() * 0.01;
+//	  z -= 0.3; // reduce height in order to match the trees
 
 	  treeHeight = words[5].toFloat();
 	  treeArea = words[6].toFloat();
@@ -1317,13 +1320,15 @@ PointCloud::findNearestLabelHit(QMatrix4x4 matR,
     return (m_nearHitLabel >= 0);    
   else
     {
-      if (m_nearHit < 1)
-	return (m_nearHitLabel >= 0);    
-      else
-	{
-	  return false;
-	  m_nearHitLabel = -1;
-	}
+      return (m_nearHitLabel >= 0);    
+
+//      if (m_nearHit < 1)
+//	return (m_nearHitLabel >= 0);    
+//      else
+//	{
+//	  return false;
+//	  //m_nearHitLabel = -1;
+//	}
     }
 }
 GLuint
@@ -1356,8 +1361,9 @@ PointCloud::drawLabels(QVector3D cpos,
 		       QVector3D deadPoint)
 {
   // do not draw labels if this point cloud is not visible
-  if (!m_visible)
+  if (!m_visible || m_labels.count()==0)
     return;
+
 
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->drawLabel(cpos, vDir, uDir, rDir,
@@ -1629,6 +1635,11 @@ PointCloud::setGlobalMinMax(Vec gmin, Vec gmax)
 
   m_tightOctreeMin = xformPoint(m_tightOctreeMinAllTiles);
   m_tightOctreeMax = xformPoint(m_tightOctreeMaxAllTiles);
+
+  for(int i=0; i<m_labels.count(); i++)
+    m_labels[i]->setXform(m_scale, m_scaleCloudJs,
+			  m_shift, m_octreeMin,
+			  m_rotation, m_xformCen);
 
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->setGlobalMinMax(m_gmin, m_gmax);

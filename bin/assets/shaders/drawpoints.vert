@@ -211,8 +211,8 @@ void main()
 		      gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	   zdepthR = zdepth-zdepthR;
 	 }
-       
        // -----------------------------------
+
      }
    else // fixed pointsize
      {

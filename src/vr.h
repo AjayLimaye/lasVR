@@ -182,6 +182,13 @@ class VR : public QObject
   QList< CGLRenderModel * > m_vecRenderModels;
   CGLRenderModel *m_rTrackedDeviceToRenderModel[ vr::k_unMaxTrackedDeviceCount ];
 
+  QString m_leftControllerName;
+  QString m_rightControllerName;
+  QStringList m_leftComponentNames;
+  QStringList m_rightComponentNames;
+  QList< CGLRenderModel* > m_leftRenderModels;
+  QList< CGLRenderModel* > m_rightRenderModels;
+
   QMatrix4x4 m_leftProjection, m_leftPose;
   QMatrix4x4 m_rightProjection, m_rightPose;
   QMatrix4x4 m_hmdPose;
@@ -400,9 +407,10 @@ class VR : public QObject
   QMatrix4x4 quatToMat(QQuaternion); 
 
 
+  bool getControllers();
   void renderControllers(vr::Hmd_Eye);
   void setupRenderModels();
-  void setupRenderModelForTrackedDevice( vr::TrackedDeviceIndex_t unTrackedDeviceIndex );
+  void setupRenderModelForTrackedDevice(int, vr::TrackedDeviceIndex_t);
   CGLRenderModel *findOrLoadRenderModel(QString);
 
 
