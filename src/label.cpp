@@ -92,9 +92,6 @@ Label::setGlobalMinMax(Vec gmin, Vec gmax)
   
   //m_position -= gmin;
   m_position = xformPoint(m_positionO);
-  
-  if (m_vertData)
-    QMessageBox::information(0, "", "Label : regenerate vertData");
 }
 
 void
@@ -422,8 +419,8 @@ Label::drawLabel(QVector3D cpos,
       drawBox(mvp, vDir, glow, true);
       return;
     }
-//  else if ((cpos-vp).length() > m_proximity)
-//    return;
+  else if ((cpos-vp).length() > m_proximity)
+    return;
 
 
   QVector3D nDir = (cpos-vp).normalized();
@@ -442,13 +439,24 @@ Label::drawLabel(QVector3D cpos,
   //  frc = frc * 0.01/dpf;
   //-----------------------------
 
-  // fixed size caption
-  frc *= 10;
+  // fixed height caption
+  float twd = m_texWd*frc;
+  float tht = m_texHt*frc;
+  float sclw = 0.5*twd;
+  float sclh = tht;
+  frc = 2.0/sclh;
+  sclh *= frc;
+  sclw *= frc;
 
-  QVector3D vu = frc*m_texHt*uD;
+  
+  //QVector3D vu = frc*m_texHt*uD;
+  //vp += vu;
+  //QVector3D vr0 = vp - frc*m_texWd*0.5*rD;
+  //QVector3D vr1 = vp + frc*m_texWd*0.5*rD;
+  QVector3D vu = sclh*uD;
   vp += vu;
-  QVector3D vr0 = vp - frc*m_texWd*0.5*rD;
-  QVector3D vr1 = vp + frc*m_texWd*0.5*rD;
+  QVector3D vr0 = vp - sclw*rD;
+  QVector3D vr1 = vp + sclw*rD;
 
   QVector3D v0 = vr0;
   QVector3D v1 = vr0 - vu;

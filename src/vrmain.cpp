@@ -303,6 +303,9 @@ VrMain::dragEnterEvent(QDragEnterEvent *event)
 	  else if (info.exists() && info.isFile())
 	    {
 	      QString flnm = (data->urls())[0].toLocalFile();
+	      if (flnm.endsWith("labels.json"))
+		event->acceptProposedAction();
+
 	      if (flnm.endsWith(".las") || flnm.endsWith(".laz") ||
 		  flnm.endsWith(".LAS") || flnm.endsWith(".LAZ"))
 		event->acceptProposedAction();
@@ -328,6 +331,13 @@ VrMain::dropEvent(QDropEvent *event)
 	{
 	  QUrl url = data->urls()[0];
 	  QFileInfo info(url.toLocalFile());
+	  if (info.exists() && info.isFile())
+	    {
+	      if (StaticFunctions::checkExtension(url.toLocalFile(), "labels.json"))
+		m_viewer->loadLabelsJson(url.toLocalFile());
+	      return;
+	    }
+	  
 	  if (info.exists() && info.isDir())
 	    {
 	      QStringList flist;

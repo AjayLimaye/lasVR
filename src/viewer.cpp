@@ -4184,3 +4184,16 @@ Viewer::addLabel(Vec v)
 	}
     }
 }
+void
+Viewer::loadLabelsJson(QString jsonfile)
+{
+  // add labels from file to the first visible point cloud
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	{
+	  m_pointClouds[d]->loadLabelsJson(jsonfile);
+	  break;
+	}
+    }
+}

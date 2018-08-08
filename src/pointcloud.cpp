@@ -1126,6 +1126,8 @@ PointCloud::loadLabelsJson(QString jsonfile)
 
   QJsonArray jsonLabelsData = jsonDoc.array();
 
+  for(int i=0; i<m_labels.count(); i++)
+    delete m_labels[i];
   m_labels.clear();
 
   for(int i=0; i<jsonLabelsData.count(); i++)
@@ -1182,6 +1184,12 @@ PointCloud::loadLabelsJson(QString jsonfile)
       if (!linkData.isEmpty())
 	lbl->setLink(linkData);
       
+      lbl->setXform(m_scale, m_scaleCloudJs,
+		    m_shift, m_octreeMin,
+		    m_rotation, m_xformCen);
+      lbl->setGlobalMinMax(m_gmin, m_gmax);
+      lbl->genVertData();
+
       m_labels << lbl;
     }
 
@@ -1276,22 +1284,16 @@ void
 PointCloud::addLabel(Vec v)
 {
   Vec pos;
-  pos = v;
-  pos += m_gmin;
-  pos -= m_shift;
-  pos -= m_xformCen;
-  pos /= m_scale;
-  pos = m_rotation.inverse().rotate(pos);
-  pos += m_xformCen;
+  pos = xformPointInverse(v);
 
   QString caption = "Annotation";
 
   Label *lbl = new Label();
   lbl->setCaption(caption);
   lbl->setPosition(pos);
-  lbl->setProximity(1000*m_scale);
-  lbl->setColor(Vec(0.6, 0.8, 1.0));
-  lbl->setFontSize(40);
+  lbl->setProximity(500*m_scale);
+  lbl->setColor(Vec(0.7, 0.85, 1.0));
+  lbl->setFontSize(20);
   
   lbl->setXform(m_scale, m_scaleCloudJs,
 		m_shift, m_octreeMin,
@@ -1321,7 +1323,7 @@ PointCloud::saveLabelToJson(Vec pos, QString caption)
   QJsonObject jsonInfo;
   jsonInfo["caption"] = caption;
   jsonInfo["position"] = QString("%1 %2 %3").arg(pos.x).arg(pos.y).arg(pos.z);
-  jsonInfo["proximity"] = 1000;
+  jsonInfo["proximity"] = 500;
   jsonInfo["color"] = "0.7 0.85 1.0";
   jsonInfo["font size"] = 20;
   

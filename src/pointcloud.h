@@ -62,6 +62,7 @@ class PointCloud
 
   QList<uchar> maxLevelVisible();
 
+  void loadLabelsJson(QString);
   void addLabel(Vec);
   void drawLabels(Camera*);
   void drawLabels(QVector3D,
@@ -209,7 +210,6 @@ class PointCloud
 
   void loadCloudJson(QString);
 
-  void loadLabelsJson(QString);
   void loadLabelsCSV(QString);
 
   void loadLowerTiles(QStringList);

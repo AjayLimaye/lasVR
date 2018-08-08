@@ -140,7 +140,7 @@ class Viewer : public QGLViewer
     void clearLoadNodeList() { m_loadNodes.clear(); }
 
     void addLabel(Vec);
-
+    void loadLabelsJson(QString);
     
  signals :
     void showToolbar();
