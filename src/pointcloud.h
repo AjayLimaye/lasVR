@@ -62,6 +62,7 @@ class PointCloud
 
   QList<uchar> maxLevelVisible();
 
+  void addLabel(Vec);
   void drawLabels(Camera*);
   void drawLabels(QVector3D,
 		  QVector3D, QVector3D, QVector3D,
@@ -194,6 +195,8 @@ class PointCloud
   int m_nearHitLabel;
   float m_nearHit;
 
+  QString m_labelsJsonFile;
+  
   qint64 getNumPointsInLASFile(QString);
   qint64 getNumPointsInBINFile(QString);
 
@@ -210,6 +213,8 @@ class PointCloud
   void loadLabelsCSV(QString);
 
   void loadLowerTiles(QStringList);
+
+  void saveLabelToJson(Vec, QString);
 };
 
 #endif

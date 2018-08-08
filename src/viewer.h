@@ -138,6 +138,9 @@ class Viewer : public QGLViewer
     void setTimeStep(int);
 
     void clearLoadNodeList() { m_loadNodes.clear(); }
+
+    void addLabel(Vec);
+
     
  signals :
     void showToolbar();

@@ -168,6 +168,13 @@ VR::setDataDir(QString d)
   m_menuPanels = m_leftMenu.menuList();
   m_currPanel = -1;
   m_leftMenu.setCurrentMenu("none");
+
+  for(int i=0; i<CaptionWidget::widgets.count(); i++)
+    delete CaptionWidget::widgets[i];
+  CaptionWidget::widgets.clear();
+
+  CaptionWidget *capWidget = new CaptionWidget();
+  capWidget->generateCaption("hud", QFileInfo(d).baseName());  
 }
 
 VR::~VR()
@@ -703,7 +710,17 @@ void
 VR::xButtonPressed()
 {
   m_xActive = true;
-  gotoPreviousStep();
+  //gotoPreviousStep();
+
+
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  QVector3D cenV = m_final_xformInverted.map(centerR);
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+  emit addLabel(cenW);
+
+  CaptionWidget::setText("hud", "Label Added");
+  CaptionWidget::blinkAndHide("hud", 200);
 }
 void
 VR::xButtonReleased()
@@ -716,7 +733,7 @@ void
 VR::yButtonPressed()
 {
   m_yActive = true;
-  gotoNextStep();
+  //gotoNextStep();
 }
 void
 VR::yButtonReleased()
@@ -2078,6 +2095,16 @@ VR::previousMenu()
 void
 VR::renderMenu(vr::Hmd_Eye eye)
 {
+  if (CaptionWidget::widgets.count() > 0)
+    { // draw caption widgets
+      QMatrix4x4 mvp = currentViewProjection(eye);
+      QMatrix4x4 hmdMat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];
+      
+      for(int i=0; i<CaptionWidget::widgets.count(); i++)
+	CaptionWidget::widgets[i]->draw(mvp, hmdMat);
+    }
+
+  
   // do not draw menu if both or left trigger is pressed
   if (m_triggerActiveBoth || m_triggerActiveLeft)
     return;
@@ -2231,6 +2258,9 @@ VR::saveTeleportNode()
   //---------------------
   sendTeleportsToMenu();
   //---------------------
+
+  CaptionWidget::setText("hud", "Teleport Saved");
+  CaptionWidget::blinkAndHide("hud", 200);
 }
 
 void
@@ -2889,172 +2919,6 @@ VR::showHUD(vr::Hmd_Eye eye,
 
 //----------------
 //----------------
-
-//CGLRenderModel*
-//VR::findOrLoadRenderModel(QString pchRenderModelName)
-//{
-//  CGLRenderModel *pRenderModel = NULL;
-//  for(int i=0; i<m_vecRenderModels.count(); i++)
-//    {
-//      if(m_vecRenderModels[i]->GetName() == pchRenderModelName)
-//	{
-//	  pRenderModel = m_vecRenderModels[i];
-//	  break;
-//	}
-//    }
-//
-//  // load the model if we didn't find one
-//  if( !pRenderModel )
-//    {
-//      vr::RenderModel_t *pModel;
-//      vr::EVRRenderModelError error;
-//      while ( 1 )
-//	{
-//	  error = vr::VRRenderModels()->LoadRenderModel_Async( pchRenderModelName.toLatin1(),
-//							       &pModel );
-//	  if ( error != vr::VRRenderModelError_Loading )
-//	    break;
-//	  
-//	  Sleep( 1 );
-//	}
-//      
-//      if ( error != vr::VRRenderModelError_None )
-//	{
-//	  QMessageBox::information(0, "", QString("Unable to load render model %1 - %2").\
-//				   arg(pchRenderModelName).\
-//				   arg(vr::VRRenderModels()->GetRenderModelErrorNameFromEnum(error)));
-//	  return NULL; // move on to the next tracked device
-//	}
-//      
-//      vr::RenderModel_TextureMap_t *pTexture;
-//      while ( 1 )
-//	{
-//	  error = vr::VRRenderModels()->LoadTexture_Async( pModel->diffuseTextureId, &pTexture );
-//	  if ( error != vr::VRRenderModelError_Loading )
-//	    break;
-//	  
-//	  Sleep( 1 );
-//	}
-//      
-//      if ( error != vr::VRRenderModelError_None )
-//	{
-//	  QMessageBox::information(0, "", QString("Unable to load render texture id:%1 for render model %2"). \
-//				   arg(pModel->diffuseTextureId).arg(pchRenderModelName));
-//	  vr::VRRenderModels()->FreeRenderModel( pModel );
-//	  return NULL; // move on to the next tracked device
-//	}
-//      
-//      pRenderModel = new CGLRenderModel( pchRenderModelName );
-//      if ( !pRenderModel->BInit( *pModel, *pTexture ) )
-//	{
-//	  QMessageBox::information(0, "", "Unable to create GL model from render model " + pchRenderModelName);
-//	  delete pRenderModel;
-//	  pRenderModel = NULL;
-//	}
-//      else
-//	{
-//	  m_vecRenderModels << pRenderModel;
-//	}
-//      vr::VRRenderModels()->FreeRenderModel( pModel );
-//      vr::VRRenderModels()->FreeTexture( pTexture );
-//    }
-//  return pRenderModel;
-//}
-//
-//
-//void
-//VR::setupRenderModelForTrackedDevice(vr::TrackedDeviceIndex_t unTrackedDeviceIndex)
-//{
-//  if(unTrackedDeviceIndex >= vr::k_unMaxTrackedDeviceCount)
-//    return;
-//
-//  // try to find a model we've already set up
-//  QString sRenderModelName = getTrackedDeviceString(unTrackedDeviceIndex,
-//						    vr::Prop_RenderModelName_String);
-//
-//  CGLRenderModel *pRenderModel = findOrLoadRenderModel( sRenderModelName);
-//  if( !pRenderModel )
-//    {
-//      QString sTrackingSystemName = getTrackedDeviceString(unTrackedDeviceIndex,
-//							   vr::Prop_TrackingSystemName_String);
-//      QMessageBox::information(0, "", QString("Unable to load render model for tracked device %1 (%2.%3)").\
-//			       arg(unTrackedDeviceIndex).arg(sTrackingSystemName).arg(sRenderModelName));
-//    }
-//  else
-//    {
-//      m_rTrackedDeviceToRenderModel[ unTrackedDeviceIndex ] = pRenderModel;
-//      m_rbShowTrackedDevice[ unTrackedDeviceIndex ] = true;
-//    }
-//}
-//
-//void
-//VR::setupRenderModels()
-//{
-//  memset( m_rTrackedDeviceToRenderModel, 0, sizeof( m_rTrackedDeviceToRenderModel ) );
-//
-//  if( !m_hmd )
-//    return;
-//
-//  for( uint32_t unTrackedDevice = vr::k_unTrackedDeviceIndex_Hmd + 1; unTrackedDevice < vr::k_unMaxTrackedDeviceCount; unTrackedDevice++ )
-//    {
-//      if( !m_hmd->IsTrackedDeviceConnected( unTrackedDevice ) )
-//	continue;
-//      
-//      setupRenderModelForTrackedDevice( unTrackedDevice );
-//    }  
-//}
-//
-//void
-//VR::renderControllers(vr::Hmd_Eye eye)
-//{
-//  if (!m_hmd)
-//    return;
-//  
-//  bool bIsInputCapturedByAnotherProcess = m_hmd->IsInputFocusCapturedByAnotherProcess();
-//  if(bIsInputCapturedByAnotherProcess)
-//    return;
-//
-//  if( !m_hmd->IsTrackedDeviceConnected(m_leftController) ||
-//      !m_hmd->IsTrackedDeviceConnected(m_rightController) )
-//    return;
-//  
-//
-//  QMatrix4x4 mat = m_matrixDevicePose[vr::k_unTrackedDeviceIndex_Hmd];    
-//  QVector4D center = mat * QVector4D(0,0,0,1);
-//  QVector4D point = mat * QVector4D(0,0,1,1);
-//  QVector3D vd = QVector3D(center-point);
-//  vd.normalize();
-//  
-////-------------------------------------------------
-////-------------------------------------------------
-//  glUseProgram(ShaderFactory::rcShader());
-//
-//  GLint *rcShaderParm = ShaderFactory::rcShaderParm();
-//  QMatrix4x4 matDeviceToTracking = m_matrixDevicePose[m_leftController];
-//  QMatrix4x4 mvp = currentViewProjection(eye) * matDeviceToTracking;  
-//  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-//  glUniform1i(rcShaderParm[1], 0); // texture
-//  glUniform3f(rcShaderParm[2], 0.0,0.8,1); // color
-//  glUniform3f(rcShaderParm[3], vd.x(), vd.y(), vd.z()); // view direction
-//  glUniform1f(rcShaderParm[4], 1); // opacity modulator
-//  glUniform1i(rcShaderParm[5], 2); // applytexture
-//  glUniform1f(rcShaderParm[7], 0.5); // mixcolor
-//  if( m_rTrackedDeviceToRenderModel[m_leftController])
-//    m_rTrackedDeviceToRenderModel[m_leftController]->Draw();
-//
-//
-//  matDeviceToTracking = m_matrixDevicePose[m_rightController];
-//  mvp = currentViewProjection(eye) * matDeviceToTracking;
-//  glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-//  glUniform3f(rcShaderParm[2], 1,0.8,0.0); // color
-//  if(m_rTrackedDeviceToRenderModel[m_rightController])
-//    m_rTrackedDeviceToRenderModel[ m_rightController ]->Draw();
-//
-//
-//  glUseProgram( 0 );
-////-------------------------------------------------
-////-------------------------------------------------
-//}
 
 CGLRenderModel*
 VR::findOrLoadRenderModel(QString pchRenderModelName)

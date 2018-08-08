@@ -67,7 +67,8 @@ HEADERS += vrmain.h \
 	savemoviedialog.h \
         propertyeditor.h \
         ply.h \
-        triset.h
+        triset.h \
+        captionwidget.h
 
 
 SOURCES += main.cpp \
@@ -101,4 +102,5 @@ SOURCES += main.cpp \
 	savemoviedialog.cpp \
         propertyeditor.cpp \
         ply.c \
-        triset.cpp
+        triset.cpp \
+        captionwidget.cpp

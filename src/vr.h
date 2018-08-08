@@ -3,6 +3,7 @@
 
 #include "vrmenu.h"
 #include "cubemap.h"
+#include "captionwidget.h"
 
 #include <QFile>
 #include <QMatrix4x4>
@@ -169,6 +170,9 @@ class VR : public QObject
   void gotoNextStep();
   void playPressed(bool);
 
+ signals :
+  void addLabel(Vec);
+    
  private :
   vr::IVRSystem *m_hmd;
   vr::TrackedDevicePose_t m_trackedDevicePose[vr::k_unMaxTrackedDeviceCount];
@@ -304,6 +308,7 @@ class VR : public QObject
   QStringList m_menuPanels;
   int m_currPanel;
 
+  QList<CaptionWidget*> m_captionWidgets;
 
   CubeMap m_skybox;
 

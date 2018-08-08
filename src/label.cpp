@@ -177,7 +177,7 @@ Label::drawLabel(Camera* cam)
 
   if ((m_position-cpos)*cam->viewDirection() < 0)
     return;
-  
+			   
   Vec scr = cam->projectedCoordinatesOf(m_position);
   int x = scr.x;
   int y = scr.y;
@@ -204,7 +204,8 @@ void
 Label::stickToGround()
 {
   // use m_position instead of original m_positionO
-  m_position = Global::stickToGround(m_position);
+  if (m_treeInfo.count() > 0)
+    m_position = Global::stickToGround(m_position);
 
   createBox();
 }
@@ -289,7 +290,7 @@ Label::genVertData()
   glVertexAttribPointer( 0, //attribute 0
 			 3, // size
 			 GL_FLOAT, // type
-			 GL_FALSE, // normalized
+			 GL_FALSE, // not normalized
 			 sizeof(float)*8, // stride
 			 (void *)0 ); // starting offset
 
@@ -327,9 +328,6 @@ Label::genVertData()
 		      &m_boxData[0]);
       
       uchar indexData[36];
-      //	  for(int i=0; i<24; i++)
-      //	    indexData[i] = i;
-      
       for(int i=0; i<6; i++)
 	{
 	  indexData[6*i+0] = 4*i+0;
@@ -344,8 +342,11 @@ Label::genVertData()
 		   sizeof(uchar)*36,
 		   &indexData[0],
 		   GL_STATIC_DRAW);
+  
+      glBindVertexArray( 0 );
+      return;
     }
-  else
+  else // m_caption
     {
       uchar indexData[6];
       indexData[0] = 0;
@@ -359,42 +360,42 @@ Label::genVertData()
 		    sizeof(uchar) * 2 * 3,
 		    &indexData[0],
 		    GL_STATIC_DRAW );
+
+      glBindVertexArray( 0 );
     }
-  
-  glBindVertexArray( 0 );
   
   
   
   int fsize = m_fontSize;
   if (!m_glTexture)
-    {
-      QFont font = QFont("Helvetica", fsize);
-      QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
-      QImage tmpTex = StaticFunctions::renderText(m_caption,
-						  font,
-						  Qt::black, color);      
-      m_texWd = tmpTex.width();
-      m_texHt = tmpTex.height();
-      
-      glGenTextures(1, &m_glTexture);
-      glActiveTexture(GL_TEXTURE4);
-      glBindTexture(GL_TEXTURE_2D, m_glTexture);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexImage2D(GL_TEXTURE_2D,
-		   0,
-		   4,
-		   m_texWd,
-		   m_texHt,
-		   0,
-		   GL_RGBA,
-		   GL_UNSIGNED_BYTE,
-		   tmpTex.bits());
-      
-      glDisable(GL_TEXTURE_2D);
-    }  
+    glGenTextures(1, &m_glTexture);
+
+  QFont font = QFont("Helvetica", fsize);
+  QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
+  QImage tmpTex = StaticFunctions::renderText(m_caption,
+					      font,
+					      Qt::black, color);      
+  m_texWd = tmpTex.width();
+  m_texHt = tmpTex.height();
+  
+  //glGenTextures(1, &m_glTexture);
+  glActiveTexture(GL_TEXTURE4);
+  glBindTexture(GL_TEXTURE_2D, m_glTexture);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D,
+	       0,
+	       4,
+	       m_texWd,
+	       m_texHt,
+	       0,
+	       GL_RGBA,
+	       GL_UNSIGNED_BYTE,
+	       tmpTex.bits());
+  
+  glDisable(GL_TEXTURE_2D);
 }
 
 void
@@ -421,41 +422,8 @@ Label::drawLabel(QVector3D cpos,
       drawBox(mvp, vDir, glow, true);
       return;
     }
-  else if ((cpos-vp).length() > m_proximity)
-    return;
-
-//  if (m_treeInfo.count() > 0)
-//    {
-//      QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-//      QVector3D frontR;
-//      frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)) - centerR;
-//      QVector3D pinPoint = centerR + frontR;
-//      QVector3D fxvp = finalxform.map(vp);
-//
-//      if (fxvp.distanceToLine(pinPoint, frontR) > 0.02)
-//	{
-//	  Vec vp2d(vp.x(), vp.y(), 0);
-//	  Vec dp2d(deadPoint.x(), deadPoint.y(), 0);
-//	  
-//	  if (deadRadius <= 0 ||
-//	      (vp2d-dp2d).norm() > deadRadius-0.02) // take slightly smaller radius
-//	    {
-//	      // show icon only if we are close
-//	      if ((cpos-vp).lengthSquared() < 1)
-//		showTreeInfoPosition(mvp, glow);
-//	    }
-//	  else
-//	    {
-//	      drawBox(mvp, vDir, glow, true);
-//	    }
-//	  return;
-//	}
-//    }
 //  else if ((cpos-vp).length() > m_proximity)
 //    return;
-
-
-  //glDisable(GL_DEPTH_TEST);
 
 
   QVector3D nDir = (cpos-vp).normalized();
@@ -466,13 +434,19 @@ Label::drawLabel(QVector3D cpos,
 
   float frc = 1.0/qMax(m_texWd, m_texHt);
 
-  float projFactor = 0.045f/qTan(qDegreesToRadians(55.0));
-  float dist = (cpos-vp).length();
-  float dpf = projFactor/dist;
-  frc = frc * 0.01/dpf;
+  //-----------------------------
+  //  //size varies based on distance to viewer
+  //  float projFactor = 0.045f/qTan(qDegreesToRadians(55.0));
+  //  float dist = (cpos-vp).length();
+  //  float dpf = projFactor/dist;
+  //  frc = frc * 0.01/dpf;
+  //-----------------------------
 
+  // fixed size caption
+  frc *= 10;
 
   QVector3D vu = frc*m_texHt*uD;
+  vp += vu;
   QVector3D vr0 = vp - frc*m_texWd*0.5*rD;
   QVector3D vr1 = vp + frc*m_texWd*0.5*rD;
 

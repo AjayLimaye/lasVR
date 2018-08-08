@@ -69,6 +69,8 @@ PointCloud::PointCloud()
   m_ignoreScaling = false;
 
   m_undo.clear();
+
+  m_labelsJsonFile.clear();
 }
 
 PointCloud::~PointCloud()
@@ -156,6 +158,9 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   m_time = timestep;
   m_name = QFileInfo(dirname).fileName();
 
+  m_labelsJsonFile = QDir(dirname).absoluteFilePath("labels.json");
+
+  
 
   m_ignoreScaling = ignoreScaling;
   
@@ -1258,7 +1263,7 @@ PointCloud::loadLabelsCSV(QString csvfile)
 
       Label *lbl = new Label();
       lbl->setPosition(xyz);
-      lbl->setProximity(10*m_scale);
+      lbl->setProximity(100*m_scale);
       lbl->setColor(rgb);
       lbl->setFontSize(20);
       lbl->setTreeInfo(treeInfo);
@@ -1268,12 +1273,80 @@ PointCloud::loadLabelsCSV(QString csvfile)
 }
 
 void
+PointCloud::addLabel(Vec v)
+{
+  Vec pos;
+  pos = v;
+  pos += m_gmin;
+  pos -= m_shift;
+  pos -= m_xformCen;
+  pos /= m_scale;
+  pos = m_rotation.inverse().rotate(pos);
+  pos += m_xformCen;
+
+  QString caption = "Annotation";
+
+  Label *lbl = new Label();
+  lbl->setCaption(caption);
+  lbl->setPosition(pos);
+  lbl->setProximity(1000*m_scale);
+  lbl->setColor(Vec(0.6, 0.8, 1.0));
+  lbl->setFontSize(40);
+  
+  lbl->setXform(m_scale, m_scaleCloudJs,
+		m_shift, m_octreeMin,
+		m_rotation, m_xformCen);
+  lbl->setGlobalMinMax(m_gmin, m_gmax);
+  lbl->genVertData();
+  m_labels << lbl;
+
+
+  saveLabelToJson(pos, caption);
+}
+void
+PointCloud::saveLabelToJson(Vec pos, QString caption)
+{
+  QJsonArray jsonLabelsData;  
+
+  if (QFile::exists(m_labelsJsonFile))
+    {
+      QFile loadFile(m_labelsJsonFile);
+      loadFile.open(QIODevice::ReadOnly);
+      QByteArray data = loadFile.readAll();
+      QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
+      jsonLabelsData = jsonDoc.array();
+      loadFile.close();
+    }
+
+  QJsonObject jsonInfo;
+  jsonInfo["caption"] = caption;
+  jsonInfo["position"] = QString("%1 %2 %3").arg(pos.x).arg(pos.y).arg(pos.z);
+  jsonInfo["proximity"] = 1000;
+  jsonInfo["color"] = "0.7 0.85 1.0";
+  jsonInfo["font size"] = 20;
+  
+  QJsonObject jsonLabelNode;
+  jsonLabelNode["label"] = jsonInfo;
+
+  jsonLabelsData << jsonLabelNode;
+
+  
+  QJsonDocument saveDoc(jsonLabelsData);  
+  QFile saveFile(m_labelsJsonFile);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson());
+  saveFile.flush();
+  saveFile.close();
+
+}
+
+void
 PointCloud::drawLabels(Camera* cam)
 {
   // do not draw labels if this point cloud is not visible
   if (!m_visible)
     return;
-
+  
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->drawLabel(cam);
 }

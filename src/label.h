@@ -47,6 +47,8 @@ class Label
   GLuint glTexture() { return m_glTexture; }
   QSize textureSize() { return QSize(m_texWd, m_texHt); }
 
+  void genVertData();
+
  private :
 
   QList<float> m_treeInfo;
@@ -77,8 +79,6 @@ class Label
   Vec m_shift, m_offset;
   float m_scale, m_scaleCloudJs;
   Vec m_xformCen;
-
-  void genVertData();
 
   void showTreeInfoPosition(QMatrix4x4, bool);
 
