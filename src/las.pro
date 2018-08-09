@@ -57,7 +57,8 @@ HEADERS += vrmain.h \
 	cglrendermodel.h \
 	vrmenu.h \
 	map.h \
-	menu01.h \
+        menu01.h \
+        menu02.h \
 	cubemap.h \
 	popupslider.h \
 	keyframe.h \
@@ -68,7 +69,8 @@ HEADERS += vrmain.h \
         propertyeditor.h \
         ply.h \
         triset.h \
-        captionwidget.h
+        captionwidget.h \
+        button.h
 
 
 SOURCES += main.cpp \
@@ -92,7 +94,8 @@ SOURCES += main.cpp \
 	cglrendermodel.cpp \
 	vrmenu.cpp \
 	map.cpp \
-	menu01.cpp \
+        menu01.cpp \
+        menu02.cpp \
 	cubemap.cpp \
 	popupslider.cpp \
 	keyframe.cpp \
@@ -103,4 +106,5 @@ SOURCES += main.cpp \
         propertyeditor.cpp \
         ply.c \
         triset.cpp \
-        captionwidget.cpp
+        captionwidget.cpp \
+        button.cpp

@@ -11,5 +11,11 @@
   <file>images/zoomin.png</file>
   <file>images/zoomout.png</file>
   <file>keyframeeditor.help</file>
+  <file>images/aplus.png</file>
+  <file>images/aminus.png</file>
+  <file>images/aplay.png</file>
+  <file>images/areset.png</file>
+  <file>images/clip.png</file>
+  <file>images/flag.png</file>
 </qresource>
 </RCC>

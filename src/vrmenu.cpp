@@ -5,6 +5,7 @@ VrMenu::VrMenu() : QObject()
 {
   m_menus["00"] = new Map();
   m_menus["01"] = new Menu01();
+  m_menus["02"] = new Menu02();
 
   m_currMenu = "none";
 
@@ -31,6 +32,9 @@ VrMenu::VrMenu() : QObject()
 	  this, SIGNAL(gotoNextStep()));
   connect(m_menus["01"], SIGNAL(playPressed(bool)),
 	  this, SIGNAL(playPressed(bool)));
+
+  connect(m_menus["02"], SIGNAL(toggle(QString, float)),
+	  this, SIGNAL(toggle(QString, float)));
 }
 
 VrMenu::~VrMenu()
@@ -96,6 +100,9 @@ VrMenu::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
 
   if (m_currMenu == "01")
     ((Menu01*)(m_menus[m_currMenu]))->draw(mvp, matL, triggerPressed);
+
+  if (m_currMenu == "02")
+    ((Menu02*)(m_menus[m_currMenu]))->draw(mvp, matL, triggerPressed);
 }
 
 int
@@ -112,7 +119,10 @@ VrMenu::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
 {
   if (m_currMenu == "01")
     ((Menu01*)(m_menus[m_currMenu]))->checkOptions(matL, matR, triggered);
-  
+
+  if (m_currMenu == "02")
+    ((Menu02*)(m_menus[m_currMenu]))->checkOptions(matL, matR, triggered);
+
   return -1;
 }
 
@@ -136,12 +146,16 @@ VrMenu::setCurrentMenu(QString m)
 
   ((Map*)(m_menus["00"]))->setVisible(false);
   ((Menu01*)(m_menus["01"]))->setVisible(false);
+  ((Menu02*)(m_menus["02"]))->setVisible(false);
 
   if (m_currMenu == "00")
     ((Map*)(m_menus["00"]))->setVisible(true);
 
   if (m_currMenu == "01")
     ((Menu01*)(m_menus["01"]))->setVisible(true);
+
+  if (m_currMenu == "02")
+    ((Menu02*)(m_menus["02"]))->setVisible(true);
 }
 
 bool
@@ -151,6 +165,7 @@ VrMenu::pointingToMenu()
   
   pm = pm || ((Map*)(m_menus["00"]))->pointingToMenu();
   pm = pm || ((Menu01*)(m_menus["01"]))->pointingToMenu();
+  pm = pm || ((Menu02*)(m_menus["02"]))->pointingToMenu();
 
   return pm;
 }
@@ -163,6 +178,9 @@ VrMenu::pinPoint()
 
   if (((Menu01*)(m_menus["01"]))->pointingToMenu())
     return ((Menu01*)(m_menus["01"]))->pinPoint();
+
+  if (((Menu02*)(m_menus["02"]))->pointingToMenu())
+    return ((Menu02*)(m_menus["02"]))->pinPoint();
 
   return QVector3D(-1000,-1000,-1000);
 }

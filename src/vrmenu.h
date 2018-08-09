@@ -12,6 +12,7 @@ using namespace qglviewer;
 
 #include "map.h"
 #include "menu01.h"
+#include "menu02.h"
 
 class VrMenu : public QObject
 {
@@ -65,6 +66,8 @@ class VrMenu : public QObject
   void gotoPreviousStep();
   void gotoNextStep();
   void playPressed(bool);
+
+  void toggle(QString, float);
 
  private :
   QMap<QString, QObject*> m_menus;
