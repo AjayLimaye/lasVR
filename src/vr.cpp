@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QtMath>
 #include <QDir>
+#include <QApplication>
 
 #define NEAR_CLIP 0.1f
 #define FAR_CLIP 2.0f
@@ -75,7 +76,7 @@ VR::VR() : QObject()
   m_menuPanels = m_leftMenu.menuList();
   m_currPanel = -1;
   m_leftMenu.setCurrentMenu("none");
-
+  
   m_spheres = false;
   m_edges = true;
   m_softShadows = true;
@@ -353,6 +354,8 @@ VR::initVR()
 
   setSkyBoxType(0);
   
+  loadAnnotationIcons();
+
   if (VERBOSE)
     QMessageBox::information(0, "Init VR", "Init VR done");
 }
@@ -717,9 +720,11 @@ VR::xButtonPressed()
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
   QVector3D cenV = m_final_xformInverted.map(centerR);
   Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
-  emit addLabel(cenW);
 
-  CaptionWidget::setText("hud", "Label Added");
+  QString icon = m_leftMenu.currentAnnotationIcon();
+  emit addLabel(cenW, icon);
+
+  CaptionWidget::setText("hud", QString("Label %1 Added").arg(icon));
   CaptionWidget::blinkAndHide("hud", 200);
 }
 void
@@ -2415,16 +2420,18 @@ VR::buildPinPoint()
     {
       if (m_menuPanels[m_currPanel] != "00") // not pointing to map menu
 	{
-	  QVector3D pp = m_leftMenu.pinPoint();
-	  
-	  if (pp.x() < 0)
-	    return;
+//	  QVector3D pp = m_leftMenu.pinPoint();
+//	  
+//	  if (pp.x() < 0)
+//	    return;
+//
+//	  QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
+//	  QVector3D ppW = m_final_xformInverted.map(pp);
+//	  
+//	  telPos = cenW;
+//	  telPosU = ppW;
 
-	  QMatrix4x4 matL = m_matrixDevicePose[m_leftController];
-	  QVector3D ppW = m_final_xformInverted.map(pp);
-	  
-	  telPos = cenW;
-	  telPosU = ppW;
+	  return;
 	}
     }
   else
@@ -3183,4 +3190,26 @@ VR::renderControllers(vr::Hmd_Eye eye)
   glUseProgram( 0 );
 //-------------------------------------------------
 //-------------------------------------------------
+}
+
+void
+VR::loadAnnotationIcons()
+{
+  QString icondir = qApp->applicationDirPath() + \
+                    QDir::separator() + "assets" + \
+                    QDir::separator() + "annotation_icons";
+
+  QDir idir(icondir);
+  if (!idir.exists())
+    {
+      m_leftMenu.setAnnotationIcons(QStringList()); // empty list
+      return;
+    }
+  
+  QStringList flist = idir.entryList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+  QStringList icons;
+  for(int i=0; i<flist.count(); i++)
+    icons << idir.relativeFilePath(flist.at(i));
+
+  m_leftMenu.setAnnotationIcons(icons);
 }

@@ -184,3 +184,15 @@ VrMenu::pinPoint()
 
   return QVector3D(-1000,-1000,-1000);
 }
+
+void
+VrMenu::setAnnotationIcons(QStringList icons)
+{
+  return ((Menu02*)(m_menus["02"]))->setIcons(icons);
+}
+QString
+VrMenu::currentAnnotationIcon()
+{
+  return ((Menu02*)(m_menus["02"]))->currentIcon();
+}
+

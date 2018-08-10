@@ -148,7 +148,8 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   fpsTimer->start(1000);
 
 
-  connect(&m_vr, SIGNAL(addLabel(Vec)), this, SLOT(addLabel(Vec)));
+  connect(&m_vr, SIGNAL(addLabel(Vec, QString)),
+	  this, SLOT(addLabel(Vec, QString)));
 
 }
 
@@ -4172,14 +4173,14 @@ Viewer::alignUsingPointPairs()
 }
 
 void
-Viewer::addLabel(Vec v)
+Viewer::addLabel(Vec v, QString icon)
 {
   // add label to the first visible point cloud
   for(int d=0; d<m_pointClouds.count(); d++)
     {
       if (m_pointClouds[d]->visible())
 	{
-	  m_pointClouds[d]->addLabel(v);
+	  m_pointClouds[d]->addLabel(v, icon);
 	  break;
 	}
     }

@@ -15,6 +15,7 @@ class Label
   ~Label();
 
   void setCaption(QString cap) { m_caption = cap; }
+  void setIcon(QString con) { m_icon = con; }
   void setPosition(Vec pos) { m_positionO = m_position = pos; }
   void setProximity(float p) { m_proximity = p; }
   void setColor(Vec col) { m_color = col; }
@@ -54,6 +55,7 @@ class Label
   QList<float> m_treeInfo;
 
   QString m_caption;
+  QString m_icon;
   Vec m_positionO;
   Vec m_position;
   float m_proximity;

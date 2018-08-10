@@ -455,8 +455,8 @@ StaticFunctions::intersectRayPlane(QVector3D v0, QVector3D vy,
 {
   float deno = QVector3D::dotProduct(ray, pn);
 
-//  if (deno > -0.00001) // point along same direction
-//    return false;
+  if (deno > -0.00001) // point along same direction
+    return false;
 
   float t = -QVector3D::dotProduct(rayO - v0, pn) / deno;
   if (t >= 0)

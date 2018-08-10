@@ -30,7 +30,10 @@ class Button
   void setGeom(QRectF g) { m_geom = g; }
   void setGrabbed(bool g) { m_grabbed = g; }
   void resetValue() { m_value = m_minValue; }
-  
+  void toggle() { m_value = m_value < m_maxValue ? m_maxValue : m_minValue; }
+
+  bool on() { return m_value < m_maxValue ? false : true; }
+
   bool inBox(float, float);
   void boxPos(float, float, float&, float&);
     

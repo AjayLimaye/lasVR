@@ -54,6 +54,9 @@ class VrMenu : public QObject
   void setPlayMenu(bool);
   void setPlayButton(bool);
 
+  void setAnnotationIcons(QStringList);
+  QString currentAnnotationIcon();
+  
  signals :
   void resetModel();
   void updateMap();

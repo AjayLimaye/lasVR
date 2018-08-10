@@ -171,7 +171,7 @@ class VR : public QObject
   void playPressed(bool);
 
  signals :
-  void addLabel(Vec);
+  void addLabel(Vec, QString);
     
  private :
   vr::IVRSystem *m_hmd;
@@ -444,6 +444,7 @@ class VR : public QObject
   void projectPinPoint();
   bool nextHit();
 
+  void loadAnnotationIcons();
 };
 
 

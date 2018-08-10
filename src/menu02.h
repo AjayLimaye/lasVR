@@ -23,6 +23,8 @@ class Menu02 : public QObject
 
   void draw(QMatrix4x4, QMatrix4x4, bool);
 
+  void setIcons(QStringList);
+  
   QVector3D pinPoint() { return m_pinPt; }
 
   int checkOptions(QMatrix4x4, QMatrix4x4, int);
@@ -39,6 +41,8 @@ class Menu02 : public QObject
 
   void setValue(QString, float);
   float value(QString);
+
+  QString currentIcon();
   
  signals :
   void resetModel();
@@ -73,7 +77,7 @@ class Menu02 : public QObject
   QRectF m_stepGeom;
 
   QList<Button> m_buttons;
-  QList<QImage> m_icons;
+  QStringList m_icons;
   
   float m_menuScale;
   float m_menuDist;

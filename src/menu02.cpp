@@ -7,6 +7,8 @@
 #include <QColor>
 #include <QtMath>
 #include <QMessageBox>
+#include <QApplication>
+#include <QDir>
 
 Menu02::Menu02() : QObject()
 {
@@ -82,6 +84,13 @@ Menu02::setValue(QString name, float val)
 	break;
       }
     }
+}
+
+void
+Menu02::setIcons(QStringList icl)
+{
+  m_icons = icl;
+  genVertData();
 }
 
 void
@@ -190,30 +199,10 @@ Menu02::genVertData()
       QFont font = QFont("Helvetica", 48);
       QColor color(250, 230, 210); 
       
-      QImage aminus(":/images/aminus.png");
-      QImage aplus(":/images/aplus.png");
-      QImage areset(":/images/areset.png");
-      QImage aplay(":/images/aplay.png");
-      QImage aflag(":/images/flag.png");
-      QImage aclip(":/images/clip.png");
-
-      aminus = aminus.scaledToHeight(90, Qt::SmoothTransformation);
-      aplus = aplus.scaledToHeight(90, Qt::SmoothTransformation);
-      areset = areset.scaledToHeight(90, Qt::SmoothTransformation);
-      aplay = aplay.scaledToHeight(90, Qt::SmoothTransformation);
-      aflag = aflag.scaledToHeight(90, Qt::SmoothTransformation);
-      aclip = aclip.scaledToHeight(90, Qt::SmoothTransformation);
-
-      m_icons.clear();
-      m_icons << aminus;
-      m_icons << aplus;
-      m_icons << aplay;
-      m_icons << aflag;
-      m_icons << aclip;
-      
       m_texWd = 520;
-      m_texHt = 320;
-      int flipTexHt = 310;
+      m_texHt = (m_icons.count()/5)*100 + 20;
+      if (m_icons.count()%5 > 0) m_texHt += 100;
+      int flipTexHt = m_texHt-10;
 
       QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
       pimg.fill(Qt::black);
@@ -226,20 +215,41 @@ Menu02::genVertData()
       
 
       p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
+
+      if (m_icons.count() == 0)
+	{
+	  QImage img = StaticFunctions::renderText("NO ANNOTATION ICONS FOUND",
+						   font,
+						   Qt::black, Qt::white, true);
+
+	  img = img.scaledToHeight(90, Qt::SmoothTransformation);
+	  int twd = img.width();
+	  int tht = img.height();	  
+	  int ws = (m_texWd-twd)/2;
+	  int hs = (m_texHt-tht)/2;
+	  p.drawImage(ws, hs, img.mirrored(false,true));
+	}
       
       //-------------------
       //-------------------
+      QString icondir = qApp->applicationDirPath() +	\
+                        QDir::separator() + "assets" + \
+                        QDir::separator() + "annotation_icons";
+      QDir idir(icondir);
       for(int i=0; i<m_icons.count(); i++)
 	{
 	  // 3 icons per row
 	  int r = i/5;
 	  int c = i%5;
-	  //m_relGeom << QRect(10 + c*100, flipTexHt-(r*100), 90, 90);
-	  m_relGeom << QRect(10 + c*100, 10 + r*100, 90, 90);
+	  m_relGeom << QRect(15 + c*100, 15 + r*100, 90, 90);
 
-	  p.drawImage(10 + c*100,
-		      10 + r*100,
-		      m_icons[i].mirrored(false, true));
+	  QImage iconImage = QImage(idir.absoluteFilePath(m_icons[i])).	\
+	                     scaledToHeight(70, Qt::SmoothTransformation).\
+	                     mirrored(false,true);
+	    
+	  p.drawImage(25 + c*100,
+		      25 + r*100,
+		      iconImage);
 	}
       //-------------------
       //-------------------
@@ -305,7 +315,7 @@ Menu02::genVertData()
   float mx = qMax(twd, tht);
   twd/=mx; tht/=mx;
   {
-    float frc = 0.1/tht;
+    float frc = 0.075/tht;
     twd *= frc;
     tht *= frc;
   }
@@ -331,10 +341,6 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
-//  glBufferSubData(GL_ARRAY_BUFFER,
-//		  0,
-//		  sizeof(float)*8*4,
-//		  &m_vertData[0]);
 
   glEnableVertexAttribArray( 0 );
   glVertexAttribPointer( 0, //attribute 0
@@ -384,7 +390,6 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
     
   // now change for drawing text/icons etc
-  glBlendFunc(GL_ONE, GL_ONE);
   glEnableVertexAttribArray( 0 );
   glVertexAttribPointer( 0, //attribute 0
 			 3, // size2
@@ -455,6 +460,7 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   // show pinPt
   if (m_pinPt.x() > -1000)
     {
+      glBlendFunc(GL_ONE, GL_ONE);
       glBindTexture(GL_TEXTURE_2D, Global::circleSpriteTexture());
       glEnable(GL_PROGRAM_POINT_SIZE );
       glEnable(GL_POINT_SPRITE);
@@ -517,7 +523,7 @@ Menu02::showText(GLuint tex, QRectF geom,
       m_textData[8*i+5] = 0;
     }
   
-  float texD[] = {tx0,1-ty0, tx0,1-ty1, tx1,1-ty1, tx1,1-ty0};
+  float texD[] = {tx0,ty0, tx0,ty1, tx1,ty1, tx1,ty0};
 	  
   m_textData[6] =  texD[0];  m_textData[7] =  texD[1];
   m_textData[14] = texD[2];  m_textData[15] = texD[3];
@@ -578,7 +584,7 @@ Menu02::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
   if (!m_pointingToMenu)
     return -1;
 
-  m_pinPt = vleft + rw*vright - rh*vtop;
+  m_pinPt = QVector3D(rw, 0, -rh);
 
   int tp = -1;
 
@@ -598,19 +604,28 @@ Menu02::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
     
   if (triggered == 2) // released
     {
-      for(int b=0; b<m_buttons.count(); b++)
-	m_buttons[b].setGrabbed(false);
-      	  
-      if (m_buttons[m_selected].value() > m_buttons[m_selected].minValue())
-	m_buttons[m_selected].setValue(m_buttons[m_selected].minValue());
-      else
-	m_buttons[m_selected].setValue(m_buttons[m_selected].maxValue());
+      if (!m_buttons[m_selected].on())
+	{ // switch off any other switched on buttons
+	  for(int b=0; b<m_buttons.count(); b++)
+	    if (m_buttons[b].on())
+	      m_buttons[b].toggle();
+	}
 
-      emit toggle(m_buttons[m_selected].text(),
-		  m_buttons[m_selected].value());
+      m_buttons[m_selected].toggle();
 
       return m_selected;
     }
 
   return m_selected;
+}
+
+QString
+Menu02::currentIcon()
+{
+  for(int b=0; b<m_buttons.count(); b++)
+    if (m_buttons[b].on())
+      return m_icons[b];
+
+  // if no icon is selected
+  return QString();
 }

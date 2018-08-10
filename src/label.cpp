@@ -9,6 +9,7 @@
 Label::Label()
 {
   m_caption.clear();
+  m_icon.clear();
   m_position = Vec(0,0,0);
   m_positionO = Vec(0,0,0);
   m_proximity = -1;
@@ -35,6 +36,7 @@ Label::Label()
 Label::~Label()
 {
   m_caption.clear();
+  m_icon.clear();
   m_position = Vec(0,0,0);
   m_positionO = Vec(0,0,0);
   m_proximity = -1;
@@ -185,8 +187,20 @@ Label::drawLabel(Camera* cam)
 
   QColor color(m_color.z*255,m_color.y*255,m_color.x*255);
 
-  StaticFunctions::renderText(x, y, m_caption, font, Qt::black, color);
-
+  if (m_icon.isEmpty())
+    StaticFunctions::renderText(x, y, m_caption, font, Qt::black, color);
+  else
+    {
+      QImage iconImage = QImage(m_icon).	       \
+	                 scaledToHeight(90, Qt::SmoothTransformation). \
+	                 mirrored(false,true);
+      glRasterPos2i(x, y);
+      glDrawPixels(iconImage.width(),
+		   iconImage.height(),
+		   GL_RGBA, GL_UNSIGNED_BYTE,
+		   iconImage.bits());
+    }
+  
   if (!m_linkData.isEmpty())
     {
       float prox = (cpos-m_position).norm()/m_proximity;      
@@ -343,7 +357,7 @@ Label::genVertData()
       glBindVertexArray( 0 );
       return;
     }
-  else // m_caption
+  else // m_caption / icon
     {
       uchar indexData[6];
       indexData[0] = 0;
@@ -369,13 +383,17 @@ Label::genVertData()
 
   QFont font = QFont("Helvetica", fsize);
   QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
-  QImage tmpTex = StaticFunctions::renderText(m_caption,
-					      font,
-					      Qt::black, color);      
+  QImage tmpTex;
+  if (m_icon.isEmpty())
+    tmpTex = StaticFunctions::renderText(m_caption,
+					 font,
+					 Qt::black, color);      
+  else
+    tmpTex = QImage(m_icon).mirrored(false,true);
+
   m_texWd = tmpTex.width();
   m_texHt = tmpTex.height();
   
-  //glGenTextures(1, &m_glTexture);
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_glTexture);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 

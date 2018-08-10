@@ -7,6 +7,8 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QInputDialog>
+#include <QApplication>
+#include <QDir>
 
 #include "laszip_dll.h"
 
@@ -1130,12 +1132,24 @@ PointCloud::loadLabelsJson(QString jsonfile)
     delete m_labels[i];
   m_labels.clear();
 
+  QString icondir = qApp->applicationDirPath() +       \
+                        QDir::separator() + "assets" + \
+                        QDir::separator() + "annotation_icons";
+  QDir idir(icondir);
+
   for(int i=0; i<jsonLabelsData.count(); i++)
     {
       QJsonObject jsonLabelNode = jsonLabelsData[i].toObject();
       QJsonObject jsonInfo = jsonLabelNode["label"].toObject();
 
-      QString caption = jsonInfo["caption"].toString();
+      QString caption;
+      QString icon;
+      
+      if (jsonInfo.contains("caption"))
+	caption = jsonInfo["caption"].toString();
+      
+      if (jsonInfo.contains("icon"))
+	icon = jsonInfo["icon"].toString();
 
       QString str;
       QStringList xyz;
@@ -1157,11 +1171,6 @@ PointCloud::loadLabelsJson(QString jsonfile)
 
       float fontSize = jsonInfo["font size"].toDouble();
 
-//      QMessageBox::information(0, "", QString("%1\n%2 %3 %4\n%5").\
-//			       arg(caption).\
-//			       arg(position.x).arg(position.y).arg(position.z).\
-//			       arg(proximity));
-
       QString linkData;
       if (jsonInfo.contains("link"))
 	{
@@ -1176,7 +1185,17 @@ PointCloud::loadLabelsJson(QString jsonfile)
       proximity *= m_scale;
 
       Label *lbl = new Label();
-      lbl->setCaption(caption);
+      if (icon.isEmpty())
+	lbl->setCaption(caption);
+      else
+	{
+	  QString icondir = qApp->applicationDirPath() +	\
+                        QDir::separator() + "assets" + \
+                        QDir::separator() + "annotation_icons";
+	  QDir idir(icondir);
+	  icon = idir.absoluteFilePath(icon);
+	  lbl->setIcon(icon);
+	}
       lbl->setPosition(position);
       lbl->setProximity(proximity);
       lbl->setColor(color);
@@ -1281,15 +1300,25 @@ PointCloud::loadLabelsCSV(QString csvfile)
 }
 
 void
-PointCloud::addLabel(Vec v)
+PointCloud::addLabel(Vec v, QString icon)
 {
   Vec pos;
   pos = xformPointInverse(v);
 
   QString caption = "Annotation";
-
+  
+  
   Label *lbl = new Label();
-  lbl->setCaption(caption);
+  if (icon.isEmpty())
+    lbl->setCaption(caption);
+  else
+    {
+      QString icondir = qApp->applicationDirPath() +   \
+                        QDir::separator() + "assets" + \
+	QDir::separator() + "annotation_icons";
+      QDir idir(icondir);
+      lbl->setIcon(idir.absoluteFilePath(icon));
+    }
   lbl->setPosition(pos);
   lbl->setProximity(500*m_scale);
   lbl->setColor(Vec(0.7, 0.85, 1.0));
@@ -1303,10 +1332,10 @@ PointCloud::addLabel(Vec v)
   m_labels << lbl;
 
 
-  saveLabelToJson(pos, caption);
+  saveLabelToJson(pos, caption, icon);
 }
 void
-PointCloud::saveLabelToJson(Vec pos, QString caption)
+PointCloud::saveLabelToJson(Vec pos, QString caption, QString icon)
 {
   QJsonArray jsonLabelsData;  
 
@@ -1321,7 +1350,10 @@ PointCloud::saveLabelToJson(Vec pos, QString caption)
     }
 
   QJsonObject jsonInfo;
-  jsonInfo["caption"] = caption;
+  if (icon.isEmpty())
+    jsonInfo["caption"] = caption;
+  else
+    jsonInfo["icon"] = icon;
   jsonInfo["position"] = QString("%1 %2 %3").arg(pos.x).arg(pos.y).arg(pos.z);
   jsonInfo["proximity"] = 500;
   jsonInfo["color"] = "0.7 0.85 1.0";
