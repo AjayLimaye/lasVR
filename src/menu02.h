@@ -55,7 +55,6 @@ class Menu02 : public QObject
   QVector3D m_pinPt;
 
   int m_texHt, m_texWd;
-  QList<QRect> m_menuDim;
   QImage m_image;
 
   GLuint m_stepTexture;
@@ -88,7 +87,7 @@ class Menu02 : public QObject
 
   QVector3D projectPin(QMatrix4x4, QMatrix4x4);
 
-  void showText(GLuint, QRectF,
+  void showText(QRectF,
 		QVector3D, QVector3D,
 		QVector3D, QVector3D,
 		float,float,float,float,

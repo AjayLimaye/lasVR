@@ -2,6 +2,7 @@
 #include "menu02.h"
 #include "shaderfactory.h"
 #include "staticfunctions.h"
+#include "iconlibrary.h"
 
 #include <QFont>
 #include <QColor>
@@ -25,7 +26,6 @@ Menu02::Menu02() : QObject()
   m_menuDist = 0.1;
   
   m_menuList.clear();
-  m_menuDim.clear();
 
   m_relGeom.clear();
   m_optionsGeom.clear();
@@ -196,99 +196,108 @@ Menu02::genVertData()
 
   if (m_relGeom.count() == 0)
     {
-      QFont font = QFont("Helvetica", 48);
-      QColor color(250, 230, 210); 
-      
-      m_texWd = 520;
-      m_texHt = (m_icons.count()/5)*100 + 20;
-      if (m_icons.count()%5 > 0) m_texHt += 100;
-      int flipTexHt = m_texHt-10;
+      m_texWd = IconLibrary::width();
+      m_texHt = IconLibrary::height();
 
-      QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
-      pimg.fill(Qt::black);
+      m_relGeom = IconLibrary::iconShape();
+      m_optionsGeom = IconLibrary::iconGeometry();
+    }	
 
-      QPainter p(&pimg);      
-      p.setBrush(Qt::black);
-      QPen ppen(Qt::white);
-      ppen.setWidth(5);
-      p.setPen(ppen);
-      
-
-      p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
-
-      if (m_icons.count() == 0)
-	{
-	  QImage img = StaticFunctions::renderText("NO ANNOTATION ICONS FOUND",
-						   font,
-						   Qt::black, Qt::white, true);
-
-	  img = img.scaledToHeight(90, Qt::SmoothTransformation);
-	  int twd = img.width();
-	  int tht = img.height();	  
-	  int ws = (m_texWd-twd)/2;
-	  int hs = (m_texHt-tht)/2;
-	  p.drawImage(ws, hs, img.mirrored(false,true));
-	}
-      
-      //-------------------
-      //-------------------
-      QString icondir = qApp->applicationDirPath() +	\
-                        QDir::separator() + "assets" + \
-                        QDir::separator() + "annotation_icons";
-      QDir idir(icondir);
-      for(int i=0; i<m_icons.count(); i++)
-	{
-	  // 3 icons per row
-	  int r = i/5;
-	  int c = i%5;
-	  m_relGeom << QRect(15 + c*100, 15 + r*100, 90, 90);
-
-	  QImage iconImage = QImage(idir.absoluteFilePath(m_icons[i])).	\
-	                     scaledToHeight(70, Qt::SmoothTransformation).\
-	                     mirrored(false,true);
-	    
-	  p.drawImage(25 + c*100,
-		      25 + r*100,
-		      iconImage);
-	}
-      //-------------------
-      //-------------------
-      
-      if (!m_glTexture)
-	glGenTextures(1, &m_glTexture);
-  
-      glActiveTexture(GL_TEXTURE4);
-      glBindTexture(GL_TEXTURE_2D, m_glTexture);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexImage2D(GL_TEXTURE_2D,
-		   0,
-		   4,
-		   m_texWd,
-		   m_texHt,
-		   0,
-		   GL_RGBA,
-		   GL_UNSIGNED_BYTE,
-		   pimg.bits());
-  
-      glDisable(GL_TEXTURE_2D);
-    }
-
-  m_optionsGeom.clear();
-  for (int i=0; i<m_relGeom.count(); i++)
-    {
-       float cx = m_relGeom[i].x();
-       float cy = m_relGeom[i].y();
-      float cwd = m_relGeom[i].width();
-      float cht = m_relGeom[i].height();
-
-      m_optionsGeom << QRectF(cx/(float)m_texWd,
-			      cy/(float)m_texHt,
-			      cwd/(float)m_texWd,
-			      cht/(float)m_texHt);
-    }
+//  if (m_relGeom.count() == 0)
+//    {
+//      QFont font = QFont("Helvetica", 48);
+//      QColor color(250, 230, 210); 
+//      
+//      m_texWd = 520;
+//      m_texHt = (m_icons.count()/5)*100 + 20;
+//      if (m_icons.count()%5 > 0) m_texHt += 100;
+//      int flipTexHt = m_texHt-10;
+//
+//      QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
+//      pimg.fill(Qt::black);
+//
+//      QPainter p(&pimg);      
+//      p.setBrush(Qt::black);
+//      QPen ppen(Qt::white);
+//      ppen.setWidth(5);
+//      p.setPen(ppen);
+//      
+//
+//      p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
+//
+//      if (m_icons.count() == 0)
+//	{
+//	  QImage img = StaticFunctions::renderText("NO ANNOTATION ICONS FOUND",
+//						   font,
+//						   Qt::black, Qt::white, true);
+//
+//	  img = img.scaledToHeight(90, Qt::SmoothTransformation);
+//	  int twd = img.width();
+//	  int tht = img.height();	  
+//	  int ws = (m_texWd-twd)/2;
+//	  int hs = (m_texHt-tht)/2;
+//	  p.drawImage(ws, hs, img.mirrored(false,true));
+//	}
+//      
+//      //-------------------
+//      //-------------------
+//      QString icondir = qApp->applicationDirPath() +	\
+//                        QDir::separator() + "assets" + \
+//                        QDir::separator() + "annotation_icons";
+//      QDir idir(icondir);
+//      for(int i=0; i<m_icons.count(); i++)
+//	{
+//	  // 3 icons per row
+//	  int r = i/5;
+//	  int c = i%5;
+//	  m_relGeom << QRect(15 + c*100, 15 + r*100, 90, 90);
+//
+//	  QImage iconImage = QImage(idir.absoluteFilePath(m_icons[i])).	\
+//	                     scaledToHeight(70, Qt::SmoothTransformation).\
+//	                     mirrored(false,true);
+//	    
+//	  p.drawImage(25 + c*100,
+//		      25 + r*100,
+//		      iconImage);
+//	}
+//      //-------------------
+//      //-------------------
+//      
+//      if (!m_glTexture)
+//	glGenTextures(1, &m_glTexture);
+//  
+//      glActiveTexture(GL_TEXTURE4);
+//      glBindTexture(GL_TEXTURE_2D, m_glTexture);
+//      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+//      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+//      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//      glTexImage2D(GL_TEXTURE_2D,
+//		   0,
+//		   4,
+//		   m_texWd,
+//		   m_texHt,
+//		   0,
+//		   GL_RGBA,
+//		   GL_UNSIGNED_BYTE,
+//		   pimg.bits());
+//  
+//      glDisable(GL_TEXTURE_2D);
+//    }
+//
+//  m_optionsGeom.clear();
+//  for (int i=0; i<m_relGeom.count(); i++)
+//    {
+//       float cx = m_relGeom[i].x();
+//       float cy = m_relGeom[i].y();
+//      float cwd = m_relGeom[i].width();
+//      float cht = m_relGeom[i].height();
+//
+//      m_optionsGeom << QRectF(cx/(float)m_texWd,
+//			      cy/(float)m_texHt,
+//			      cwd/(float)m_texWd,
+//			      cht/(float)m_texHt);
+//    }
 
   //-----------------------
   //-----------------------
@@ -307,15 +316,13 @@ Menu02::genVertData()
   //-----------------------
   
   
-  m_menuDim << QRect(0, 0, m_texWd, 200); // default menu
-
-
   float twd = m_texWd;
   float tht = m_texHt;
   float mx = qMax(twd, tht);
   twd/=mx; tht/=mx;
   {
-    float frc = 0.075/tht;
+    //float frc = 0.075/tht;
+    float frc = 0.1/tht;
     twd *= frc;
     tht *= frc;
   }
@@ -336,7 +343,8 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   QMatrix4x4 mvp = mvpC * matL * m_menuMat;
 
   glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, m_glTexture);
+  //glBindTexture(GL_TEXTURE_2D, m_glTexture);
+  glBindTexture(GL_TEXTURE_2D, IconLibrary::iconTexture());
   glEnable(GL_TEXTURE_2D);
 
   glBindVertexArray(m_glVertArray);
@@ -448,7 +456,7 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
 	  
 	  
 	  if (mc.x > 0.0)	    
-	    showText(m_glTexture, geom,
+	    showText(geom,
 		     vleft, vright, vtop, vup,
 		     cx, cx+cwd, cy, cy+cht,
 		     mc);
@@ -491,14 +499,12 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
 }
 
 void
-Menu02::showText(GLuint tex, QRectF geom,
+Menu02::showText(QRectF geom,
 		 QVector3D vleft, QVector3D vright,
 		 QVector3D vtop, QVector3D vup,
 		 float tx0, float tx1, float ty0, float ty1,
 		 Vec mc)
 {
-  glBindTexture(GL_TEXTURE_2D, tex);
-
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniform3f(rcShaderParm[2], mc.x, mc.y, mc.z); // mix color
 

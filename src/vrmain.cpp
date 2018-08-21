@@ -3,6 +3,7 @@
 #include "staticfunctions.h"
 #include "saveimageseqdialog.h"
 #include "savemoviedialog.h"
+#include "iconlibrary.h"
 
 #include <QtGui>
 #include <QMessageBox>
@@ -276,6 +277,14 @@ VrMain::VrMain(QWidget *parent) :
 	  this, SLOT(showToolbar()));
 
   ui.toolBar->hide();
+
+  IconLibrary::init();
+  QString icondir = qApp->applicationDirPath() +   \
+                    QDir::separator() + "assets" + \
+                    QDir::separator() + "annotation_icons";
+  QDir idir(icondir);
+  if (idir.exists())
+    IconLibrary::loadIcons(icondir);
 }
 
 void VrMain::showToolbar() { ui.toolBar->show(); }
@@ -283,6 +292,7 @@ void VrMain::showToolbar() { ui.toolBar->show(); }
 void
 VrMain::closeEvent(QCloseEvent*)
 {
+  IconLibrary::clear();
   on_actionQuit_triggered();
 }
 

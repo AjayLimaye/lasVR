@@ -1189,11 +1189,11 @@ PointCloud::loadLabelsJson(QString jsonfile)
 	lbl->setCaption(caption);
       else
 	{
-	  QString icondir = qApp->applicationDirPath() +	\
-                        QDir::separator() + "assets" + \
-                        QDir::separator() + "annotation_icons";
-	  QDir idir(icondir);
-	  icon = idir.absoluteFilePath(icon);
+//	  QString icondir = qApp->applicationDirPath() +	\
+//                        QDir::separator() + "assets" + \
+//                        QDir::separator() + "annotation_icons";
+//	  QDir idir(icondir);
+//	  icon = idir.absoluteFilePath(icon);
 	  lbl->setIcon(icon);
 	}
       lbl->setPosition(position);
@@ -1313,11 +1313,12 @@ PointCloud::addLabel(Vec v, QString icon)
     lbl->setCaption(caption);
   else
     {
-      QString icondir = qApp->applicationDirPath() +   \
-                        QDir::separator() + "assets" + \
-	QDir::separator() + "annotation_icons";
-      QDir idir(icondir);
-      lbl->setIcon(idir.absoluteFilePath(icon));
+//      QString icondir = qApp->applicationDirPath() +   \
+//                        QDir::separator() + "assets" + \
+//	QDir::separator() + "annotation_icons";
+//      QDir idir(icondir);
+//      lbl->setIcon(idir.absoluteFilePath(icon));
+      lbl->setIcon(icon);
     }
   lbl->setPosition(pos);
   lbl->setProximity(500*m_scale);

@@ -70,7 +70,8 @@ HEADERS += vrmain.h \
         ply.h \
         triset.h \
         captionwidget.h \
-        button.h
+        button.h \
+        iconlibrary.h
 
 
 SOURCES += main.cpp \
@@ -107,4 +108,5 @@ SOURCES += main.cpp \
         ply.c \
         triset.cpp \
         captionwidget.cpp \
-        button.cpp
+        button.cpp \
+        iconlibrary.cpp

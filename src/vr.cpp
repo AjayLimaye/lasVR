@@ -2,6 +2,7 @@
 #include "global.h"
 #include "staticfunctions.h"
 #include "shaderfactory.h"
+#include "iconlibrary.h"
 
 #include "vr.h"
 #include <QMessageBox>
@@ -3195,21 +3196,23 @@ VR::renderControllers(vr::Hmd_Eye eye)
 void
 VR::loadAnnotationIcons()
 {
-  QString icondir = qApp->applicationDirPath() + \
-                    QDir::separator() + "assets" + \
-                    QDir::separator() + "annotation_icons";
+  m_leftMenu.setAnnotationIcons(IconLibrary::iconList());
 
-  QDir idir(icondir);
-  if (!idir.exists())
-    {
-      m_leftMenu.setAnnotationIcons(QStringList()); // empty list
-      return;
-    }
-  
-  QStringList flist = idir.entryList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
-  QStringList icons;
-  for(int i=0; i<flist.count(); i++)
-    icons << idir.relativeFilePath(flist.at(i));
-
-  m_leftMenu.setAnnotationIcons(icons);
+//  QString icondir = qApp->applicationDirPath() +   \
+//                    QDir::separator() + "assets" + \
+//                    QDir::separator() + "annotation_icons";
+//
+//  QDir idir(icondir);
+//  if (!idir.exists())
+//    {
+//      m_leftMenu.setAnnotationIcons(QStringList()); // empty list
+//      return;
+//    }
+//  
+//  QStringList flist = idir.entryList(QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+//  QStringList icons;
+//  for(int i=0; i<flist.count(); i++)
+//    icons << idir.relativeFilePath(flist.at(i));
+//
+//  m_leftMenu.setAnnotationIcons(icons);
 }

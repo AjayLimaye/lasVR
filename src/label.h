@@ -64,7 +64,8 @@ class Label
   QString m_linkData;
 
   int m_texWd, m_texHt;
-
+  float m_tx0, m_ty0, m_tx1, m_ty1;
+  
   GLuint m_glTexture;
   GLuint m_glVertBuffer;
   GLuint m_glIndexBuffer;

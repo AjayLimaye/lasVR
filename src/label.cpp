@@ -2,9 +2,12 @@
 #include "shaderfactory.h"
 #include "staticfunctions.h"
 #include "label.h"
+#include "iconlibrary.h"
 
 #include <QtMath>
 #include <QMessageBox>
+#include <QApplication>
+#include <QDir>
 
 Label::Label()
 {
@@ -191,7 +194,12 @@ Label::drawLabel(Camera* cam)
     StaticFunctions::renderText(x, y, m_caption, font, Qt::black, color);
   else
     {
-      QImage iconImage = QImage(m_icon).	       \
+      QString icondir = qApp->applicationDirPath() +   \
+	                QDir::separator() + "assets" + \
+	                QDir::separator() + "annotation_icons";
+      QDir idir(icondir);
+      QString icon = idir.absoluteFilePath(m_icon);
+      QImage iconImage = QImage(icon).	       \
 	                 scaledToHeight(90, Qt::SmoothTransformation). \
 	                 mirrored(false,true);
       glRasterPos2i(x, y);
@@ -378,39 +386,59 @@ Label::genVertData()
   
   
   int fsize = m_fontSize;
-  if (!m_glTexture)
-    glGenTextures(1, &m_glTexture);
-
   QFont font = QFont("Helvetica", fsize);
   QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
   QImage tmpTex;
   if (m_icon.isEmpty())
-    tmpTex = StaticFunctions::renderText(m_caption,
-					 font,
-					 Qt::black, color);      
-  else
-    tmpTex = QImage(m_icon).mirrored(false,true);
+    {
+      if (!m_glTexture)
+	glGenTextures(1, &m_glTexture);
 
-  m_texWd = tmpTex.width();
-  m_texHt = tmpTex.height();
-  
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, m_glTexture);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D,
-	       0,
-	       4,
-	       m_texWd,
-	       m_texHt,
-	       0,
-	       GL_RGBA,
-	       GL_UNSIGNED_BYTE,
-	       tmpTex.bits());
-  
-  glDisable(GL_TEXTURE_2D);
+      tmpTex = StaticFunctions::renderText(m_caption,
+					   font,
+					   Qt::black, color);      
+      m_texWd = tmpTex.width();
+      m_texHt = tmpTex.height();
+
+      glActiveTexture(GL_TEXTURE4);
+      glBindTexture(GL_TEXTURE_2D, m_glTexture);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexImage2D(GL_TEXTURE_2D,
+		   0,
+		   4,
+		   m_texWd,
+		   m_texHt,
+		   0,
+		   GL_RGBA,
+		   GL_UNSIGNED_BYTE,
+		   tmpTex.bits());
+      
+      glDisable(GL_TEXTURE_2D);
+
+      m_tx0 = 0;
+      m_ty0 = 0;
+      m_tx1 = 1;
+      m_ty1 = 1;
+    }
+  else
+    {
+      m_glTexture = IconLibrary::iconTexture();
+
+      QRect iconShape = IconLibrary::iconShape(m_icon);
+      m_texWd = iconShape.width();
+      m_texWd = iconShape.height();
+
+      QRectF iconGeom = IconLibrary::iconGeometry(m_icon);
+      m_tx0 = iconGeom.x();
+      m_ty0 = iconGeom.y();
+      m_tx1 = m_tx0 + iconGeom.width();
+      m_ty1 = m_ty0 + iconGeom.height();
+      //tmpTex = QImage(m_icon).mirrored(false,true);
+    }
+ 
 }
 
 void
@@ -467,10 +495,6 @@ Label::drawLabel(QVector3D cpos,
   sclw *= frc;
 
   
-  //QVector3D vu = frc*m_texHt*uD;
-  //vp += vu;
-  //QVector3D vr0 = vp - frc*m_texWd*0.5*rD;
-  //QVector3D vr1 = vp + frc*m_texWd*0.5*rD;
   QVector3D vu = sclh*uD;
   vp += vu;
   QVector3D vr0 = vp - sclw*rD;
@@ -487,8 +511,8 @@ Label::drawLabel(QVector3D cpos,
   m_vertData[3] = vDir.x();
   m_vertData[4] = vDir.y();
   m_vertData[5] = vDir.z();
-  m_vertData[6] = 0.0;
-  m_vertData[7] = 0.0;
+  m_vertData[6] = m_tx0;
+  m_vertData[7] = m_ty0;;
 
   m_vertData[8] = v1.x();
   m_vertData[9] = v1.y();
@@ -496,8 +520,8 @@ Label::drawLabel(QVector3D cpos,
   m_vertData[11] = vDir.x();
   m_vertData[12] = vDir.y();
   m_vertData[13] = vDir.z();
-  m_vertData[14] = 0.0;
-  m_vertData[15] = 1.0;
+  m_vertData[14] = m_tx0;
+  m_vertData[15] = m_ty1;
 
   m_vertData[16] = v2.x();
   m_vertData[17] = v2.y();
@@ -505,8 +529,8 @@ Label::drawLabel(QVector3D cpos,
   m_vertData[19] = vDir.x();
   m_vertData[20] = vDir.y();
   m_vertData[21] = vDir.z();
-  m_vertData[22] = 1.0;
-  m_vertData[23] = 1.0;
+  m_vertData[22] = m_tx1;
+  m_vertData[23] = m_ty1;
 
   m_vertData[24] = v3.x();
   m_vertData[25] = v3.y();
@@ -514,8 +538,8 @@ Label::drawLabel(QVector3D cpos,
   m_vertData[27] = vDir.x();
   m_vertData[28] = vDir.y();
   m_vertData[29] = vDir.z();
-  m_vertData[30] = 1.0;
-  m_vertData[31] = 0.0;
+  m_vertData[30] = m_tx1;
+  m_vertData[31] = m_ty0;
 
 //  glEnable(GL_BLEND);
 //  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
