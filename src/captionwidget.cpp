@@ -33,6 +33,20 @@ CaptionWidget::setText(QString name, QString text)
 }
 
 void
+CaptionWidget::setTexture(QString name, GLuint texId, QSize texSize)
+{
+  for(int i=0; i<widgets.count(); i++)
+    {
+      QString attr = widgets[i]->name().toLower().trimmed();
+      if (attr == name)
+	{
+	  widgets[i]->setTexture(texId, texSize);
+	  return;
+	}
+    }
+}
+
+void
 CaptionWidget::blink(QString name, int val)
 {
   for(int i=0; i<widgets.count(); i++)
@@ -62,6 +76,8 @@ CaptionWidget::blinkAndHide(QString name, int val)
 
 CaptionWidget::CaptionWidget() : QObject()
 {
+  m_textureSet = 0;
+
   m_glVA = 0;
   m_glVB = 0;
   m_glIB = 0;
@@ -126,6 +142,7 @@ CaptionWidget::generateCaption(QString name, QString caption)
 
   if (!m_glTexture)
     glGenTextures(1, &m_glTexture);
+    //glCreateTextures(GL_TEXTURE_2D, 1, &m_glTexture);
 
   
   glBindVertexArray(m_glVA);
@@ -198,8 +215,12 @@ CaptionWidget::generateCaption(QString name, QString caption)
 void
 CaptionWidget::setText(QString caption)
 {
+  m_textureSet = 0;
   m_caption = caption;
 
+  if (m_caption.isEmpty())
+    return;
+  
   QFont font = QFont("Helvetica", m_fontSize);
   QFontMetrics metric(font);
   QColor color(m_color.z*255,m_color.y*255,m_color.x*255); 
@@ -232,7 +253,14 @@ CaptionWidget::setText(QString caption)
 //  p.drawRoundedRect(1, 1, m_texWd-2, m_texHt-2, 5, 5);
 //  p.drawImage(1, 1, tmpTex);
 
-  glActiveTexture(GL_TEXTURE4);
+//  glTextureStorage2D(m_glTexture, 1, GL_RGBA, m_texWd, m_texHt);
+//  glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
+//		      GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+//  glTextureParameteri(m_glTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//  glTextureParameteri(m_glTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//  glBindTextureUnit(4, m_glTexture);
+
+//  glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_glTexture);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
@@ -248,7 +276,7 @@ CaptionWidget::setText(QString caption)
 	       GL_UNSIGNED_BYTE,
 	       image.bits());
   
-  glDisable(GL_TEXTURE_2D);
+  //glDisable(GL_TEXTURE_2D);
 
   float frc = 1.0/qMax(m_texWd, m_texHt);
   float twd = m_texWd*frc;
@@ -275,9 +303,48 @@ CaptionWidget::setText(QString caption)
 }
 
 void
+CaptionWidget::setTexture(GLuint texId, QSize texSize)
+{
+  m_caption.clear();
+  
+  m_textureSet = texId;
+  m_texWd = texSize.width();
+  m_texHt = texSize.height();
+
+  if (m_textureSet <= 0)
+    return;
+
+  
+  float frc = 1.0/qMax(m_texWd, m_texHt);
+  float twd = m_texWd*frc;
+  float tht = m_texHt*frc;
+
+  float sclw = 0.5*twd;
+  float sclh = 0.5*tht;
+//  //if (sclh > 0.1)// limit height
+//    {
+//      frc = 0.1/sclh;
+//      sclh *= frc;
+//      sclw *= frc;
+//    }
+  m_captionMat.setToIdentity();
+  Vec v(0, -0.7+sclh, -1.5);
+  float angle = Quaternion(v, Vec(0,1,0)).angle();
+  Vec axis = Quaternion(v, Vec(0,1,0)).axis();
+  angle = qRadiansToDegrees(angle);
+  m_captionMat.translate(v.x, v.y, v.z);  
+  m_captionMat.rotate(-angle/2, axis.x, axis.y, axis.z);
+  m_captionMat.scale(sclw, sclh, 1);  
+}
+
+
+void
 CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
 {
   if (m_hideAfterBlink && m_blink < 1)
+    return;
+
+  if (m_caption.isEmpty() && m_textureSet <= 0)
     return;
 
   glDisable(GL_DEPTH_TEST);
@@ -308,10 +375,13 @@ CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
   glBindBuffer(GL_ARRAY_BUFFER, m_glVB);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIB);  
 
-
-  glActiveTexture(GL_TEXTURE4);
-  glBindTexture(GL_TEXTURE_2D, m_glTexture);
-  glEnable(GL_TEXTURE_2D);
+ 
+  if (m_textureSet > 0)
+    glBindTextureUnit(4, m_textureSet);
+  else
+    glBindTextureUnit(4, m_glTexture);
+  
+  //glEnable(GL_TEXTURE_2D);
 
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 
@@ -325,7 +395,7 @@ CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
 
   glUseProgram(0);
 
-  glDisable(GL_TEXTURE_2D);
+  //glDisable(GL_TEXTURE_2D);
 
   glDisable(GL_BLEND);
 

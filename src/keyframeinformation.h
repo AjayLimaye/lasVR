@@ -2,6 +2,7 @@
 #define KEYFRAMEINFORMATION_H
 
 #include <GL/glew.h>
+
 #include <QObject>
 #include <QImage>
 #include <QGLViewer/qglviewer.h>

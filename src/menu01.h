@@ -2,6 +2,7 @@
 #define MENU01_H
 
 #include "glewinitialisation.h"
+#include "button.h"
 
 #include <QImage>
 #include <QMatrix4x4>
@@ -86,6 +87,8 @@ class Menu01 : public QObject
   QList<QString> m_menuList;
   QList<QRect> m_relGeom;
   QList<QRectF> m_optionsGeom;
+
+  QList<Button> m_buttons;
 
   QList<QRectF> m_dataGeom;
 

@@ -76,7 +76,7 @@ class PointCloud
   GLuint labelTexture();
   QSize labelTextureSize();
 
-
+  void regenerateLabels();
 
   QString checkLink(Camera*, QPoint);
 

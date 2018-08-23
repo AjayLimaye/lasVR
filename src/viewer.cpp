@@ -2,6 +2,7 @@
 #include "viewer.h"
 #include "global.h"
 #include "shaderfactory.h"
+#include "iconlibrary.h"
 
 #include <QMessageBox>
 #include <QtMath>
@@ -337,6 +338,16 @@ Viewer::GlewInit()
 
   emit message("Ready");
 
+  //--------------------
+  IconLibrary::init();
+  QString icondir = qApp->applicationDirPath() +   \
+                    QDir::separator() + "assets" + \
+                    QDir::separator() + "annotation_icons";
+  QDir idir(icondir);
+  if (idir.exists())
+    IconLibrary::loadIcons(icondir);
+  //--------------------
+
 //  m_vr.initVR();
 //
 //  if (m_vr.vrEnabled())
@@ -516,6 +527,9 @@ Viewer::start()
 
   m_firstImageDone = 0;
   m_vboLoadedAll = false;
+
+//  for(int d=0; d<m_pointClouds.count(); d++)
+//    m_pointClouds[d]->regenerateLabels();
 
   if (m_vrMode && m_vr.vrEnabled())
     {
@@ -2853,11 +2867,17 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 				       m_vr.deadRadius(),
 				       m_vr.deadPoint());
 
-	  if (gotHit)
+	  // check only once
+	  if (eye == vr::Eye_Left)
 	    {
-	      GLuint texId = m_pointClouds[d]->labelTexture();
-	      QSize texSize = m_pointClouds[d]->labelTextureSize();
-	      m_vr.showHUD(eye, texId, texSize);
+	      if (gotHit)
+		{
+		  GLuint texId = m_pointClouds[d]->labelTexture();
+		  QSize texSize = m_pointClouds[d]->labelTextureSize();
+		  m_vr.showLabel(texId, texSize);
+		}
+	      else
+		m_vr.hideLabel();
 	    }
 	}
     }
@@ -3696,13 +3716,13 @@ Viewer::loadLinkOnTop(QString dirname)
 
   m_dataDir = dirname;
 
-  m_vr.setDataDir(dirname);
-
   if (!m_volume->loadOnTop(dirname))
     {
       QMessageBox::information(0, "Error", "Cannot load tiles from directory");
       return;
     }
+
+  m_vr.setDataDir(dirname);
 
   start();
 
@@ -3738,8 +3758,6 @@ Viewer::loadLink(QString dirname)
 
   m_dataDir = dirname;
 
-  m_vr.setDataDir(dirname);
-
   // if current volume is not null then push on the stack
   if (m_volume)
     {
@@ -3769,6 +3787,9 @@ Viewer::loadLink(QString dirname)
 	  return;
 	}
     }
+
+
+  m_vr.setDataDir(dirname);
 
   start();
 

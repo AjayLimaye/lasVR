@@ -222,55 +222,243 @@ Menu01::genVertData()
   glBindVertexArray( 0 );
     
 
-  if (!m_glTexture)
-    {
-      QImage menuImg(":/images/menu00.png");
-      m_texWd = menuImg.width();
-      m_texHt = menuImg.height();
-
-      glGenTextures(1, &m_glTexture);
+  m_buttons.clear();
   
-      glActiveTexture(GL_TEXTURE4);
-      glBindTexture(GL_TEXTURE_2D, m_glTexture);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexImage2D(GL_TEXTURE_2D,
-		   0,
-		   4,
-		   m_texWd,
-		   m_texHt,
-		   0,
-		   GL_RGBA,
-		   GL_UNSIGNED_BYTE,
-		   menuImg.bits());
+  m_texWd = 510;
+  m_texHt = 700;
+    
+  QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
+  pimg.fill(Qt::black);
   
-      glDisable(GL_TEXTURE_2D);
-    }
+  QPainter p(&pimg);      
+  p.setBrush(Qt::black);
+  QPen ppen(Qt::white);
+  ppen.setWidth(5);
+  p.setPen(ppen);
+    
+  p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
 
+
+  QFont font = QFont("Helvetica", 48);
+  QColor color(250, 230, 210); 
+  
+  QImage aplus(":/images/aplus.png");
+  aplus = aplus.scaledToHeight(70, Qt::SmoothTransformation);
+
+  QImage aminus(":/images/aminus.png");
+  aminus = aminus.scaledToHeight(70, Qt::SmoothTransformation);
+
+  QImage across(":/images/across.png");
+  across = across.scaledToHeight(70, Qt::SmoothTransformation);
 
   m_relGeom.clear();
-  //m_relGeom << QRect(20, 10, 480, 90); // RESET
-  m_relGeom << QRect(20, 10, 400, 90); // RESET
 
-  m_relGeom << QRect(420, 10, 90, 90); // MAP
+  //----
+  {
+    QImage img = StaticFunctions::renderText("RESET",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(90, Qt::SmoothTransformation);
+    int twd = img.width();
+    int tht = img.height();
+    
+    int ws = (m_texWd-twd)/2;
+    m_relGeom << QRect(ws, 10, twd, 90); // RESET
+    p.drawImage(ws, m_texHt-100, img.mirrored(false,true));
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("reset");
+    m_buttons << button;
+  }
 
-  m_relGeom << QRect(300, 100, 100, 100); // point size -
-  m_relGeom << QRect(400, 100, 100, 100); // point size +
-  m_relGeom << QRect(300, 200, 100, 100); // scaling -
-  m_relGeom << QRect(400, 200, 100, 100); // scaling +
+  {
+    QImage img = StaticFunctions::renderText("MAP",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    int twd = img.width();
+    int tht = img.height();
 
-  m_relGeom << QRect(400, 300, 100, 50); // soft shadows
-  m_relGeom << QRect(400, 365, 100, 50); // edges
-  m_relGeom << QRect(400, 430, 100, 50); // spheres
+    int ws = (m_texWd-twd-30);
+    m_relGeom << QRect(ws, 30, twd, tht); // MAP
+    p.drawImage(ws, m_texHt-tht-30, img.mirrored(false,true));
 
-  m_relGeom << QRect(25,  510, 75, 80); // play-reset
-  m_relGeom << QRect(100, 510, 90, 80); // step back
-  m_relGeom << QRect(190, 510, 90, 80); // step forward
-  m_relGeom << QRect(280, 510, 90, 80); // play/pause
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("map");
+    m_buttons << button;
+  }
+  //----
 
-  m_relGeom << QRect(380, 505, 120, 90); // step number
+  int menuLvl = 100;
+    
+  //----
+  {
+    QRect rect = QRect(300, menuLvl, 70, 70); // point size -
+    m_relGeom << rect;
+
+    QImage img = StaticFunctions::renderText("Point Size",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    p.drawImage(20, m_texHt-rect.y()-rect.height(), img.mirrored(false,true));
+
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aminus);
+
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("ptsz-");
+    m_buttons << button;
+  }
+  {
+    QRect rect = QRect(400, menuLvl, 70, 70); // point size +
+    m_relGeom << rect;
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aplus);
+
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("ptsz+");
+    m_buttons << button;
+  }
+  //----
+
+  //----
+  menuLvl += 70;
+  {
+    QRect rect = QRect(300, menuLvl, 70, 70); // scaling -
+    m_relGeom << rect;
+    QImage img = StaticFunctions::renderText("Scaling",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    p.drawImage(20, m_texHt-rect.y()-rect.height(), img.mirrored(false,true));
+
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aminus);
+
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("scl-");
+    m_buttons << button;
+  }
+  {
+    QRect rect = QRect(400, menuLvl, 70, 70); // scaling +
+    m_relGeom << rect;
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aplus);
+    Button button;
+    button.setType(0); // simple pushbuttton
+    button.setText("scl+");
+    m_buttons << button;
+  }
+  //----
+
+  //----
+  menuLvl += 70;
+  {
+    QRect rect = QRect(400, menuLvl, 70, 70); // soft shadows
+    m_relGeom << rect;
+    QImage img = StaticFunctions::renderText("Soft shadows",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    p.drawImage(20, m_texHt-rect.y()-rect.height(), img.mirrored(false,true));
+
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), across);
+
+    Button button;
+    button.setType(1); // checkbox
+    button.setText("softshadows");
+    m_buttons << button;
+  }
+  //----
+
+  //----
+  menuLvl += 70;
+  {
+    QRect rect = QRect(400, menuLvl, 70, 70); // edges
+    m_relGeom << rect;
+    QImage img = StaticFunctions::renderText("Edges",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    p.drawImage(20, m_texHt-rect.y()-rect.height(), img.mirrored(false,true));
+
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), across);
+
+    Button button;
+    button.setType(1); // checkbox
+    button.setText("edges");
+    m_buttons << button;
+  }
+  //----
+
+  //----
+  menuLvl += 70;
+  {
+    QRect rect = QRect(400, menuLvl, 70, 70); // spheres
+    m_relGeom << rect;
+    QImage img = StaticFunctions::renderText("Spheres",
+					     font,
+					     Qt::black, color, false);
+    img = img.scaledToHeight(50, Qt::SmoothTransformation);
+    p.drawImage(20, m_texHt-rect.y()-rect.height(), img.mirrored(false,true));
+
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), across);
+
+    Button button;
+    button.setType(1); // checkbox
+    button.setText("spheres");
+    m_buttons << button;
+  }
+  //----
+
+  //----
+  menuLvl += 100;
+  {
+    QRect rect = QRect(20, menuLvl, 70, 70); // play-reset
+    m_relGeom << rect;
+    QImage areset(":/images/areset.png");
+    areset = areset.scaledToHeight(70, Qt::SmoothTransformation);
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), areset);
+
+    Button button;
+    button.setType(1); // simple pushbutton
+    button.setText("|<");
+    m_buttons << button;
+  }
+  {
+    QRect rect = QRect(100, menuLvl, 70, 70); // step back
+    m_relGeom << rect;
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aminus);
+
+    Button button;
+    button.setType(1); // simple pushbutton
+    button.setText("-");
+    m_buttons << button;
+  }
+  {
+    QRect rect = QRect(180, menuLvl, 70, 70); // step forward
+    m_relGeom << rect;
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aplus);
+
+    Button button;
+    button.setType(1); // simple pushbutton
+    button.setText("+");
+    m_buttons << button;
+  }
+  {
+    QRect rect = QRect(260, menuLvl, 70, 70); // play/pause
+    m_relGeom << rect;
+    QImage aplay(":/images/aplay.png");
+    aplay = aplay.scaledToHeight(90, Qt::SmoothTransformation);
+    p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aplay);
+
+    Button button;
+    button.setType(1); // checkbox
+    button.setText("play");
+    m_buttons << button;
+  }
+
+  m_relGeom << QRect(350, menuLvl, 120, 70); // step number
 
 
   m_optionsGeom.clear();
@@ -288,73 +476,51 @@ Menu01::genVertData()
     }
 
 
-  m_menuDim << QRect(0, 0, m_texWd, 500); // default menu
-  m_menuDim << QRect(0, 500, m_texWd, 100); // play menu
+  for(int i=0; i<m_buttons.count(); i++)
+    {
+      m_buttons[i].setRect(m_relGeom[i]);
+      m_buttons[i].setGeom(m_optionsGeom[i]);
+    }
+
+  
+  m_menuDim << QRect(0, 0, m_texWd, 600); // default menu
+  m_menuDim << QRect(0, 600, m_texWd, 100); // play menu
 
 
   //data name
-  m_dataGeom << QRectF(25/(float)m_texWd, 510/(float)m_texHt,
-		       450/(float)m_texWd, 90/(float)m_texHt);
   m_dataGeom << QRectF(25/(float)m_texWd, 610/(float)m_texHt,
 		       450/(float)m_texWd, 90/(float)m_texHt);
-}
+  m_dataGeom << QRectF(25/(float)m_texWd, 710/(float)m_texHt,
+		       450/(float)m_texWd, 90/(float)m_texHt);
 
-void
-Menu01::setShowMap(bool b)
-{
-  m_showMap = b;
 
-  QImage menuImg(":/images/menu00.png");
-  m_texWd = menuImg.width();
-  m_texHt = menuImg.height();
 
   if (!m_glTexture)
     glGenTextures(1, &m_glTexture);
-
+  
   glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_glTexture);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  
-  if (m_showMap)
-    {
-      QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
-      QPainter p(&pimg);
-      p.drawImage(0, 0, menuImg.rgbSwapped());
-
-      QFont font = QFont("Helvetica", 48);
-      QColor color(200, 220, 250); 
-      QImage tmpTex = StaticFunctions::renderText("map",
-						  font,
-						  Qt::black, color); 
-      tmpTex = tmpTex.scaledToWidth(60, Qt::SmoothTransformation);
-
-      p.drawImage(435, m_texHt-75, tmpTex.mirrored());
-
-      glTexImage2D(GL_TEXTURE_2D,
-		   0,
-		   4,
-		   m_texWd,
-		   m_texHt,
-		   0,
-		   GL_RGBA,
-		   GL_UNSIGNED_BYTE,
-		   pimg.bits());
-    }
-  else
-    glTexImage2D(GL_TEXTURE_2D,
-		 0,
-		 4,
-		 m_texWd,
-		 m_texHt,
-		 0,
-		 GL_RGBA,
-		 GL_UNSIGNED_BYTE,
-		 menuImg.bits());
+  glTexImage2D(GL_TEXTURE_2D,
+	       0,
+	       4,
+	       m_texWd,
+	       m_texHt,
+	       0,
+	       GL_RGBA,
+	       GL_UNSIGNED_BYTE,
+	       pimg.bits());
   
   glDisable(GL_TEXTURE_2D);
+}
+
+void
+Menu01::setShowMap(bool b)
+{
+  m_showMap = b;
 }
 
 void

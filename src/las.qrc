@@ -15,6 +15,7 @@
   <file>images/aminus.png</file>
   <file>images/aplay.png</file>
   <file>images/areset.png</file>
+  <file>images/across.png</file>
   <file>images/clip.png</file>
   <file>images/flag.png</file>
 </qresource>

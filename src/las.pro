@@ -10,15 +10,15 @@ DESTDIR = ..\bin
 RESOURCES = las.qrc
 
 INCLUDEPATH += c:\Qt\libQGLViewer-2.6.1 \
- 	c:\cygwin64\home\acl900\drishtilib\glew-1.11.0\include \
+ 	c:\cygwin64\home\acl900\drishtilib\glew-2.1.0\include \
 	LASzip \
 	c:/cygwin64/home/acl900/VR/openvr-1.0.10/headers
  
 QMAKE_LIBDIR += c:\Qt\libQGLViewer-2.6.1\lib \
-		c:\cygwin64\home\acl900\drishtilib\glew-1.11.0\lib\Release\x64 \
+		c:\cygwin64\home\acl900\drishtilib\glew-2.1.0\lib\Release\x64 \
 	        LASzip \
 	        c:/cygwin64/home/acl900/VR/openvr-1.0.10/lib/win64
-
+                
 win32 {
   DEFINES += USE_GLMEDIA
   INCLUDEPATH += glmedia-64
@@ -26,7 +26,7 @@ win32 {
   LIBS += glmedia.lib
 }
 
-LIBS += QGLViewer2.lib glew32.lib LASzip.lib openvr_api.lib 
+LIBS += QGLViewer2.lib glew32.lib LASzip.lib openvr_api.lib
 
 FORMS += vrmain.ui \
 	 saveimgseq.ui \
@@ -110,3 +110,4 @@ SOURCES += main.cpp \
         captionwidget.cpp \
         button.cpp \
         iconlibrary.cpp
+        

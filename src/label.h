@@ -50,10 +50,12 @@ class Label
 
   void genVertData();
 
+  void regenerate();
+  
  private :
 
   QList<float> m_treeInfo;
-
+  QImage m_captionImage;
   QString m_caption;
   QString m_icon;
   Vec m_positionO;
@@ -82,8 +84,6 @@ class Label
   Vec m_shift, m_offset;
   float m_scale, m_scaleCloudJs;
   Vec m_xformCen;
-
-  void showTreeInfoPosition(QMatrix4x4, bool);
 
   void createBox();
   void drawBox(QMatrix4x4, QVector3D, bool, bool);

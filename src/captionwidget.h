@@ -18,6 +18,7 @@ class CaptionWidget : public QObject
 
   void generateCaption(QString, QString);
   void setText(QString);
+  void setTexture(GLuint, QSize);
   
   void draw(QMatrix4x4, QMatrix4x4);
 
@@ -32,12 +33,15 @@ class CaptionWidget : public QObject
   static void blinkAndHide(QString, int);
   static QList<CaptionWidget*> widgets;  
   static CaptionWidget* getWidget(QString);
-  
+
+  static void setTexture(QString, GLuint, QSize);
+
  private :
   GLuint m_glVA;
   GLuint m_glVB;
   GLuint m_glIB;
 
+  GLuint m_textureSet;
   GLuint m_glTexture;
   int m_texWd, m_texHt;
   QMatrix4x4 m_captionMat;

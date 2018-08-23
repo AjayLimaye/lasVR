@@ -150,7 +150,8 @@ class VR : public QObject
   QVector3D deadPoint() { return m_deadPoint; }
 
   void renderSkyBox(vr::Hmd_Eye);
-  void showHUD(vr::Hmd_Eye, GLuint, QSize);
+  void showLabel(GLuint, QSize);
+  void hideLabel();
 
   bool reUpdateMap() { return m_updateMap; }
   void resetUpdateMap() { m_updateMap = false; }

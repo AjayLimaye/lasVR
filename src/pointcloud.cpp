@@ -1954,3 +1954,10 @@ PointCloud::reload()
       m_allNodes[d]->reloadData();
     }
 }
+
+void
+PointCloud::regenerateLabels()
+{
+  for(int i=0; i<m_labels.count(); i++)
+    m_labels[i]->regenerate();
+}

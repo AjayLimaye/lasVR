@@ -342,10 +342,9 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
 
   QMatrix4x4 mvp = mvpC * matL * m_menuMat;
 
-  glActiveTexture(GL_TEXTURE4);
-  //glBindTexture(GL_TEXTURE_2D, m_glTexture);
-  glBindTexture(GL_TEXTURE_2D, IconLibrary::iconTexture());
-  glEnable(GL_TEXTURE_2D);
+  glBindTextureUnit(5, IconLibrary::iconTexture());
+  //glBindTextureUnit(4, m_glTexture);
+  //glEnable(GL_TEXTURE_2D);
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
@@ -386,7 +385,7 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   glUseProgram(ShaderFactory::rcShader());
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  glUniform1i(rcShaderParm[1], 4); // texture
+  glUniform1i(rcShaderParm[1], 5); // texture
   glUniform3f(rcShaderParm[2], 0, 0, 0); // color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.9); // opacity modulator
@@ -469,7 +468,7 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   if (m_pinPt.x() > -1000)
     {
       glBlendFunc(GL_ONE, GL_ONE);
-      glBindTexture(GL_TEXTURE_2D, Global::circleSpriteTexture());
+      glBindTextureUnit(5, Global::circleSpriteTexture());
       glEnable(GL_PROGRAM_POINT_SIZE );
       glEnable(GL_POINT_SPRITE);
       m_textData[0] = m_pinPt.x();
@@ -488,7 +487,7 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   // ----
 
   glBindVertexArray(0);
-  glDisable(GL_TEXTURE_2D);
+  //glDisable(GL_TEXTURE_2D);
   
   glUseProgram( 0 );
   

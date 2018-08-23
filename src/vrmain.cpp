@@ -278,13 +278,7 @@ VrMain::VrMain(QWidget *parent) :
 
   ui.toolBar->hide();
 
-  IconLibrary::init();
-  QString icondir = qApp->applicationDirPath() +   \
-                    QDir::separator() + "assets" + \
-                    QDir::separator() + "annotation_icons";
-  QDir idir(icondir);
-  if (idir.exists())
-    IconLibrary::loadIcons(icondir);
+  ui.actionSkybox->isChecked();
 }
 
 void VrMain::showToolbar() { ui.toolBar->show(); }
@@ -569,10 +563,10 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("Srishti v1.06");
+      setWindowTitle("Srishti v1.07");
     }
   else
-    setWindowTitle("Srishti v1.06 - "+mesg);
+    setWindowTitle("Srishti v1.07 - "+mesg);
 }
 
 void VrMain::on_actionEditMode_triggered()

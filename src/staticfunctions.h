@@ -2,6 +2,7 @@
 #define STATICFUNCTIONS_H
 
 #include <GL/glew.h>
+
 #include <QGLViewer/qglviewer.h>
 using namespace qglviewer;
 

@@ -2,6 +2,7 @@
 #define ICONLIBRARY_H
 
 #include <GL/glew.h>
+
 #include <QImage>
 #include <QRectF>
 #include <QStringList>
@@ -12,7 +13,8 @@ class IconLibrary : public QObject
   static void init();
   static void clear();
 
-  static void loadIcons(QString);
+  static void loadIcons(QString);  
+  static void loadIconImages();
 
   static GLuint iconTexture() { return m_iconTex; }
   static QStringList iconList() { return m_iconList; }
