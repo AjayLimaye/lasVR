@@ -69,7 +69,7 @@ Menu01::setTimeStep(QString stpStr)
   int tht = img.height();
 
   int szh = tht;
-  int szw = 1.333*szh; // 120/90=aspect ration of final image
+  int szw = (150.0/70.0)*szh; // 150/70=aspect ratio of final image
   if (szw < twd)
     {
       szw = twd;
@@ -225,19 +225,18 @@ Menu01::genVertData()
   m_buttons.clear();
   
   m_texWd = 510;
-  m_texHt = 700;
+  m_texHt = 530;
     
   QImage pimg = QImage(m_texWd, m_texHt, QImage::Format_ARGB32);
   pimg.fill(Qt::black);
   
   QPainter p(&pimg);      
-  p.setBrush(Qt::black);
+  p.setBrush(Qt::transparent);
   QPen ppen(Qt::white);
   ppen.setWidth(5);
   p.setPen(ppen);
     
-  p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
-
+  //p.drawRoundedRect(5,5,m_texWd-10,m_texHt-10, 5, 5);
 
   QFont font = QFont("Helvetica", 48);
   QColor color(250, 230, 210); 
@@ -411,8 +410,13 @@ Menu01::genVertData()
   }
   //----
 
+  m_menuDim << QRect(0, 0, m_texWd, menuLvl+70); // default menu
+
+  p.drawRoundedRect(5,75,m_texWd-10,m_texHt-75, 5, 5);
+
+  
   //----
-  menuLvl += 100;
+  menuLvl += 80;
   {
     QRect rect = QRect(20, menuLvl, 70, 70); // play-reset
     m_relGeom << rect;
@@ -449,7 +453,7 @@ Menu01::genVertData()
     QRect rect = QRect(260, menuLvl, 70, 70); // play/pause
     m_relGeom << rect;
     QImage aplay(":/images/aplay.png");
-    aplay = aplay.scaledToHeight(90, Qt::SmoothTransformation);
+    aplay = aplay.scaledToHeight(70, Qt::SmoothTransformation);
     p.drawImage(rect.x(), m_texHt-rect.y()-rect.height(), aplay);
 
     Button button;
@@ -458,9 +462,11 @@ Menu01::genVertData()
     m_buttons << button;
   }
 
-  m_relGeom << QRect(350, menuLvl, 120, 70); // step number
+  m_relGeom << QRect(350, menuLvl, 150, 70); // step number
 
 
+  m_menuDim << QRect(0, menuLvl+70, m_texWd, 70); // play menu
+  
   m_optionsGeom.clear();
   for (int i=0; i<m_relGeom.count(); i++)
     {
@@ -482,15 +488,12 @@ Menu01::genVertData()
       m_buttons[i].setGeom(m_optionsGeom[i]);
     }
 
-  
-  m_menuDim << QRect(0, 0, m_texWd, 600); // default menu
-  m_menuDim << QRect(0, 600, m_texWd, 100); // play menu
 
 
   //data name
-  m_dataGeom << QRectF(25/(float)m_texWd, 610/(float)m_texHt,
+  m_dataGeom << QRectF(25/(float)m_texWd, menuLvl/(float)m_texHt,
 		       450/(float)m_texWd, 90/(float)m_texHt);
-  m_dataGeom << QRectF(25/(float)m_texWd, 710/(float)m_texHt,
+  m_dataGeom << QRectF(25/(float)m_texWd, (menuLvl+70)/(float)m_texHt,
 		       450/(float)m_texWd, 90/(float)m_texHt);
 
 
@@ -572,10 +575,11 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
   glUniform1f(rcShaderParm[7], 0.5); // mixcolor
 
 
-  QVector3D vfront = 2*front;
-
-  float rt = (float)m_menuDim[1].height()/(float)m_texHt;
-  QVector3D vfrontActual = vfront + rt*vfront;
+  float asp0 = (float)(m_texHt-m_menuDim[1].height())/(float)m_texWd;
+  QVector3D vfront = 2*asp0*front;  
+  
+  float asp1 = (float)m_texHt/(float)m_texWd;
+  QVector3D vfrontActual = 2*asp1*front;
 
   if (m_playMenu) // show play menu
     {
@@ -584,7 +588,7 @@ Menu01::draw(QMatrix4x4 mvp, QMatrix4x4 matL, bool triggerPressed)
     }
 
   QVector3D vright = 2*right;
-  QVector3D vleft = center - right - 0.1*front;
+  QVector3D vleft = center - right - 0.11*front;
 
   QVector3D v[4];  
   v[0] = vleft;
@@ -793,18 +797,19 @@ Menu01::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
   if (opmod < 0.1)
     return m_selected;
 
-  QVector3D vft = 2*frontL;
+  float asp0 = (float)(m_texHt-m_menuDim[1].height())/(float)m_texWd;
+  QVector3D vft = 2*asp0*frontL;
   QVector3D vrt = 2*rightL;
 
-  float rt = (float)m_menuDim[1].height()/(float)m_texHt;
-  QVector3D vftActual = vft + rt*vft;
+  float asp1 = (float)m_texHt/(float)m_texWd;
+  QVector3D vftActual = 2*asp1*frontL;
   if (m_playMenu) // show play menu
     {
       // increase height of menu image to accommodate play menu
       vft = vftActual;
     }
 
-  QVector3D vleft = centerL - rightL - 0.1*frontL;
+  QVector3D vleft = centerL - rightL - 0.11*frontL;
 
 
   QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
