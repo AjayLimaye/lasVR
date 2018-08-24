@@ -327,7 +327,7 @@ Menu02::genVertData()
     tht *= frc;
   }
   m_menuMat.setToIdentity();
-  m_menuMat.translate(-twd/2, 0, 0);
+  m_menuMat.translate(-twd/2, 0, -0.011);
   m_menuMat.scale(twd, 1, tht);
 }
 
@@ -343,8 +343,6 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   QMatrix4x4 mvp = mvpC * matL * m_menuMat;
 
   glBindTextureUnit(5, IconLibrary::iconTexture());
-  //glBindTextureUnit(4, m_glTexture);
-  //glEnable(GL_TEXTURE_2D);
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
@@ -375,8 +373,6 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glIndexBuffer);  
   
-  glDisable(GL_DEPTH_TEST);
-  glDepthMask(GL_FALSE);
   
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -487,14 +483,10 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
   // ----
 
   glBindVertexArray(0);
-  //glDisable(GL_TEXTURE_2D);
   
   glUseProgram( 0 );
   
   glDisable(GL_BLEND);
-
-  glDepthMask(GL_TRUE);
-  glEnable(GL_DEPTH_TEST);
 }
 
 void

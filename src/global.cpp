@@ -28,7 +28,7 @@ GLuint Global::circleSpriteTexture()
 
   QImage circle(":/images/circle.png");
   int texsize = circle.height();
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_circleSpriteTexture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -61,7 +61,7 @@ GLuint Global::infoSpriteTexture()
 
   QImage info(":/images/info.png");
   int texsize = info.height();
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_infoSpriteTexture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -94,7 +94,7 @@ GLuint Global::homeSpriteTexture()
 
   QImage home(":/images/home.png");
   int texsize = home.height();
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_homeSpriteTexture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -127,7 +127,7 @@ GLuint Global::boxSpriteTexture()
 
   QImage box(":/images/box.png");
   int texsize = box.height();
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, m_boxSpriteTexture);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);

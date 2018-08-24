@@ -116,7 +116,10 @@ IconLibrary::loadIcons(QString iconDir)
       int c = i%iclsq;
       r*=100;
       c*=100;
-      m_iconShape << QRect(15+c, 15+r, 90, 90);
+      //m_iconShape << QRect(15+c, 15+r, 90, 90);
+
+      QRect ics = QRect(20+c, 20+r, 80, 80);
+      m_iconShape << ics;
       
       QImage iconImage = QImage(idir.absoluteFilePath(m_iconList[i])). \
 	                 scaledToHeight(80, Qt::SmoothTransformation). \
@@ -126,10 +129,14 @@ IconLibrary::loadIcons(QString iconDir)
 		  20+r,
 		  iconImage);
 
-      m_iconGeom << QRectF((float)(15+c)/(float)m_texWd,
-			   (float)(15+r)/(float)m_texHt,
-			   90.0/(float)m_texWd,
-			   90.0/(float)m_texHt);
+//      m_iconGeom << QRectF((float)(15+c)/(float)m_texWd,
+//			   (float)(15+r)/(float)m_texHt,
+//			   90.0/(float)m_texWd,
+//			   90.0/(float)m_texHt);
+      m_iconGeom << QRectF((float)(ics.x())/(float)m_texWd,
+			   (float)(ics.y())/(float)m_texHt,
+			   (float)ics.width()/(float)m_texWd,
+			   (float)ics.height()/(float)m_texHt);
     }
 
   p.setBrush(Qt::transparent);
@@ -141,42 +148,15 @@ IconLibrary::loadIcons(QString iconDir)
 
   // load texture
   if (!m_iconTex)
-    //glCreateTextures(GL_TEXTURE_2D, 1, &m_iconTex);
     glGenTextures(1, &m_iconTex);
 
   loadIconImages();
-  
-//  glTextureStorage2D(m_iconTex, 1, GL_RGBA, m_texWd, m_texHt);
-//  glTextureSubImage2D(m_iconTex, 0, 0, 0, m_texWd, m_texHt,
-//		      GL_RGBA, GL_UNSIGNED_BYTE, m_iconImage.bits());
-//  glTextureParameteri(m_iconTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//  glTextureParameteri(m_iconTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//  glBindTextureUnit(4, m_iconTex);
-//  glActiveTexture(GL_TEXTURE4);
-
-
-//  glBindTexture(GL_TEXTURE_2D, m_iconTex);
-//  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-//  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//  glTexImage2D(GL_TEXTURE_2D,
-//	       0,
-//	       4,
-//	       m_texWd,
-//	       m_texHt,
-//	       0,
-//	       GL_RGBA,
-//	       GL_UNSIGNED_BYTE,
-//	       m_iconImage.bits());
-//  
-//  glDisable(GL_TEXTURE_2D);
 }
 
 void
 IconLibrary::loadIconImages()
 {
+  glBindTextureUnit(5, m_iconTex);
   glBindTexture(GL_TEXTURE_2D, m_iconTex);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
@@ -188,7 +168,7 @@ IconLibrary::loadIconImages()
 	       m_texWd,
 	       m_texHt,
 	       0,
-	       GL_RGBA,
+	       GL_BGRA,
 	       GL_UNSIGNED_BYTE,
 	       m_iconImage.bits());
 }

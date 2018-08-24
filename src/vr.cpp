@@ -81,6 +81,7 @@ VR::VR() : QObject()
   m_spheres = false;
   m_edges = true;
   m_softShadows = true;
+  m_showSkybox = false;
 
   m_updateMap = false;
 
@@ -936,21 +937,28 @@ VR::leftTouched()
 
   m_startTouchX = m_stateLeft.rAxis[0].x;
   m_startTouchY = m_stateLeft.rAxis[0].y;
+
+  m_gotoMenu = 0;
+  if (m_startTouchX > 0.5) m_gotoMenu = 1;
+  if (m_startTouchX < -0.5) m_gotoMenu = -1;
 }
 void
 VR::leftTouchMove()
 {
   m_touchX = m_stateLeft.rAxis[0].x;
   m_touchY = m_stateLeft.rAxis[0].y;
+
+  if (m_touchX > 0.5) m_gotoMenu = 1;
+  if (m_touchX < -0.5) m_gotoMenu = -1;
 }
 void
 VR::leftTouchReleased()
 {
   m_touchActiveLeft = false;
 
-  if (m_touchX > 0.5)
+  if (m_gotoMenu > 0)
     nextMenu();
-  else if (m_touchX < -0.5)
+  else if (m_gotoMenu < 0)
     previousMenu();
 }
 //---------------------------------------

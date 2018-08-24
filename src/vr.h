@@ -431,7 +431,7 @@ class VR : public QObject
 
   void buildPinPoint();
 
-
+  int m_gotoMenu;
   void nextMenu();
   void previousMenu();
   void renderMenu(vr::Hmd_Eye);

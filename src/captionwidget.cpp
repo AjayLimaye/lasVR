@@ -142,7 +142,6 @@ CaptionWidget::generateCaption(QString name, QString caption)
 
   if (!m_glTexture)
     glGenTextures(1, &m_glTexture);
-    //glCreateTextures(GL_TEXTURE_2D, 1, &m_glTexture);
 
   
   glBindVertexArray(m_glVA);
@@ -381,7 +380,6 @@ CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
   else
     glBindTextureUnit(4, m_glTexture);
   
-  //glEnable(GL_TEXTURE_2D);
 
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);  
 
@@ -394,8 +392,6 @@ CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
   glBindVertexArray(0);
 
   glUseProgram(0);
-
-  //glDisable(GL_TEXTURE_2D);
 
   glDisable(GL_BLEND);
 

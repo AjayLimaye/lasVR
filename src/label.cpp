@@ -412,7 +412,7 @@ Label::genVertData()
   if (m_icon.isEmpty())
     {
       if (!m_glTexture)
-      glGenTextures(1, &m_glTexture);
+	glGenTextures(1, &m_glTexture);
 
       m_captionImage = StaticFunctions::renderText(m_caption,
 						   font,
@@ -563,14 +563,18 @@ Label::drawLabel(QVector3D cpos,
 //  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 
-  glBindTextureUnit(4, m_glTexture);
   // label are getting wrong textures and that is why
   // the textures are being loaded per frame, which is ridiculous
   // we should not be required to do this
   // cannot figure out where I am going wrong
   if (m_icon.isEmpty())
-    glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
-			GL_RGBA, GL_UNSIGNED_BYTE, m_captionImage.bits());
+    {
+      glBindTextureUnit(4, m_glTexture);
+      glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
+			  GL_RGBA, GL_UNSIGNED_BYTE, m_captionImage.bits());
+    }
+//  else
+//    glBindTextureUnit(5, m_glTexture);
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
@@ -607,7 +611,10 @@ Label::drawLabel(QVector3D cpos,
   glUseProgram(ShaderFactory::rcShader());
   GLint *rcShaderParm = ShaderFactory::rcShaderParm();
   glUniformMatrix4fv(rcShaderParm[0], 1, GL_FALSE, mvp.data() );  
-  glUniform1i(rcShaderParm[1], 4); // texture
+  if (m_icon.isEmpty())
+    glUniform1i(rcShaderParm[1], 4); // texture
+  else
+    glUniform1i(rcShaderParm[1], 5); // texture
   glUniform3f(rcShaderParm[2], 0, 0, 0); // color
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.5); // opacity modulator

@@ -2825,20 +2825,6 @@ Viewer::drawLabels()
 void
 Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 {
-//  glDepthMask(GL_FALSE); // enable writing to depth buffer
-//  glDisable(GL_DEPTH_TEST);
-//
-//  glBindFramebuffer(GL_FRAMEBUFFER, m_depthBuffer);
-//  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
-//			 GL_COLOR_ATTACHMENT0,
-//			 GL_TEXTURE_RECTANGLE,
-//			 m_depthTex[0],
-//			 0);
-//  GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT };
-//  glDrawBuffers(1, buffers);
-//
-//  glClear(GL_COLOR_BUFFER_BIT);
-
   QMatrix4x4 mvp = m_vr.viewProjection(eye);
   QMatrix4x4 matR = m_vr.matrixDevicePoseRight();
   QVector3D cpos = m_hmdPos;
@@ -2882,57 +2868,9 @@ Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
 	}
     }
 //  glDisable(GL_BLEND);
-//
-//  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   return;
 
-//  //------------------------------
-//
-//  m_vr.bindBuffer(eye);
-//
-//  glUseProgram(m_shadowShader);
-//
-//  glEnable(GL_BLEND);
-//  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-//
-//  glActiveTexture(GL_TEXTURE0);
-//  glEnable(GL_TEXTURE_RECTANGLE);
-//  glBindTexture(GL_TEXTURE_RECTANGLE, m_depthTex[0]); // colors
-//
-//  int wd = camera()->screenWidth();
-//  int ht = camera()->screenHeight();
-//
-//  QMatrix4x4 mvp4x4;
-//  mvp4x4.setToIdentity();
-//  mvp4x4.ortho(0.0, wd, 0.0, ht, 0.0, 1.0);
-//
-//  glUniformMatrix4fv(m_shadowParm[0], 1, GL_FALSE, mvp4x4.data());
-//
-//  glUniform1i(m_shadowParm[1], 0); // colors
-//  glUniform1i(m_shadowParm[8], true);
-//
-//  glEnableVertexAttribArray(0);
-//  glBindBuffer(GL_ARRAY_BUFFER, m_vertexScreenBuffer);
-//  glVertexAttribPointer(0,  // attribute 0
-//			2,  // size
-//			GL_FLOAT, // type
-//			GL_FALSE, // normalized
-//			0, // stride
-//			(void*)0 ); // array buffer offset
-//  glDrawArrays(GL_QUADS, 0, 8);
-//
-//  glDisableVertexAttribArray(0);
-//
-//  glActiveTexture(GL_TEXTURE0);
-//  glDisable(GL_TEXTURE_RECTANGLE);
-//
-//  glUseProgram(0);
-//
-//  glDisable(GL_BLEND);
-//  glDepthMask(GL_TRUE); // enable writing to depth buffer
-//  glEnable(GL_DEPTH_TEST);
-//  //------------------------------
 }
 
 void

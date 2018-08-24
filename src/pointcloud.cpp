@@ -1312,16 +1312,9 @@ PointCloud::addLabel(Vec v, QString icon)
   if (icon.isEmpty())
     lbl->setCaption(caption);
   else
-    {
-//      QString icondir = qApp->applicationDirPath() +   \
-//                        QDir::separator() + "assets" + \
-//	QDir::separator() + "annotation_icons";
-//      QDir idir(icondir);
-//      lbl->setIcon(idir.absoluteFilePath(icon));
-      lbl->setIcon(icon);
-    }
+    lbl->setIcon(icon);
   lbl->setPosition(pos);
-  lbl->setProximity(500*m_scale);
+  lbl->setProximity(200*m_scale);
   lbl->setColor(Vec(0.7, 0.85, 1.0));
   lbl->setFontSize(20);
   
@@ -1356,7 +1349,7 @@ PointCloud::saveLabelToJson(Vec pos, QString caption, QString icon)
   else
     jsonInfo["icon"] = icon;
   jsonInfo["position"] = QString("%1 %2 %3").arg(pos.x).arg(pos.y).arg(pos.z);
-  jsonInfo["proximity"] = 500;
+  jsonInfo["proximity"] = 200;
   jsonInfo["color"] = "0.7 0.85 1.0";
   jsonInfo["font size"] = 20;
   
