@@ -149,6 +149,10 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   fpsTimer->start(1000);
 
 
+  connect(&m_vr, SIGNAL(addTempLabel(Vec, QString)),
+	  this, SLOT(addTempLabel(Vec, QString)));
+  connect(&m_vr, SIGNAL(moveTempLabel(Vec)),
+	  this, SLOT(moveTempLabel(Vec)));
   connect(&m_vr, SIGNAL(addLabel(Vec, QString)),
 	  this, SLOT(addLabel(Vec, QString)));
 
@@ -2824,7 +2828,7 @@ Viewer::drawLabels()
 }
 void
 Viewer::drawLabelsForVR(vr::Hmd_Eye eye)
-{
+{  
   QMatrix4x4 mvp = m_vr.viewProjection(eye);
   QMatrix4x4 matR = m_vr.matrixDevicePoseRight();
   QVector3D cpos = m_hmdPos;
@@ -4131,6 +4135,32 @@ Viewer::alignUsingPointPairs()
   update();
 }
 
+void
+Viewer::addTempLabel(Vec v, QString icon)
+{
+  // add label to the first visible point cloud
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	{
+	  m_pointClouds[d]->setTempLabel(v, icon);
+	  break;
+	}
+    }
+}
+void
+Viewer::moveTempLabel(Vec v)
+{
+  // add label to the first visible point cloud
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	{
+	  m_pointClouds[d]->moveTempLabel(v);
+	  break;
+	}
+    }
+}
 void
 Viewer::addLabel(Vec v, QString icon)
 {

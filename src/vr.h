@@ -172,6 +172,8 @@ class VR : public QObject
   void playPressed(bool);
 
  signals :
+  void addTempLabel(Vec, QString);
+  void moveTempLabel(Vec);
   void addLabel(Vec, QString);
     
  private :
@@ -406,8 +408,10 @@ class VR : public QObject
   bool m_yActive;
   bool isXYTriggered(vr::VRControllerState_t&);
   void xButtonPressed();
+  void xButtonMoved();
   void xButtonReleased();
   void yButtonPressed();
+  void yButtonMoved();
   void yButtonReleased();
 
   QMatrix4x4 quatToMat(QQuaternion); 

@@ -63,6 +63,8 @@ class PointCloud
   QList<uchar> maxLevelVisible();
 
   void loadLabelsJson(QString);
+  void setTempLabel(Vec, QString);
+  void moveTempLabel(Vec);
   void addLabel(Vec, QString);
   void drawLabels(Camera*);
   void drawLabels(QVector3D,
@@ -190,7 +192,8 @@ class PointCloud
   QList<OctreeNode*> m_allNodes;
 
   QList<Label*> m_labels;
-
+  Label* m_tempLabel;
+  
   QList<QVector4D> m_undo;
 
   int m_nearHitLabel;

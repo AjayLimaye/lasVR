@@ -139,6 +139,8 @@ class Viewer : public QGLViewer
 
     void clearLoadNodeList() { m_loadNodes.clear(); }
 
+    void addTempLabel(Vec, QString);
+    void moveTempLabel(Vec);
     void addLabel(Vec, QString);
     void loadLabelsJson(QString);
     

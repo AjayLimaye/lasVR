@@ -52,6 +52,7 @@ PointCloud::PointCloud()
 
   m_tiles.clear();
   m_labels.clear();
+  m_tempLabel = 0;
 
   m_vData.clear();
 
@@ -101,6 +102,10 @@ PointCloud::reset()
 
   m_tiles.clear();
   m_labels.clear();
+
+  if (m_tempLabel)
+    delete m_tempLabel;
+  m_tempLabel = 0;
 
   m_vData.clear();
 
@@ -1132,6 +1137,11 @@ PointCloud::loadLabelsJson(QString jsonfile)
     delete m_labels[i];
   m_labels.clear();
 
+  if (m_tempLabel)
+    delete m_tempLabel;
+  m_tempLabel = 0;
+
+  
   QString icondir = qApp->applicationDirPath() +       \
                         QDir::separator() + "assets" + \
                         QDir::separator() + "annotation_icons";
@@ -1188,14 +1198,7 @@ PointCloud::loadLabelsJson(QString jsonfile)
       if (icon.isEmpty())
 	lbl->setCaption(caption);
       else
-	{
-//	  QString icondir = qApp->applicationDirPath() +	\
-//                        QDir::separator() + "assets" + \
-//                        QDir::separator() + "annotation_icons";
-//	  QDir idir(icondir);
-//	  icon = idir.absoluteFilePath(icon);
-	  lbl->setIcon(icon);
-	}
+	lbl->setIcon(icon);
       lbl->setPosition(position);
       lbl->setProximity(proximity);
       lbl->setColor(color);
@@ -1260,21 +1263,9 @@ PointCloud::loadLabelsCSV(QString csvfile)
 	  treeInfo << treeArea;
 	  treeInfo << treePointCount;
 
-//	  tpcMin = qMin(tpcMin, treePointCount);
-//	  tpcMax = qMax(tpcMax, treePointCount);
-
 	  tInfo << Vec(x,y,z);
 	  tInfo << Vec(r,g,b);
 	  tInfo << Vec(treeHeight, treeArea, treePointCount);
-
-//	  Label *lbl = new Label();
-//	  lbl->setPosition(Vec(x,y,z));
-//	  lbl->setProximity(10*m_scale);
-//	  lbl->setColor(Vec(r,g,b));
-//	  lbl->setFontSize(20);
-//	  lbl->setTreeInfo(treeInfo);
-//	  
-//	  m_labels << lbl;
 	  
 	}    
     } while (!line.isNull());
@@ -1300,8 +1291,49 @@ PointCloud::loadLabelsCSV(QString csvfile)
 }
 
 void
+PointCloud::setTempLabel(Vec v, QString icon)
+{
+  Vec pos;
+  pos = xformPointInverse(v);
+
+  QString caption = "Annotation";
+  
+  Label *lbl = new Label();
+  if (icon.isEmpty())
+    lbl->setCaption(caption);
+  else
+    lbl->setIcon(icon);
+  lbl->setPosition(pos);
+  lbl->setProximity(200*m_scale);
+  lbl->setColor(Vec(0.7, 0.85, 1.0));
+  lbl->setFontSize(20);
+  
+  lbl->setXform(m_scale, m_scaleCloudJs,
+		m_shift, m_octreeMin,
+		m_rotation, m_xformCen);
+  lbl->setGlobalMinMax(m_gmin, m_gmax);
+  lbl->genVertData();
+
+  if (m_tempLabel)
+    delete m_tempLabel;  
+  m_tempLabel = lbl;
+}
+void
+PointCloud::moveTempLabel(Vec v)
+{
+  Vec pos;
+  pos = xformPointInverse(v);
+  m_tempLabel->setPosition(pos);
+  m_tempLabel->setGlobalMinMax(m_gmin, m_gmax);
+  //m_tempLabel->genVertData();
+}
+void
 PointCloud::addLabel(Vec v, QString icon)
 {
+  if (m_tempLabel)
+    delete m_tempLabel;
+  m_tempLabel = 0;
+  
   Vec pos;
   pos = xformPointInverse(v);
 
@@ -1377,6 +1409,9 @@ PointCloud::drawLabels(Camera* cam)
   
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->drawLabel(cam);
+
+  if (m_tempLabel)
+    m_tempLabel->drawLabel(cam);
 }
 
 void
@@ -1462,9 +1497,16 @@ PointCloud::drawLabels(QVector3D cpos,
 		       QVector3D deadPoint)
 {
   // do not draw labels if this point cloud is not visible
-  if (!m_visible || m_labels.count()==0)
+  if (!m_visible || (m_labels.count()==0 && !m_tempLabel))
     return;
 
+
+  if (m_tempLabel)
+    m_tempLabel->drawLabel(cpos, vDir, uDir, rDir,
+			   mat, matR,
+			   finalxform, finalxformInv,
+			   deadRadius, deadPoint,
+			   false);
 
   for(int i=0; i<m_labels.count(); i++)
     m_labels[i]->drawLabel(cpos, vDir, uDir, rDir,

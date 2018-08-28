@@ -571,13 +571,17 @@ VR::updateInput()
 // left X/Y events
   if (!m_xActive && xActive)
     xButtonPressed();
-  if (m_xActive && !xActive)
+  else if (m_xActive && !xActive)
     xButtonReleased();
-
+  else if (m_xActive && xActive)
+    xButtonMoved();
+  
   if (!m_yActive && yActive)
     yButtonPressed();
-  if (m_yActive && !yActive)
+  else if (m_yActive && !yActive)
     yButtonReleased();
+  else
+    yButtonMoved();
 // -----------------------
 
 
@@ -723,10 +727,38 @@ VR::xButtonPressed()
   m_xActive = true;
   //gotoPreviousStep();
 
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  //QVector3D cenV = m_final_xformInverted.map(centerR);
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D cenV = m_final_xformInverted.map(frontR);
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+
+  QString icon = m_leftMenu.currentAnnotationIcon();
+  emit addTempLabel(cenW, icon);
+}
+void
+VR::xButtonMoved()
+{
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  //QVector3D cenV = m_final_xformInverted.map(centerR);
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D cenV = m_final_xformInverted.map(frontR);
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+
+  emit moveTempLabel(cenW);
+}
+void
+VR::xButtonReleased()
+{
+  m_xActive = false;
 
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  QVector3D cenV = m_final_xformInverted.map(centerR);
+  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
+  //QVector3D cenV = m_final_xformInverted.map(centerR);
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D cenV = m_final_xformInverted.map(frontR);
   Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
 
   QString icon = m_leftMenu.currentAnnotationIcon();
@@ -735,11 +767,6 @@ VR::xButtonPressed()
   CaptionWidget::setText("hud", QString("Label %1 Added").arg(icon));
   CaptionWidget::blinkAndHide("hud", 200);
 }
-void
-VR::xButtonReleased()
-{
-  m_xActive = false;
-}
 
 
 void
@@ -747,6 +774,10 @@ VR::yButtonPressed()
 {
   m_yActive = true;
   //gotoNextStep();
+}
+void
+VR::yButtonMoved()
+{
 }
 void
 VR::yButtonReleased()

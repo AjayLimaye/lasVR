@@ -116,7 +116,6 @@ IconLibrary::loadIcons(QString iconDir)
       int c = i%iclsq;
       r*=100;
       c*=100;
-      //m_iconShape << QRect(15+c, 15+r, 90, 90);
 
       QRect ics = QRect(20+c, 20+r, 80, 80);
       m_iconShape << ics;
@@ -129,10 +128,6 @@ IconLibrary::loadIcons(QString iconDir)
 		  20+r,
 		  iconImage);
 
-//      m_iconGeom << QRectF((float)(15+c)/(float)m_texWd,
-//			   (float)(15+r)/(float)m_texHt,
-//			   90.0/(float)m_texWd,
-//			   90.0/(float)m_texHt);
       m_iconGeom << QRectF((float)(ics.x())/(float)m_texWd,
 			   (float)(ics.y())/(float)m_texHt,
 			   (float)ics.width()/(float)m_texWd,
