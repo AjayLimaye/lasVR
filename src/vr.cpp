@@ -580,7 +580,7 @@ VR::updateInput()
     yButtonPressed();
   else if (m_yActive && !yActive)
     yButtonReleased();
-  else
+  else if (m_yActive && yActive)
     yButtonMoved();
 // -----------------------
 

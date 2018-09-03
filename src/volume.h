@@ -128,16 +128,6 @@ class Volume : public QObject
 
   Vec m_boxSizeMin, m_boxSizeMax;
 
-  void pruneOctreeNodesBasedOnPriority();
-
-  bool checkBoxXY(QList<OctreeNode*>, Vec, Vec);
-  QList<OctreeNode*> getAllLeaves(OctreeNode*);
-  QList<OctreeNode*> getNodesAtLevel(OctreeNode*, int);
-  QList<OctreeNode*> getNodesAtLevelBelow(OctreeNode*, int);
-
-  int cullNodes(OctreeNode*, QList<OctreeNode*>);
-  QList<OctreeNode*> getNodesWithOccupiedLeaves(OctreeNode*, QList<int>);
-
   void loadTopJson(QString);
 
   void loadAllPLY(QString);

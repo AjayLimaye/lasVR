@@ -45,7 +45,6 @@ class OctreeNode
 
   void addChild(int i, OctreeNode* o) { m_child[i] = o; }
   void setLevel(int l) { m_level = l; }
-  void setLevelsBelow(int l) { m_levelsBelow = l; }
   void setDataPerVertex(int d) { m_dpv = d; }
   void setColorPresent(bool b) { m_colorPresent = b; }
   void setClassPresent(bool b) { m_classPresent = b; }
@@ -75,7 +74,6 @@ class OctreeNode
   OctreeNode* getChild(int i) { return m_child[i]; }
   OctreeNode* childAt(int); // will create child if not present
   int level() { return m_level; }
-  int levelsBelow() { return m_levelsBelow; }
   int dataPerVertex() { return m_dpv; }
   Vec shift() { return m_shift; }
   float pointSize() { return m_pointSize; }
@@ -89,9 +87,6 @@ class OctreeNode
 
   void markForDeletion();
   bool markedForDeletion() { return m_removalFlag; }
-
-  QList<OctreeNode*> allActiveNodes();
-  int setPointSizeForActiveNodes(float);
 
   void setEditMode(bool b) { m_editMode = b; }
 
@@ -126,7 +121,6 @@ class OctreeNode
   OctreeNode* m_child[8];
   int m_level;
   uchar m_maxVisLevel;
-  int m_levelsBelow;
   int m_dpv;
   bool m_colorPresent;
   bool m_classPresent;

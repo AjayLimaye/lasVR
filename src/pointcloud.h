@@ -4,6 +4,7 @@
 #include <QProgressDialog>
 #include <QFile>
 #include <QJsonDocument>
+#include <QDir>
 
 #include <QGLViewer/vec.h>
 using namespace qglviewer;
@@ -25,6 +26,9 @@ class PointCloud
 
   bool loadTileOctree(QString);
 
+  int numPoints() { return m_npoints; }
+  int hierarchyStepSize() { return m_hierarchyStepSize;}
+    
   void setLevelsBelow();
 
   Vec globalMin() { return m_gmin; };
@@ -59,8 +63,6 @@ class PointCloud
   bool visible() { return m_visible; }
 
   void updateVisibilityData();
-
-  QList<uchar> maxLevelVisible();
 
   void loadLabelsJson(QString);
   void setTempLabel(Vec, QString);
@@ -150,6 +152,8 @@ class PointCloud
 
   bool m_visible;
 
+  int m_npoints;
+  int m_hierarchyStepSize;
   float m_spacing;
   Vec m_octreeMin, m_octreeMax;
   Vec m_tightOctreeMin, m_tightOctreeMax;
@@ -200,14 +204,11 @@ class PointCloud
   float m_nearHit;
 
   QString m_labelsJsonFile;
-  
-  qint64 getNumPointsInLASFile(QString);
-  qint64 getNumPointsInBINFile(QString);
 
   void loadOctreeNodeFromJson(QString, OctreeNode*);
-  void saveOctreeNodeToJson(QString, OctreeNode*);
+  void loadOctreeNodeFromJsonArray(QDir, OctreeNode*, QJsonArray);
 
-  int setLevel(OctreeNode*, int);
+  void setLevel(OctreeNode*, int);
 
   void loadModJson(QString);
 

@@ -150,15 +150,7 @@ Label::setTreeInfo(QList<float> ti)
       cht += img[i].height();
     }
 
-//  glBindTextureUnit(4, m_glTexture);
-//  glTextureStorage2D(m_glTexture, 1, GL_RGBA, m_texWd, m_texHt);
-//  glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
-//		      GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
-//  glTextureParameteri(m_glTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//  glTextureParameteri(m_glTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
   glGenTextures(1, &m_glTexture);
-//  glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, m_glTexture);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
@@ -173,8 +165,6 @@ Label::setTreeInfo(QList<float> ti)
 	       GL_RGBA,
 	       GL_UNSIGNED_BYTE,
 	       image.bits());
-  
-  //glDisable(GL_TEXTURE_2D);
 }
 
 void

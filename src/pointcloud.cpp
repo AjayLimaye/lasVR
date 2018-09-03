@@ -139,17 +139,6 @@ PointCloud::loadAll()
     }
 }
 
-//int
-//PointCloud::maxTime()
-//{
-//  int maxTime = 0;
-//
-//  for(int d=0; d<m_tiles.count(); d++)
-//    maxTime = qMax(maxTime, m_tiles[d]->time());
-//
-//  return maxTime;
-//}
-
 void
 PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling)
 {
@@ -209,21 +198,10 @@ PointCloud::loadPoTreeMultiDir(QString dirname, int timestep, bool ignoreScaling
   loadMultipleTiles(dirnames);
 }
 
-int
+void
 PointCloud::setLevel(OctreeNode *node, int lvl)
 {
   node->setLevel(lvl);
-
-  int levelsBelow = 0;
-  for (int k=0; k<8; k++)
-    {
-      OctreeNode *cnode = node->getChild(k);
-      if (cnode)
-	levelsBelow = qMax(levelsBelow, setLevel(cnode, lvl+1)+1);
-    }
-
-  node->setLevelsBelow(levelsBelow);
-  return levelsBelow;
 }
 
 void
@@ -411,20 +389,15 @@ PointCloud::loadTileOctree(QString dirnameO)
   //-----------------------
 
   
-  //-----------------------
-  // check existance of octree.json file
-  if (jsondir.exists("octree.json"))
-    {
-      loadOctreeNodeFromJson(dirname, oNode);
-      return true;
-    }  
-  //-----------------------
+//  //-----------------------
+//  // check existance of octree.json file
+//  if (jsondir.exists("octree.json"))
+//    {
+//      loadOctreeNodeFromJson(dirname, oNode);
+//      return true;
+//    }  
+//  //-----------------------
 
-
-  //------------------------------------------------
-  // octree.json not found so continue collecting
-  // information withing the directory
-  //------------------------------------------------
 
   QStringList namefilters;
   if (m_fileFormat) // LAS/LAZ
@@ -436,17 +409,30 @@ PointCloud::loadTileOctree(QString dirnameO)
 
   Global::progressBar()->show();
 
+
   QDirIterator topDirIter(dirname,
 			  namefilters,
 			  QDir::Files | QDir::Readable,
 			  QDirIterator::Subdirectories);
 
-  QFileInfoList finfolist;
   int nfl = 0;
+  QJsonArray jsonOctreeData;
   while(topDirIter.hasNext())
     {
       topDirIter.next();
-      finfolist << topDirIter.fileInfo();
+      QFileInfo finfo = topDirIter.fileInfo();
+      QString basename = finfo.baseName();
+      QString levelString = basename.mid(1);
+      
+      //--------------------------
+      QJsonObject jsonOctreeNode;
+      QJsonObject jsonInfo;
+      jsonInfo["filename"] = jsondir.relativeFilePath(finfo.absoluteFilePath());  
+      jsonInfo["level"] = levelString;
+      jsonOctreeNode["node"] = jsonInfo;
+      //--------------------------
+      
+      jsonOctreeData << jsonOctreeNode;
       nfl++;
       if (nfl%100 == 1)
 	{
@@ -455,158 +441,9 @@ PointCloud::loadTileOctree(QString dirnameO)
 	  qApp->processEvents();
 	}
     }
-
-  qint64 totalPoints = 0;
-  int maxOct = 0;
-  int minNameSize = 10000;
-  int maxNameSize = 0;
-  for (int i=0; i<finfolist.count(); i++)
-    {
-      Global::progressBar()->setValue(100*(float)i/(float)finfolist.count());
-      qApp->processEvents();
-
-      QString basename = finfolist[i].baseName();
-      minNameSize = qMin(minNameSize, basename.count());
-      maxNameSize = qMax(maxNameSize, basename.count());
-
-      if (m_fileFormat)
-	totalPoints += getNumPointsInLASFile(finfolist[i].absoluteFilePath());
-      else
-	totalPoints += getNumPointsInBINFile(finfolist[i].absoluteFilePath());
-    }
-
-  maxOct = maxNameSize - minNameSize;
   
-  //-----------------------------
-  qint64 npts;
-  Vec shift = m_shift;
-  Vec xformCen = m_xformCen;
-  float scale = m_scale;
-  if (m_ignoreScaling)
-    scale = 1.0;
-  Quaternion rotate = m_rotation;
-  int priority = m_priority;
-  int time = m_time;
-  bool colorPresent = m_colorPresent;
-  bool classPresent = m_classPresent;
-  //-----------------------------
-
-
-  for(int l=0; l<=maxOct; l++)
-    {
-      Global::progressBar()->setValue(100*(float)l/(float)(maxOct+1));
-      qApp->processEvents();
-
-      QStringList flist;
-      for (int i=0; i<finfolist.count(); i++)
-	{
-	  QString basename = finfolist[i].baseName();
-	  if (basename.count() == minNameSize + l)
-	    flist << finfolist[i].absoluteFilePath();
-	}
-
-      if (l==0)
-	{
-	  if (m_fileFormat)
-	    npts = getNumPointsInLASFile(flist[0]);
-	  else
-	    npts = getNumPointsInBINFile(flist[0]);	  
-
-	  oNode->setFileName(flist[0]);
-	  oNode->setNumPoints(npts);
-	  oNode->setLevelsBelow(maxOct);
-	  oNode->setLevelString("");
-	  oNode->setDataPerVertex(m_dpv);
-	  oNode->setOffset(m_octreeMin);
-	  oNode->setBMin(m_octreeMin);
-	  oNode->setBMax(m_octreeMax);
-	  oNode->setTightMin(m_tightOctreeMinO);
-	  oNode->setTightMax(m_tightOctreeMaxO);
-	  oNode->setPriority(priority);
-	  oNode->setScale(scale, m_scaleCloudJs);
-	  oNode->setSpacing(m_spacing*scale);
-	  oNode->setPointAttributes(m_pointAttrib);
-	  oNode->setAttribBytes(m_attribBytes);
-	  oNode->setColorPresent(colorPresent);
-	  oNode->setClassPresent(classPresent);
-	  oNode->setZBounds(m_bminZ, m_bmaxZ);
-	}
-      else
-	{
-	  for(int fl=0; fl<flist.count(); fl++)
-	    {
-	      QString flnm = flist[fl];
-
-	      if (m_fileFormat)
-		npts = getNumPointsInLASFile(flnm);
-	      else
-		npts = getNumPointsInBINFile(flnm);	  
-
-	      QString basename = QFileInfo(flnm).baseName();
-
-	      QString levelString = basename.mid(minNameSize, l);
-
-	      // now put the node in octree
-	      QList<int> ll;
-	      for(int vl=0; vl<l; vl++)
-		ll << basename[minNameSize+vl].digitValue();
-	      
-	      OctreeNode* tnode = oNode;
-	      if (ll.count() > 0)
-		{
-		  for(int vl=0; vl<ll.count(); vl++)
-		    tnode = tnode->childAt(ll[vl]);
-
-		  m_allNodes << tnode;
-		}
-
-	      //-----------------	      
-	      Vec bmin = m_octreeMin;
-	      Vec bmax = m_octreeMax;
-	      Vec bsize = m_octreeMax-m_octreeMin;
-	      if (ll.count() > 0)
-		{	  
-		  for(int vl=0; vl<ll.count(); vl++)
-		    {
-		      //spacing /= 2;
-		      bsize /= 2;
-		      
-		      if (ll[vl]%2 > 0) bmin.z += bsize.z;
-		      if (ll[vl]%4 > 1) bmin.y += bsize.y;
-		      if (ll[vl]   > 3) bmin.x += bsize.x;
-		    }
-		  
-		  bmax = bmin + bsize;
-		}
-	      //-----------------
-	      
-	      tnode->setFileName(flnm);
-	      tnode->setNumPoints(npts);
-	      tnode->setLevelsBelow(maxOct-l);
-	      tnode->setLevelString(levelString);
-	      tnode->setDataPerVertex(m_dpv);
-	      tnode->setOffset(bmin);
-	      tnode->setBMin(bmin);
-	      tnode->setBMax(bmax);
-	      tnode->setTightMin(m_tightOctreeMinO);
-	      tnode->setTightMax(m_tightOctreeMaxO);
-	      tnode->setPriority(priority);
-	      tnode->setScale(scale, m_scaleCloudJs);
-	      tnode->setSpacing(m_spacing*scale);
-	      tnode->setPointAttributes(m_pointAttrib);
-	      tnode->setAttribBytes(m_attribBytes);
-	      tnode->setColorPresent(colorPresent);
-	      tnode->setClassPresent(classPresent);
-	      tnode->setZBounds(m_bminZ, m_bmaxZ);
-	    }
-	}
-    }
-
-
-  setXform(m_scale, m_shift, m_rotation, m_xformCen);
-
-  saveOctreeNodeToJson(dirname, oNode);
-
+  loadOctreeNodeFromJsonArray(jsondir, oNode, jsonOctreeData);
+  
   return true;
 }
 
@@ -626,6 +463,9 @@ PointCloud::loadCloudJson(QString dirname)
   QJsonDocument jsonDoc(QJsonDocument::fromJson(data));
 
   QJsonObject jsonCloudData = jsonDoc.object();
+
+  m_npoints = jsonCloudData["points"].toInt();
+  m_hierarchyStepSize = jsonCloudData["hierarchyStepSize"].toInt();
 
   m_spacing = jsonCloudData["spacing"].toDouble();
   m_scaleCloudJs = jsonCloudData["scale"].toDouble();
@@ -821,9 +661,9 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       QString flnm = jsonInfo["filename"].toString();
       flnm = jsondir.absoluteFilePath(flnm);
       
-      qint64 numpt = jsonInfo["numpoints"].toDouble();
+      //qint64 numpt = jsonInfo["numpoints"].toDouble();
 
-      int levelsBelow = jsonInfo["levelsbelow"].toInt();
+      //int levelsBelow = jsonInfo["levelsbelow"].toInt();
 
       QString lvlStr = jsonInfo["level"].toString();
       
@@ -868,8 +708,7 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setBMax(bmax);
       tnode->setTightMin(m_tightOctreeMinO);
       tnode->setTightMax(m_tightOctreeMaxO);
-      tnode->setNumPoints(numpt);
-      tnode->setLevelsBelow(levelsBelow);
+      //tnode->setNumPoints(numpt);
       tnode->setLevelString(lvlStr);
       tnode->setDataPerVertex(m_dpv);
 
@@ -890,116 +729,162 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 }
 
 void
-PointCloud::saveOctreeNodeToJson(QString dirname, OctreeNode *oNode)
+PointCloud::loadOctreeNodeFromJsonArray(QDir jsondir,
+					OctreeNode *oNode,
+					QJsonArray jsonOctreeData)
 {
-  QDir jsondir(dirname);
+  int jstart = 0;
 
-  QString str, lvlStr;
-  Vec bmin, bmax;
+  Vec shift = m_shift;
+  float scale = m_scale;
+  if (m_ignoreScaling)
+    scale = 1.0;
+  Quaternion rotate = m_rotation;
+  float bminZ = m_bminZ;
+  float bmaxZ = m_bmaxZ;
+  int priority = m_priority;
+  int time = m_time;
+  bool colorPresent = m_colorPresent;
+  bool classPresent = m_classPresent;
 
-  QJsonArray jsonOctreeData;
-  QJsonObject jsonOctreeNode;
-  QJsonObject jsonInfo;
-
-
-  //--------------------------
-  // toplevel node
-  jsonInfo["filename"] = jsondir.relativeFilePath(oNode->filename());
   
-  jsonInfo["numpoints"] = oNode->numpoints();
-  jsonInfo["levelsbelow"] = oNode->levelsBelow();
-
-  jsonInfo["level"] = "";
-
-  jsonOctreeNode["node"] = jsonInfo;
-  //--------------------------
-
-
-  jsonOctreeData << jsonOctreeNode;
-
-
-  QList<OctreeNode*> onl0;
-  onl0 << oNode;
-
-  while(onl0.count() > 0)
+  if ((jsonOctreeData[0].toObject()).contains("mod"))
     {
-      QList<OctreeNode*> onl1;
-      onl1.clear();
-      for(int i=0; i<onl0.count(); i++)
+      QJsonObject jsonOctreeNode = jsonOctreeData[0].toObject();
+      QJsonObject jsonInfo = jsonOctreeNode["mod"].toObject();
+
+      if (jsonInfo.contains("priority"))
+	priority = jsonInfo["priority"].toDouble();
+
+      if (jsonInfo.contains("time"))
+	time = jsonInfo["time"].toDouble();
+
+      if (jsonInfo.contains("shift"))
 	{
-	  OctreeNode *node = onl0[i];
-	  if (node->levelsBelow() >= 0)
-	    {
-	      for (int k=0; k<8; k++)
-		{
-		  OctreeNode *cnode = node->getChild(k);
-		  if (cnode)
-		    {
-		      onl1 << cnode;
-
-		      QJsonObject jsonOctreeNode;
-		      QJsonObject jsonInfo;
-		      jsonInfo["filename"] = jsondir.relativeFilePath(cnode->filename());
-		      
-		      jsonInfo["numpoints"] = cnode->numpoints();
-		      jsonInfo["levelsbelow"] = cnode->levelsBelow();
-		      
-		      lvlStr = cnode->levelString();
-		      jsonInfo["level"] = lvlStr;
-
-		      jsonOctreeNode["node"] = jsonInfo;
-		      
-		      
-		      jsonOctreeData << jsonOctreeNode;
-		    }
-		}
-	    }
+	  QString str = jsonInfo["shift"].toString();
+	  QStringList xyz = str.split(" ", QString::SkipEmptyParts);
+	  shift = Vec(xyz[0].toFloat(), 
+		      xyz[1].toFloat(), 
+		      xyz[2].toFloat());
 	}
 
-      onl0 = onl1;
+      if (jsonInfo.contains("rotation"))
+	{
+	  QString str = jsonInfo["rotation"].toString();
+	  QStringList xyzw = str.split(" ", QString::SkipEmptyParts);
+	  rotate = Quaternion(xyzw[0].toFloat(), 
+			      xyzw[1].toFloat(), 
+			      xyzw[2].toFloat(),
+			      xyzw[4].toFloat());
+	}
+
+      if (jsonInfo.contains("scale"))
+	scale = jsonInfo["scale"].toDouble();
+
+      if (jsonInfo.contains("min_height"))
+	bminZ = jsonInfo["min_height"].toDouble();
+
+      if (jsonInfo.contains("max_height"))
+	bmaxZ = jsonInfo["max_height"].toDouble();
+
+      if (jsonInfo.contains("color"))
+	{
+	  if (jsonInfo["color"].isBool())
+	    colorPresent = jsonInfo["color"].toBool();
+	  else
+	    colorPresent = (jsonInfo["color"].toInt() != 0);
+	}
+
+      if (jsonInfo.contains("classification"))
+	{
+	  if (jsonInfo["classification"].isBool())
+	    classPresent = jsonInfo["classification"].toBool();
+	  else
+	    classPresent = (jsonInfo["classification"].toInt() != 0);
+	}
+
+      jstart = 1;
     }
 
-  QJsonDocument saveDoc(jsonOctreeData);
-  
-  QString jsonfile = jsondir.absoluteFilePath("octree.json");
-  
-  QFile saveFile(jsonfile);
-  saveFile.open(QIODevice::WriteOnly);
-  saveFile.write(saveDoc.toJson());
+  Global::statusBar()->showMessage(jsondir.dirName(), 2000);
+  Global::progressBar()->show();
 
-  return;
-}
-
-qint64
-PointCloud::getNumPointsInBINFile(QString flnm)
-{
-  QFileInfo finfo(flnm);
-  qint64 fsz = finfo.size();
-  return fsz/m_attribBytes;
-}
-
-qint64
-PointCloud::getNumPointsInLASFile(QString flnm)
-{
-  laszip_POINTER laszip_reader;
-
-  laszip_create(&laszip_reader);
-
-  laszip_BOOL is_compressed = flnm.endsWith(".laz");
-  if (laszip_open_reader(laszip_reader, flnm.toLatin1().data(), &is_compressed))
+  int jend = jsonOctreeData.count();
+  for (int i=jstart; i<jend; i++)
     {
-      QMessageBox::information(0, flnm, "Error opening file" + flnm);
+      Global::progressBar()->setValue(100*(float)(i-jstart)/(float)(jend-jstart+1));
+      qApp->processEvents();
+
+
+      QJsonObject jsonOctreeNode = jsonOctreeData[i].toObject();
+      QJsonObject jsonInfo = jsonOctreeNode["node"].toObject();
+
+      QString str;
+      QStringList xyz;
+
+      QString flnm = jsonInfo["filename"].toString();
+      flnm = jsondir.absoluteFilePath(flnm);
+
+      QString lvlStr = jsonInfo["level"].toString();
+      
+      QList<int> ll;
+      for(int vl=0; vl<lvlStr.count(); vl++)
+	ll << lvlStr[vl].digitValue();
+
+      //-----------------
+      //float spacing = m_spacing;
+      Vec bmin = m_octreeMin;
+      Vec bmax = m_octreeMax;
+      Vec bsize = m_octreeMax-m_octreeMin;
+      if (ll.count() > 0)
+	{	  
+	  for(int vl=0; vl<ll.count(); vl++)
+	    {
+	      //spacing /= 2;
+	      bsize /= 2;
+
+	      if (ll[vl]%2 > 0) bmin.z += bsize.z;
+	      if (ll[vl]%4 > 1) bmin.y += bsize.y;
+	      if (ll[vl]   > 3) bmin.x += bsize.x;
+	    }
+
+	  bmax = bmin + bsize;
+	}
+      //-----------------
+
+
+      OctreeNode* tnode = oNode;
+      if (ll.count() > 0)
+	{
+	  for(int vl=0; vl<ll.count(); vl++)
+	    tnode = tnode->childAt(ll[vl]);
+
+	  m_allNodes << tnode;
+	}
+
+      tnode->setFileName(flnm);
+      tnode->setOffset(bmin);
+      tnode->setBMin(bmin);
+      tnode->setBMax(bmax);
+      tnode->setTightMin(m_tightOctreeMinO);
+      tnode->setTightMax(m_tightOctreeMaxO);
+      tnode->setLevelString(lvlStr);
+      tnode->setDataPerVertex(m_dpv);
+
+      tnode->setPriority(priority);
+      tnode->setScale(scale, m_scaleCloudJs);      
+      tnode->setSpacing(m_spacing*scale);
+
+      tnode->setPointAttributes(m_pointAttrib);
+      tnode->setAttribBytes(m_attribBytes);
+
+      tnode->setColorPresent(colorPresent);
+      tnode->setClassPresent(classPresent);
+
+      tnode->setZBounds(m_bminZ, m_bmaxZ);
     }
-  
-  laszip_header* header;
-  laszip_get_header_pointer(laszip_reader, &header);
-  
-  laszip_I64 npts = (header->number_of_point_records ? header->number_of_point_records : header->extended_number_of_point_records);
 
-  laszip_close_reader(laszip_reader);
-
-  qint64 numpts = npts;
-  return numpts;
+  setXform(m_scale, m_shift, m_rotation, m_xformCen);
 }
 
 void
@@ -1102,17 +987,17 @@ PointCloud::drawActiveNodes()
       OctreeNode *node = m_allNodes[d];
       if (node->isActive())
 	{
-	  int ol = node->levelsBelow();
+	  //int ol = node->levelsBelow();
 
 	  glColor3f(1,0,0);
-	  if (ol == 1) glColor3f(1,1,0);
-	  if (ol == 2) glColor3f(0,1,1);
-	  if (ol == 3) glColor3f(1,0,1);
-	  if (ol == 4) glColor3f(0,1,0);
-	  if (ol == 5) glColor3f(0,0,1);
-	  if (ol == 6) glColor3f(0,0.5,1);
-	  if (ol == 7) glColor3f(1,0.5,0);
-	  if (ol == 8) glColor3f(0,1,0.5);
+//	  if (ol == 1) glColor3f(1,1,0);
+//	  if (ol == 2) glColor3f(0,1,1);
+//	  if (ol == 3) glColor3f(1,0,1);
+//	  if (ol == 4) glColor3f(0,1,0);
+//	  if (ol == 5) glColor3f(0,0,1);
+//	  if (ol == 6) glColor3f(0,0.5,1);
+//	  if (ol == 7) glColor3f(1,0.5,0);
+//	  if (ol == 8) glColor3f(0,1,0.5);
 
 	  Vec bmin = node->bmin();
 	  Vec bmax = node->bmax();
@@ -1325,7 +1210,6 @@ PointCloud::moveTempLabel(Vec v)
   pos = xformPointInverse(v);
   m_tempLabel->setPosition(pos);
   m_tempLabel->setGlobalMinMax(m_gmin, m_gmax);
-  //m_tempLabel->genVertData();
 }
 void
 PointCloud::addLabel(Vec v, QString icon)
@@ -1534,31 +1418,11 @@ Vec
 PointCloud::tightOctreeMin()
 {
   return m_tightOctreeMin;
-
-//  Vec tm = m_tiles[0]->tightOctreeMin();
-//  for(int d=1; d<m_tiles.count(); d++)
-//    {
-//      Vec tom = m_tiles[d]->tightOctreeMin();
-//      tm.x = qMin(tom.x,tm.x);
-//      tm.y = qMin(tom.y,tm.y);
-//      tm.z = qMin(tom.z,tm.z);
-//    }
-//  return tm;
 }
 Vec
 PointCloud::tightOctreeMax()
 {
   return m_tightOctreeMax;
-
-//  Vec tm = m_tiles[0]->tightOctreeMax();
-//  for(int d=1; d<m_tiles.count(); d++)
-//    {
-//      Vec tom = m_tiles[d]->tightOctreeMax();
-//      tm.x = qMax(tom.x,tm.x);
-//      tm.y = qMax(tom.y,tm.y);
-//      tm.z = qMax(tom.z,tm.z);
-//    }
-//  return tm;
 }
 
 Vec
@@ -1588,53 +1452,9 @@ PointCloud::octreeMax()
   return tm;
 }
 
-QList<uchar>
-PointCloud::maxLevelVisible()
-{
-  QList<uchar> vS;
-  for(int d=0; d<m_tiles.count(); d++)
-    {
-      int maxlevel = 0;
-
-      OctreeNode *node = m_tiles[d];
-      if (node->isActive())
-	{	  
-	  QList<OctreeNode*> vlist;
-	  vlist << node;
-
-	  int vi = 0;
-	  
-	  bool done = false;
-	  while (!done)
-	    {
-	      int oid = vi;
-	      OctreeNode *oNode = vlist[vi];
-	      vi++;
-
-	      maxlevel = qMax(maxlevel, oNode->level());	  
-	      
-	      for (int k=0; k<8; k++)
-		{
-		  OctreeNode *cnode = oNode->getChild(k);
-		  if (cnode && cnode->isActive())
-		    vlist << cnode;
-		}
-
-	      if (vi >= vlist.count())
-		done = true;
-	    }
-	}
-      vS << maxlevel;
-    }
-
-  return vS;
-}
-
 void
 PointCloud::updateVisibilityData()
 {
-  QList<uchar> mvl = maxLevelVisible();
-
   m_vData.clear();
 
   for(int d=0; d<m_tiles.count(); d++)
@@ -1704,22 +1524,6 @@ PointCloud::updateVisibilityData()
 
       m_vData << vS;
     }
-
-//  QString mesg;
-//  for(int j=0; j<m_vData.count(); j++)
-//    {
-//      mesg += QString("Tile : %1\n").arg(j);
-//      QList<uchar> vS = m_vData[j];
-//      if (vS.count() > 0)
-//	{
-//	  for(int k=0; k<vS.count()/2; k++)
-//	    mesg += QString("%1 %2\n").arg(vS[2*k]).arg(vS[2*k+1]);
-//	}
-//      else
-//	mesg += "....\n";
-//    }
-//
-//  QMessageBox::information(0, "", mesg);
 
 }
 

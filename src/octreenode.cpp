@@ -27,7 +27,7 @@ OctreeNode::OctreeNode()
   m_coord = 0;
   for(int i=0; i<8; i++)
     m_child[i] = 0;
-  m_levelsBelow = -1;
+  //m_levelsBelow = -1;
   m_level = -1;
   m_maxVisLevel = 0;
   m_dataLoaded = false;
@@ -75,7 +75,7 @@ OctreeNode::~OctreeNode()
   for(int i=0; i<8; i++)
     m_child[i] = 0;
 
-  m_levelsBelow = -1;
+  //m_levelsBelow = -1;
   m_level = -1;
   m_maxVisLevel = 0;
   m_dataLoaded = false;
@@ -624,85 +624,6 @@ OctreeNode::setId(int id)
 	    cnode->setId(id);
 	}
     }
-}
-
-QList<OctreeNode*>
-OctreeNode::allActiveNodes()
-{
-  QList<OctreeNode*> activeNodes;
-
-  if (!isActive())
-    return activeNodes;
-  
-  activeNodes << this;
-
-  int an = 0;
-
-  bool done = false;
-  while (!done)
-    {
-      OctreeNode *node = activeNodes[an];
-      an++;
-
-      if (!node->isLeaf())
-	{
-	  for(int k=0; k<8; k++)
-	    {
-	      OctreeNode *cnode = node->getChild(k);
-	      if (cnode != 0 &&
-		  cnode->isActive())
-		activeNodes << cnode;
-	    }
-	}
-
-      if (an >= activeNodes.count())
-	done = true;
-    }
-
-  return activeNodes;
-}
-
-int
-OctreeNode::setPointSizeForActiveNodes(float ps)
-{
-  if (!isActive())
-    return 0;
-  
-  QList<OctreeNode*> activeNodes;
-  activeNodes << this;
-
-  int deepestVisibleLevel = 0;
-
-  int an = 0;
-  bool done = false;
-  while (!done)
-    {
-      OctreeNode *node = activeNodes[an];
-      an++;
-
-      deepestVisibleLevel = qMax(deepestVisibleLevel, node->level());
-
-      if (!node->isLeaf())
-	{
-	  for(int k=0; k<8; k++)
-	    {
-	      OctreeNode *cnode = node->getChild(k);
-	      if (cnode != 0 &&
-		  cnode->isActive())
-		activeNodes << cnode;
-	    }
-	}
-
-      if (an >= activeNodes.count())
-	done = true;
-    }
-
-  for(int i=0; i<activeNodes.count(); i++)
-    //activeNodes[i]->setPointSize((deepestVisibleLevel+1.0)/ps);
-    //activeNodes[i]->setPointSize(1.0/(deepestVisibleLevel+1.0));
-    activeNodes[i]->setPointSize(deepestVisibleLevel);	
-			 
-  return (deepestVisibleLevel+1);
 }
 
 uchar

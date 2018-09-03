@@ -3482,62 +3482,6 @@ Viewer::savePointsToFile(Vec newp)
 
 }
 
-//void
-//Viewer::createMinMaxTexture()
-//{
-//  if (!m_minmaxTex) glGenTextures(1, &m_minmaxTex);
-//
-//  m_tiles.clear();
-//  for(int d=0; d<m_pointClouds.count(); d++)
-//    m_tiles += m_pointClouds[d]->tiles();
-//
-//
-//  QList<uchar> visibleLevel;
-//  for(int d=0; d<m_pointClouds.count(); d++)
-//    visibleLevel += m_pointClouds[d]->maxLevelVisible();
-//
-//
-//  int ntiles = m_tiles.count();
-//  if (m_minmaxMap) delete [] m_minmaxMap;
-//  m_minmaxMap = new float[8*ntiles];
-//
-//  memset(m_minmaxMap, 0, sizeof(float)*8*ntiles);
-//
-//  for(int i=0; i<ntiles; i++)
-//    {
-//      Vec bmin = m_tiles[i]->bmin();
-//      Vec bmax = m_tiles[i]->bmax();
-//      float spacing = m_tiles[i]->spacing();
-//      float maxLevel = visibleLevel[i];
-//
-//      m_minmaxMap[8*i+0] = bmin.x;
-//      m_minmaxMap[8*i+1] = bmin.y;
-//      m_minmaxMap[8*i+2] = bmin.z;
-//      m_minmaxMap[8*i+3] = spacing;
-//      m_minmaxMap[8*i+4] = bmax.x;
-//      m_minmaxMap[8*i+5] = bmax.y;
-//      m_minmaxMap[8*i+6] = bmax.z;
-//      m_minmaxMap[8*i+7] = maxLevel;
-//    }
-//
-//  GLuint target = GL_TEXTURE_RECTANGLE;
-//  glActiveTexture(GL_TEXTURE2);
-//    glBindTexture(target, m_minmaxTex);
-//  glTexParameterf(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
-//  glTexParameterf(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
-//  glTexParameterf(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-//  glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//  glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//  glTexImage2D(target,
-//	       0,
-//	       GL_RGBA32F,
-//	       2, ntiles, 
-//	       0,
-//	       GL_RGBA,
-//	       GL_FLOAT,
-//	       m_minmaxMap);  
-//}
-
 void
 Viewer::createMinMaxTexture()
 {

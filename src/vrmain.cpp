@@ -563,10 +563,10 @@ VrMain::showMessage(QString mesg)
 	  ui.toolBar->hide();
 	}
 
-      setWindowTitle("Srishti v1.07");
+      setWindowTitle("Srishti v1.08");
     }
   else
-    setWindowTitle("Srishti v1.07 - "+mesg);
+    setWindowTitle("Srishti v1.08 - "+mesg);
 }
 
 void VrMain::on_actionEditMode_triggered()
