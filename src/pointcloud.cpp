@@ -389,14 +389,14 @@ PointCloud::loadTileOctree(QString dirnameO)
   //-----------------------
 
   
-//  //-----------------------
-//  // check existance of octree.json file
-//  if (jsondir.exists("octree.json"))
-//    {
-//      loadOctreeNodeFromJson(dirname, oNode);
-//      return true;
-//    }  
-//  //-----------------------
+  //-----------------------
+  // check existance of octree.json file
+  if (jsondir.exists("octree.json"))
+    {
+      loadOctreeNodeFromJson(dirname, oNode);
+      return true;
+    }  
+  //-----------------------
 
 
   QStringList namefilters;
@@ -444,6 +444,14 @@ PointCloud::loadTileOctree(QString dirnameO)
   
   loadOctreeNodeFromJsonArray(jsondir, oNode, jsonOctreeData);
   
+  //------------
+  QJsonDocument saveDoc(jsonOctreeData);  
+  QString jsonfile = jsondir.absoluteFilePath("octree.json");  
+  QFile saveFile(jsonfile);
+  saveFile.open(QIODevice::WriteOnly);
+  saveFile.write(saveDoc.toJson());
+  //------------
+
   return true;
 }
 
