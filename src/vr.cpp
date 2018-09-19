@@ -737,6 +737,7 @@ VR::xButtonPressed()
   QString icon = m_leftMenu.currentAnnotationIcon();
   emit addTempLabel(cenW, icon);
   CaptionWidget::setText("hud", "Keep button pressed and\nswipe blue touchpad up/down\nto move icon near/far");
+  CaptionWidget::blink("hud", 200);
 }
 void
 VR::xButtonMoved()
@@ -2378,6 +2379,10 @@ void
 VR::setDataShown(QString stpStr)
 {
   m_leftMenu.setDataShown(stpStr);
+
+
+  CaptionWidget::setText("hud", stpStr);
+  CaptionWidget::blinkAndHide("hud", 200);
 }
 
 
