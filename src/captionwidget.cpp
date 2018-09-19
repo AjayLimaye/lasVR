@@ -285,7 +285,8 @@ CaptionWidget::setText(QString caption)
   float sclh = 0.5*tht;
   //if (sclh > 0.1)// limit height
     {
-      frc = 0.1/sclh;
+      int nlines = m_caption.split("\n").count();
+      frc = nlines*0.1/sclh;
       sclh *= frc;
       sclw *= frc;
     }

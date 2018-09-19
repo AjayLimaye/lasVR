@@ -107,6 +107,12 @@ StaticFunctions::renderText(int x, int y,
 			    QColor bcolor, QColor color,
 			    bool left)
 {
+  if (str.contains("\n"))
+    {
+      QStringList strlist = str.split("\n");
+      return renderText(x, y, strlist, font, bcolor, color, left);
+    }
+  
   QFontMetrics metric(font);
   int ht = metric.height()+9;
   int wd = metric.width(str)+11;
@@ -130,11 +136,55 @@ StaticFunctions::renderText(int x, int y,
 
   glDrawPixels(wd, ht, GL_RGBA, GL_UNSIGNED_BYTE, mimg.bits());
 }
+void
+StaticFunctions::renderText(int x, int y,
+			    QStringList strlist, QFont font,
+			    QColor bcolor, QColor color,
+			    bool left)
+{
+  QFontMetrics metric(font);
+
+  int ht = strlist.count()*metric.height();
+  int wd = 0;
+  for(int i=0; i<strlist.count(); i++)
+    wd = qMax(wd, metric.width(strlist[i]));
+  ht += 10;
+  wd += 10;
+
+  QImage img(wd, ht, QImage::Format_ARGB32);
+  img.fill(Qt::transparent);
+  //  img.fill(bcolor);
+  QPainter p(&img);
+  p.setRenderHints(QPainter::TextAntialiasing, true);
+  p.setPen(QPen(color, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  p.setFont(font);
+  p.setBrush(bcolor);
+  p.drawRoundedRect(1, 1, wd-2, ht-2, 5, 5);
+
+  QString str = strlist.join("\n");  
+  p.drawText(QRect(5,5,wd-10,ht-10),
+	     Qt::AlignCenter,
+	     str);
+  
+  QImage mimg = img.mirrored();
+  if (!left)
+    glRasterPos2i(x-wd/2, y+ht/2);
+  else
+    glRasterPos2i(x, y);
+
+  glDrawPixels(wd, ht, GL_RGBA, GL_UNSIGNED_BYTE, mimg.bits());
+}
 
 QImage
 StaticFunctions::renderText(QString str, QFont font,
 			    QColor bcolor, QColor color, bool border)
 {
+  if (str.contains("\n"))
+    {
+      QStringList strlist = str.split("\n");
+      return renderText(strlist, font, bcolor, color, border);
+    }
+  
   QFontMetrics metric(font);
   int ht = metric.height()+9;
   int wd = metric.width(str)+11;
@@ -150,6 +200,38 @@ StaticFunctions::renderText(QString str, QFont font,
   
   p.drawText(5, ht-metric.descent()-5, str);
 
+  QImage mimg = img.mirrored();
+
+  return mimg;
+}
+QImage
+StaticFunctions::renderText(QStringList strlist, QFont font,
+			    QColor bcolor, QColor color, bool border)
+{
+  QFontMetrics metric(font);
+
+  int ht = strlist.count()*metric.height();
+  int wd = 0;
+  for(int i=0; i<strlist.count(); i++)
+    wd = qMax(wd, metric.width(strlist[i]));
+  ht += 10;
+  wd += 10;
+
+  QImage img(wd, ht, QImage::Format_ARGB32);
+  img.fill(bcolor);
+  QPainter p(&img);
+  p.setRenderHints(QPainter::TextAntialiasing, true);
+  p.setPen(QPen(color, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  p.setFont(font);
+
+  if (border)
+    p.drawRoundedRect(1, 1, wd-2, ht-2, 5, 5);
+  
+  QString str = strlist.join("\n");  
+  p.drawText(QRect(5,5,wd-10,ht-10),
+	     Qt::AlignCenter,
+	     str);
+  
   QImage mimg = img.mirrored();
 
   return mimg;

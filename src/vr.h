@@ -323,6 +323,7 @@ class VR : public QObject
   float m_deadRadius;
   QVector3D m_deadPoint;
 
+  float m_moveAnnotation;
 
   void buildAxes();
   bool buildTeleport();

@@ -27,6 +27,13 @@ class StaticFunctions
   static QImage renderText(QString, QFont,
 			   QColor, QColor,
 			   bool border = true);
+  static void renderText(int, int,
+			 QStringList, QFont,
+			 QColor, QColor,
+			 bool left = false);
+  static QImage renderText(QStringList, QFont,
+			   QColor, QColor,
+			   bool border = true);
 
   static void renderRotatedText(int, int,
 				QString, QFont,

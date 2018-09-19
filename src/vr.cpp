@@ -727,23 +727,22 @@ VR::xButtonPressed()
   m_xActive = true;
   //gotoPreviousStep();
 
+  m_moveAnnotation = 0.5;
+  
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  //QVector3D cenV = m_final_xformInverted.map(centerR);
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
   QVector3D cenV = m_final_xformInverted.map(frontR);
   Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
 
   QString icon = m_leftMenu.currentAnnotationIcon();
   emit addTempLabel(cenW, icon);
+  CaptionWidget::setText("hud", "Keep button pressed and\nswipe blue touchpad up/down\nto move icon near/far");
 }
 void
 VR::xButtonMoved()
 {
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  //QVector3D cenV = m_final_xformInverted.map(centerR);
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
   QVector3D cenV = m_final_xformInverted.map(frontR);
   Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
 
@@ -755,9 +754,7 @@ VR::xButtonReleased()
   m_xActive = false;
 
   QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  //QVector3D centerR = QVector3D(matR * QVector4D(0,0,0,1));
-  //QVector3D cenV = m_final_xformInverted.map(centerR);
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-0.1,1)); 
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
   QVector3D cenV = m_final_xformInverted.map(frontR);
   Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
 
@@ -978,9 +975,13 @@ VR::leftTouchMove()
 {
   m_touchX = m_stateLeft.rAxis[0].x;
   m_touchY = m_stateLeft.rAxis[0].y;
-
-  if (m_touchX > 0.5) m_gotoMenu = 1;
-  if (m_touchX < -0.5) m_gotoMenu = -1;
+    
+  if (m_touchX > 0.5)
+    m_gotoMenu = 1;
+  else if (m_touchX < -0.5)
+    m_gotoMenu = -1;
+  else
+    m_moveAnnotation = 0.1 + qMax(0.0f, 100*(m_touchY - m_startTouchY));
 }
 void
 VR::leftTouchReleased()

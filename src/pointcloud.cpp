@@ -398,7 +398,7 @@ PointCloud::loadTileOctree(QString dirnameO)
     }  
   //-----------------------
 
-
+  
   QStringList namefilters;
   if (m_fileFormat) // LAS/LAZ
     namefilters << "*.las" << "*.laz";
@@ -436,7 +436,8 @@ PointCloud::loadTileOctree(QString dirnameO)
       nfl++;
       if (nfl%100 == 1)
 	{
-	  float pg = nfl%100;
+	  //Global::statusBar()->showMessage(basename);
+	  float pg = (nfl/100)%100;
 	  Global::progressBar()->setValue(pg);
 	  qApp->processEvents();
 	}
@@ -668,10 +669,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
 
       QString flnm = jsonInfo["filename"].toString();
       flnm = jsondir.absoluteFilePath(flnm);
-      
-      //qint64 numpt = jsonInfo["numpoints"].toDouble();
-
-      //int levelsBelow = jsonInfo["levelsbelow"].toInt();
 
       QString lvlStr = jsonInfo["level"].toString();
       
@@ -716,7 +713,6 @@ PointCloud::loadOctreeNodeFromJson(QString dirname, OctreeNode *oNode)
       tnode->setBMax(bmax);
       tnode->setTightMin(m_tightOctreeMinO);
       tnode->setTightMax(m_tightOctreeMaxO);
-      //tnode->setNumPoints(numpt);
       tnode->setLevelString(lvlStr);
       tnode->setDataPerVertex(m_dpv);
 
