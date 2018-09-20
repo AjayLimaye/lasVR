@@ -22,6 +22,10 @@ class Label
   void setFontSize(float fs) { m_fontSize = fs; }
   void setLink(QString lnk) { m_linkData = lnk; }
 
+  Vec position() { return m_positionO; }
+  QString icon() { return m_icon; }
+  QString caption() { return m_caption; }
+  
   void setTreeInfo(QList<float>);
 
   void drawLabel(Camera*);

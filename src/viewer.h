@@ -141,6 +141,7 @@ class Viewer : public QGLViewer
 
     void addTempLabel(Vec, QString);
     void moveTempLabel(Vec);
+    void makeTempLabelPermanent();
     void addLabel(Vec, QString);
     void loadLabelsJson(QString);
     

@@ -283,9 +283,9 @@ CaptionWidget::setText(QString caption)
 
   float sclw = 0.5*twd;
   float sclh = 0.5*tht;
+  int nlines = m_caption.split("\n").count();
   //if (sclh > 0.1)// limit height
     {
-      int nlines = m_caption.split("\n").count();
       frc = nlines*0.1/sclh;
       sclh *= frc;
       sclw *= frc;
@@ -293,13 +293,16 @@ CaptionWidget::setText(QString caption)
   m_captionMat.setToIdentity();
   //m_captionMat.translate(-0.4, 0.3, -1.0);
   //m_captionMat.rotate(45, 0, 1, 0);
-  Vec v(0, -0.7+sclh, -1.5);
+  //Vec v(0, -0.7+sclh, -1.5);
+  Vec v(0, -0.6-nlines*0.15+sclh, -1.5);
   float angle = Quaternion(v, Vec(0,1,0)).angle();
   Vec axis = Quaternion(v, Vec(0,1,0)).axis();
   angle = qRadiansToDegrees(angle);
   m_captionMat.translate(v.x, v.y, v.z);  
   m_captionMat.rotate(-angle/2, axis.x, axis.y, axis.z);
   m_captionMat.scale(sclw, sclh, 1);  
+
+  m_hideAfterBlink = false;
 }
 
 void
@@ -354,7 +357,7 @@ CaptionWidget::draw(QMatrix4x4 mvp, QMatrix4x4 hmdMat)
 
   QMatrix4x4 cmvp = mvp * hmdMat * m_captionMat;  
 
-  float op = qMin(1.0, 0.3 + (m_blink%100)*0.01);
+  float op = qMin(1.0, 0.5 + (m_blink%100)*0.005);
   m_blink = qMax(m_blink-1, 0);
 
   glUseProgram(ShaderFactory::rcShader());

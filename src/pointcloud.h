@@ -67,6 +67,7 @@ class PointCloud
   void loadLabelsJson(QString);
   void setTempLabel(Vec, QString);
   void moveTempLabel(Vec);
+  void makeTempLabelPermanent();
   void addLabel(Vec, QString);
   void drawLabels(Camera*);
   void drawLabels(QVector3D,

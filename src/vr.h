@@ -174,6 +174,7 @@ class VR : public QObject
  signals :
   void addTempLabel(Vec, QString);
   void moveTempLabel(Vec);
+  void makeTempLabelPermanent();
   void addLabel(Vec, QString);
     
  private :
@@ -323,6 +324,7 @@ class VR : public QObject
   float m_deadRadius;
   QVector3D m_deadPoint;
 
+  int m_annoMode;
   float m_moveAnnotation;
 
   void buildAxes();
@@ -451,6 +453,10 @@ class VR : public QObject
   bool nextHit();
 
   void loadAnnotationIcons();
+
+  void preAnnotation();
+  void moveAnnotation();
+  void fixAnnotation();
 };
 
 

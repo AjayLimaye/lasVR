@@ -1216,6 +1216,18 @@ PointCloud::moveTempLabel(Vec v)
   m_tempLabel->setGlobalMinMax(m_gmin, m_gmax);
 }
 void
+PointCloud::makeTempLabelPermanent()
+{
+  m_labels << m_tempLabel;
+  
+  saveLabelToJson(m_tempLabel->position(),
+		  m_tempLabel->caption(),
+		  m_tempLabel->icon());
+
+  m_tempLabel = 0;
+}
+
+void
 PointCloud::addLabel(Vec v, QString icon)
 {
   if (m_tempLabel)

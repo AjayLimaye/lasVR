@@ -153,6 +153,8 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
 	  this, SLOT(addTempLabel(Vec, QString)));
   connect(&m_vr, SIGNAL(moveTempLabel(Vec)),
 	  this, SLOT(moveTempLabel(Vec)));
+  connect(&m_vr, SIGNAL(makeTempLabelPermanent()),
+	  this, SLOT(makeTempLabelPermanent()));
   connect(&m_vr, SIGNAL(addLabel(Vec, QString)),
 	  this, SLOT(addLabel(Vec, QString)));
 
@@ -4101,6 +4103,19 @@ Viewer::moveTempLabel(Vec v)
       if (m_pointClouds[d]->visible())
 	{
 	  m_pointClouds[d]->moveTempLabel(v);
+	  break;
+	}
+    }
+}
+void
+Viewer::makeTempLabelPermanent()
+{
+  // label to the first visible point cloud
+  for(int d=0; d<m_pointClouds.count(); d++)
+    {
+      if (m_pointClouds[d]->visible())
+	{
+	  m_pointClouds[d]->makeTempLabelPermanent();
 	  break;
 	}
     }

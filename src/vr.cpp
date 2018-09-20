@@ -85,6 +85,9 @@ VR::VR() : QObject()
 
   m_updateMap = false;
 
+  m_moveAnnotation = 0.5;
+  m_annoMode = 0;
+  
   connect(&m_leftMenu, SIGNAL(resetModel()),
 	  this, SLOT(resetModel()));
   connect(&m_leftMenu, SIGNAL(updateMap()),
@@ -727,43 +730,19 @@ VR::xButtonPressed()
   m_xActive = true;
   //gotoPreviousStep();
 
-  m_moveAnnotation = 0.5;
-  
-  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
-  QVector3D cenV = m_final_xformInverted.map(frontR);
-  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
-
-  QString icon = m_leftMenu.currentAnnotationIcon();
-  emit addTempLabel(cenW, icon);
-  CaptionWidget::setText("hud", "Keep button pressed and\nswipe blue touchpad up/down\nto move icon near/far");
-  CaptionWidget::blink("hud", 200);
+  if (m_annoMode == 0)
+    preAnnotation();
+  else
+    fixAnnotation();
 }
 void
 VR::xButtonMoved()
 {
-  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
-  QVector3D cenV = m_final_xformInverted.map(frontR);
-  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
-
-  emit moveTempLabel(cenW);
 }
 void
 VR::xButtonReleased()
 {
   m_xActive = false;
-
-  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
-  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
-  QVector3D cenV = m_final_xformInverted.map(frontR);
-  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
-
-  QString icon = m_leftMenu.currentAnnotationIcon();
-  emit addLabel(cenW, icon);
-
-  CaptionWidget::setText("hud", QString("Label %1 Added").arg(icon));
-  CaptionWidget::blinkAndHide("hud", 200);
 }
 
 
@@ -977,12 +956,9 @@ VR::leftTouchMove()
   m_touchX = m_stateLeft.rAxis[0].x;
   m_touchY = m_stateLeft.rAxis[0].y;
     
-  if (m_touchX > 0.5)
-    m_gotoMenu = 1;
-  else if (m_touchX < -0.5)
-    m_gotoMenu = -1;
-  else
-    m_moveAnnotation = 0.1 + qMax(0.0f, 100*(m_touchY - m_startTouchY));
+  if (m_touchX > 0.5) m_gotoMenu = 1;
+
+  if (m_touchX < -0.5) m_gotoMenu = -1;
 }
 void
 VR::leftTouchReleased()
@@ -1027,6 +1003,18 @@ VR::rightTouchMove()
   
   m_touchX = m_stateRight.rAxis[0].x;
   m_touchY = m_stateRight.rAxis[0].y;
+
+  //-----------------------------
+  // handle annotation if active
+  // no flying if handling annotation
+  if (m_annoMode == 1)
+    {
+      float amf = 0.001*m_scaleFactor/m_coordScale;
+      m_moveAnnotation = 0.1 + amf*qMax(0.0f, 10*(m_touchY - m_startTouchY));
+      moveAnnotation();
+      return;
+    }  
+  //-----------------------------
 
   float acc = (m_touchY-m_startTouchY);
 
@@ -3127,4 +3115,41 @@ VR::loadAnnotationIcons()
 //    icons << idir.relativeFilePath(flist.at(i));
 //
 //  m_leftMenu.setAnnotationIcons(icons);
+}
+
+void
+VR::preAnnotation()
+{
+  m_annoMode = 1;
+  m_moveAnnotation = 0.1 + 0.001*m_scaleFactor/m_coordScale;
+  
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
+  QVector3D cenV = m_final_xformInverted.map(frontR);
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+
+  QString icon = m_leftMenu.currentAnnotationIcon();
+  emit addTempLabel(cenW, icon);
+  CaptionWidget::setText("hud", "Swipe yellow touchpad up/down\nto move icon\nPress yellow menu button again\nto fix annotation position");
+  CaptionWidget::blink("hud", 200);
+}
+void
+VR::moveAnnotation()
+{
+  QMatrix4x4 matR = m_matrixDevicePose[m_rightController];
+  QVector3D frontR = QVector3D(matR * QVector4D(0,0,-m_moveAnnotation,1)); 
+  QVector3D cenV = m_final_xformInverted.map(frontR);
+  Vec cenW = Vec(cenV.x(), cenV.y(), cenV.z());
+
+  emit moveTempLabel(cenW);
+}
+void
+VR::fixAnnotation()
+{
+  m_annoMode = 0;
+  
+  emit makeTempLabelPermanent();
+
+  CaptionWidget::setText("hud", "Annotation added");
+  CaptionWidget::blinkAndHide("hud", 200);
 }
