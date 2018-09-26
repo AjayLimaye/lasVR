@@ -312,6 +312,8 @@ Menu02::genVertData()
       button.setText("icon");
       m_buttons << button;      
     }
+  // set the first icon as active
+  if (m_buttons.count() > 0) m_buttons[0].toggle();
   //-----------------------
   //-----------------------
   
@@ -610,6 +612,8 @@ Menu02::checkOptions(QMatrix4x4 matL, QMatrix4x4 matR, int triggered)
 
       m_buttons[m_selected].toggle();
 
+      emit toggle("icon", currentIcon());
+	
       return m_selected;
     }
 

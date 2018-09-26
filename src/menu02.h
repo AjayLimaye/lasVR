@@ -47,7 +47,7 @@ class Menu02 : public QObject
  signals :
   void resetModel();
 
-  void toggle(QString, float);
+  void toggle(QString, QString);
 
  private :
   bool m_visible;

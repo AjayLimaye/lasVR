@@ -71,6 +71,7 @@ class VrMenu : public QObject
   void playPressed(bool);
 
   void toggle(QString, float);
+  void toggle(QString, QString);
 
  private :
   QMap<QString, QObject*> m_menus;

@@ -35,6 +35,9 @@ Label::Label()
   m_shift = Vec(0,0,0);
   m_offset = Vec(0,0,0);
   m_xformCen = Vec(0,0,0);
+
+  m_glTexture = 0;
+  m_texGeninLabel = false;
 }
 
 Label::~Label()
@@ -59,6 +62,13 @@ Label::~Label()
       m_glVertArray = 0;
       m_glVertBuffer = 0;
     }
+
+  if (m_glTexture && m_texGeninLabel)
+      glDeleteTextures(1, &m_glTexture);
+  m_glTexture = 0;
+
+  m_texGeninLabel = false;
+
 }
 
 void
@@ -150,7 +160,11 @@ Label::setTreeInfo(QList<float> ti)
       cht += img[i].height();
     }
 
-  glGenTextures(1, &m_glTexture);
+  if (!m_glTexture)
+    {
+      glGenTextures(1, &m_glTexture);
+      m_texGeninLabel = true;
+    }
   glBindTexture(GL_TEXTURE_2D, m_glTexture);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
@@ -401,16 +415,18 @@ Label::genVertData()
   QImage tmpTex;
   if (m_icon.isEmpty())
     {
-      if (!m_glTexture)
-	glGenTextures(1, &m_glTexture);
-
       m_captionImage = StaticFunctions::renderText(m_caption,
 						   font,
 						   Qt::black, color);      
       m_texWd = m_captionImage.width();
       m_texHt = m_captionImage.height();
 
-      glActiveTexture(GL_TEXTURE4);
+      if (!m_glTexture)
+	{
+	  glGenTextures(1, &m_glTexture);
+	  m_texGeninLabel = true;
+	}
+
       glBindTexture(GL_TEXTURE_2D, m_glTexture);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
@@ -559,12 +575,14 @@ Label::drawLabel(QVector3D cpos,
   // cannot figure out where I am going wrong
   if (m_icon.isEmpty())
     {
+//      glActiveTexture(GL_TEXTURE4);
+//      glBindTexture(GL_TEXTURE_2D, m_glTexture);
       glBindTextureUnit(4, m_glTexture);
-      glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
-			  GL_RGBA, GL_UNSIGNED_BYTE, m_captionImage.bits());
+////      glTextureSubImage2D(m_glTexture, 0, 0, 0, m_texWd, m_texHt,
+////			  GL_RGBA, GL_UNSIGNED_BYTE, m_captionImage.bits());
     }
-//  else
-//    glBindTextureUnit(5, m_glTexture);
+////  else
+////    glBindTextureUnit(5, m_glTexture);
 
   glBindVertexArray(m_glVertArray);
   glBindBuffer( GL_ARRAY_BUFFER, m_glVertBuffer);
@@ -762,11 +780,11 @@ Label::drawBox(QMatrix4x4 mvp, QVector3D vDir,
 {
   glActiveTexture(GL_TEXTURE4);
   if (box)
-    //glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
-    glBindTextureUnit(4, Global::boxSpriteTexture());
+    glBindTexture(GL_TEXTURE_2D, Global::boxSpriteTexture());
+  //glBindTextureUnit(4, Global::boxSpriteTexture());
   else
-    //glBindTexture(GL_TEXTURE_2D, Global::circleSpriteTexture());
-    glBindTextureUnit(4, Global::circleSpriteTexture());
+    glBindTexture(GL_TEXTURE_2D, Global::circleSpriteTexture());
+  //glBindTextureUnit(4, Global::circleSpriteTexture());
 
 
   //glEnable(GL_TEXTURE_2D);

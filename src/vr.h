@@ -170,7 +170,8 @@ class VR : public QObject
   void gotoPreviousStep();
   void gotoNextStep();
   void playPressed(bool);
-
+  void toggle(QString, QString);
+    
  signals :
   void addTempLabel(Vec, QString);
   void moveTempLabel(Vec);

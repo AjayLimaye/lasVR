@@ -35,6 +35,9 @@ VrMenu::VrMenu() : QObject()
 
   connect(m_menus["02"], SIGNAL(toggle(QString, float)),
 	  this, SIGNAL(toggle(QString, float)));
+
+  connect(m_menus["02"], SIGNAL(toggle(QString, QString)),
+	  this, SIGNAL(toggle(QString, QString)));
 }
 
 VrMenu::~VrMenu()

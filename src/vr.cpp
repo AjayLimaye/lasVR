@@ -112,6 +112,24 @@ VR::VR() : QObject()
 	  this, SLOT(gotoNextStep()));
   connect(&m_leftMenu, SIGNAL(playPressed(bool)),
 	  this, SLOT(playPressed(bool)));
+
+  connect(&m_leftMenu, SIGNAL(toggle(QString, QString)),
+	  this, SLOT(toggle(QString, QString)));
+
+}
+
+void
+VR::toggle(QString attrib, QString val)
+{
+  QString attr = attrib.toLower().trimmed();
+
+  if (attr == "icon" && m_annoMode==1)
+    {
+      Vec pp = Vec(m_projectedPinPt.x(),
+		   m_projectedPinPt.y(),
+		   m_projectedPinPt.z()+m_moveAnnotation);
+      emit addTempLabel(pp, val);
+    }
 }
 
 void
@@ -716,6 +734,16 @@ VR::updateInput()
 
 // -----------------------
 
+// -----------------------
+  if (m_annoMode == 1)
+    {
+      Vec pp = Vec(m_projectedPinPt.x(),
+		   m_projectedPinPt.y(),
+		   m_projectedPinPt.z()+m_moveAnnotation);
+      emit moveTempLabel(pp);
+    }
+// -----------------------
+
   return true;
 }
 //---------------------------------------
@@ -885,12 +913,13 @@ VR::rightTriggerPressed()
       bothTriggerPressed();
       return;
     }
-
+  
   m_startTranslate =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
 }
 void
 VR::rightTriggerMove()
 {
+
   QVector3D pos =  getPosition(m_trackedDevicePose[m_rightController].mDeviceToAbsoluteTracking);
   pos = (pos - m_startTranslate);
   
@@ -979,7 +1008,8 @@ VR::rightTouched()
 {
   m_touchActiveRight = true;
 
-  m_flightActive = true;
+  if (m_annoMode != 1)
+    m_flightActive = true;
   
   m_startTouchX = m_stateRight.rAxis[0].x;
   m_startTouchY = m_stateRight.rAxis[0].y;
@@ -1010,8 +1040,13 @@ VR::rightTouchMove()
   if (m_annoMode == 1)
     {
       float amf = 0.001*m_scaleFactor/m_coordScale;
-      m_moveAnnotation = 0.1 + amf*qMax(0.0f, 10*(m_touchY - m_startTouchY));
-      moveAnnotation();
+      //m_moveAnnotation = 0.1 + amf*qMax(0.0f, 10*(m_touchY - m_startTouchY));
+      m_moveAnnotation = 1.0 + amf*qMax(1.0f, 10*(m_touchY - m_startTouchY));
+      Vec pp = Vec(m_projectedPinPt.x(),
+		   m_projectedPinPt.y(),
+		   m_projectedPinPt.z()+m_moveAnnotation);
+      emit moveTempLabel(pp);
+      //moveAnnotation();
       return;
     }  
   //-----------------------------
@@ -2493,6 +2528,15 @@ VR::buildPinPoint()
   vert << telPosU.z();      
 
   int npt = 2;
+
+  if (m_annoMode == 1)
+    {
+      vert << m_projectedPinPt.x();
+      vert << m_projectedPinPt.y();
+      vert << m_projectedPinPt.z()+qMax(0.0, m_moveAnnotation-2.0);
+      npt = 3;
+    }
+  
   
   float vt[100];  
   memset(vt, 0, sizeof(float)*100);
@@ -2511,8 +2555,15 @@ VR::buildPinPoint()
 
       vt[6] = 0.8; // texture coordinates
       vt[7] = 0.8;
-      vt[12]= 0.5;
-      vt[13]= 0.5;
+      vt[14]= 0.5;
+      vt[15]= 0.5;
+      if (m_annoMode == 1)
+	{
+	  vt[14]= 0.1;
+	  vt[15]= 0.1;
+	  vt[22] = 0.8;
+	  vt[23] = 0.8;
+	}
     }
   else
     {
@@ -2521,8 +2572,8 @@ VR::buildPinPoint()
 
       vt[6] = 1.0; // texture coordinates
       vt[7] = 1.0;
-      vt[12] = 0.5;
-      vt[13] = 0.5;
+      vt[14] = 0.5;
+      vt[15] = 0.5;
     }
 
   glBindBuffer(GL_ARRAY_BUFFER, m_boxV);
@@ -2553,7 +2604,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
   if (m_telPoints > 0)
     glUniform3f(rcShaderParm[2], 1, 1, 1); // color
   else
-    glUniform3f(rcShaderParm[2], 1, 1, 0); // color
+    glUniform3f(rcShaderParm[2], 1, 1, m_annoMode); // color
 
   glUniform3f(rcShaderParm[3], 0, 0, 0); // view direction
   glUniform1f(rcShaderParm[4], 0.5); // opacity modulator
@@ -2590,7 +2641,7 @@ VR::renderTeleport(vr::Hmd_Eye eye)
 			 sizeof(float)*8,
 			 (char *)NULL + m_axesPoints*15 + sizeof(float)*6 );
 
-  if (m_telPoints > 0)
+  if (m_telPoints > 0 || m_annoMode == 1)
     glLineWidth(20);
   else
     glLineWidth(2);
