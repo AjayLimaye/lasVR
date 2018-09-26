@@ -481,6 +481,9 @@ Menu02::draw(QMatrix4x4 mvpC, QMatrix4x4 matL, bool triggerPressed)
       glUniform1i(rcShaderParm[5], 3); // point sprite
       glDrawArrays(GL_POINTS, 0, 1);
       glDisable(GL_POINT_SPRITE);
+
+      // bind iconTexture back on
+      glBindTextureUnit(5, IconLibrary::iconTexture());
     }
   // ----
 
