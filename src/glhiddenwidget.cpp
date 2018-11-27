@@ -91,6 +91,7 @@ GLHiddenWidget::setVolume(Volume *v)
     {
       ht = m_vr->screenHeight();
       m_fov = qDegreesToRadians(110.0); // FOV is 110 degrees for HTC Vive
+      //m_fov = qDegreesToRadians(55.0); // FOV is 110 degrees for HTC Vive
     }
   else
     {
@@ -616,6 +617,103 @@ GLHiddenWidget::genDrawNodeList()
   m_viewer->setNearFar(nearDist, farDist);
 }
 
+//void
+//GLHiddenWidget::genPriorityQueue(Vec cpos)
+//{
+//  QMatrix4x4 MV;
+//
+//  if (m_viewer->vrMode() && m_vr->vrEnabled())
+//    {
+//      MV = m_vr->modelView();
+//    }
+//  else
+//    {
+//      float m[16];
+//      m_viewer->camera()->getModelViewMatrix(m);
+//      for(int i=0; i<16; i++)
+//	MV.data()[i] = m[i];
+//      MV = MV.transposed();
+//    }
+//
+//		  
+//  m_pointsDrawn = 0;
+//  m_newNodes.clear();
+//  m_priorityQueue.clear();
+//
+//  // consider all top-level tile nodes first
+//  for(int d=0; d<m_orderedTiles.count(); d++)
+//    {
+//      OctreeNode *node = m_orderedTiles[d];
+//      
+//      Vec bmin = node->bmin();
+//      Vec bmax = node->bmax(); 
+//
+//      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
+//      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
+//      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
+//      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
+//      
+//      float screenProjectedSize = 100000;
+//      screenProjectedSize = StaticFunctions::projectionSize(cpos,
+//							    bmin, bmax,
+//							    m_projFactor);
+//      
+//      m_priorityQueue.insert(screenProjectedSize, node);
+//    }
+//
+//  QStack<OctreeNode*> nodeStack;
+//  QList<float> keys = m_priorityQueue.keys();
+//  for(int k=0; k<keys.count(); k++)
+//    {
+//      QList<OctreeNode*> values = m_priorityQueue.values(keys[k]);
+//      for(int v=0; v<values.count(); v++)
+//	{
+//	  nodeStack.push(values[k]);
+//	}
+//    }
+//
+//  // now consider the nodes within each tile
+//  while (!nodeStack.isEmpty() > 0)
+//    {
+//      OctreeNode *node = nodeStack.pop();
+//      Vec bmin = node->bmin();
+//      Vec bmax = node->bmax();			  
+//      
+//      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
+//      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
+//      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
+//      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
+//      
+//      float screenProjectedSize = StaticFunctions::projectionSize(cpos,
+//								  bmin, bmax,
+//								  m_projFactor);		  
+//      if (screenProjectedSize > m_minNodePixelSize)
+//	{
+//	  if (m_pointsDrawn + node->numpoints() < m_pointBudget)
+//	    {
+//	      node->setActive(true);
+//	      m_newNodes << node;
+//	      m_pointsDrawn += node->numpoints();
+//
+//	      for (int k=0; k<8; k++)
+//		{
+//		  OctreeNode *cnode = node->getChild(k);
+//		  if (cnode)
+//		    {
+//		      nodeStack.push(cnode);
+//		    }
+//		}
+//	    }
+//	  else
+//	    {
+//	      nodeStack.clear();
+//	      break;
+//	    }
+//	}
+//
+//    }
+//}
+
 void
 GLHiddenWidget::genPriorityQueue(Vec cpos)
 {
@@ -634,6 +732,10 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
       MV = MV.transposed();
     }
 
+  MV = MV.inverted();
+  QVector4D cpMV = MV * QVector4D(cpos.x, cpos.y, cpos.z, 1);
+  Vec cposMV = Vec(cpMV.x(), cpMV.y(), cpMV.z());
+		  
   m_pointsDrawn = 0;
   m_priorityQueue.clear();
 
@@ -647,21 +749,17 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
       Vec bmin = node->bmin();
       Vec bmax = node->bmax(); 
 
-      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
-      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
-      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
-      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
-
-
-      Vec bcen = (bmax+bmin)/2;
-      //float dtoc = (cpos-bcen).norm();
-      //float blen = (bmax-bcen).norm();
+//      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
+//      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
+//      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
+//      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
+//      float screenProjectedSize = StaticFunctions::projectionSize(cpos,
+//								  bmin, bmax,
+//								  m_projFactor);
       
-      float screenProjectedSize = 100000;
-      //if (dtoc > blen)
-      screenProjectedSize = StaticFunctions::projectionSize(cpos,
-							    bmin, bmax,
-							    m_projFactor);
+      float screenProjectedSize = StaticFunctions::projectionSize(cposMV,
+								  bmin, bmax,
+								  m_projFactor);
       bool ignoreChildren = (screenProjectedSize < m_minNodePixelSize);
       
       if (!ignoreChildren)
@@ -670,12 +768,6 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
       if (!node->isActive())
 	{
 	  m_priorityQueue.insert(screenProjectedSize, node);
-	  
-	  //if (dtoc <= blen)
-	  //  m_priorityQueue.insert(100000, node);
-	  //else
-	  //  m_priorityQueue.insert(1.0/slope*blen/qSqrt(dtoc*dtoc-blen*blen), node);
-	  
 	  node->setActive(true);
 	}
     }
@@ -697,34 +789,26 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
 		  Vec bmin = cnode->bmin();
 		  Vec bmax = cnode->bmax();			  
 
-		  QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
-		  QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
-		  bmin = Vec(bminV.x(), bminV.y(), bminV.z());
-		  bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
-
-		  Vec bcen = (bmax+bmin)/2;
-		  //float dtoc = (cpos-bcen).norm();
-		  //float blen = (bmax-bcen).norm();
+		  float screenProjectedSize = StaticFunctions::projectionSize(cposMV,
+									      bmin, bmax,
+									      m_projFactor);
 		  
-		  float screenProjectedSize = 100000;
-		  //if (dtoc > blen)
-		  screenProjectedSize = StaticFunctions::projectionSize(cpos,
-									bmin, bmax,
-									m_projFactor);
-		  bool ignoreChildren = (screenProjectedSize < m_minNodePixelSize);
-		  
-		  if (!ignoreChildren)
+//		  QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
+//		  QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
+//		  bmin = Vec(bminV.x(), bminV.y(), bminV.z());
+//		  bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
+//		  
+//		  float screenProjectedSize = StaticFunctions::projectionSize(cpos,
+//									      bmin, bmax,
+//									      m_projFactor);
+//		  bool ignoreChildren = (screenProjectedSize < m_minNodePixelSize);
+//		  
+//		  if (!ignoreChildren)
 		    onl1 << cnode;
 		  
 		  if (!cnode->isActive())
 		    {
-		      m_priorityQueue.insert(screenProjectedSize, node);
-		      
-		      //if (dtoc <= blen)
-		      //  m_priorityQueue.insert(100000, node);
-		      //else
-		      //  m_priorityQueue.insert(1.0/slope*blen/qSqrt(dtoc*dtoc-blen*blen), node);
-		      
+		      m_priorityQueue.insert(screenProjectedSize, cnode);
 		      cnode->setActive(true);
 		    }
 		} // valid child
@@ -758,36 +842,4 @@ GLHiddenWidget::orderTiles(Vec cpos)
     }
 
   m_orderedTiles = m_tiles;
-
-//  QMultiMap<float, OctreeNode*> mmTiles;
-//
-//  QMatrix4x4 MV = m_vr->modelView();
-//
-//  for(int d=0; d<m_tiles.count(); d++)
-//    {
-//      OctreeNode *node = m_tiles[d];
-//      Vec bmin = node->bmin();
-//      Vec bmax = node->bmax(); 
-//
-//      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
-//      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
-//      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
-//      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
-//
-//      float screenProjectedSize = StaticFunctions::projectionSize(cpos,
-//								  bmin, bmax,
-//								  m_projFactor);
-//      mmTiles.insert(screenProjectedSize, node);
-//    }
-//
-//  m_orderedTiles.clear();
-//  QList<float> keys = mmTiles.keys();
-//  // keys appear in ascending order and we want to handle
-//  // larger screen projected boxes first before the smaller
-//  // ones so go from last to first in the list.
-//  for(int k=keys.count()-1; k>=0; k--)
-//    {
-//      QList<OctreeNode*> values = mmTiles.values(keys[k]);
-//      m_orderedTiles += values;
-//    }
 }

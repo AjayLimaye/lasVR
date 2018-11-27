@@ -123,7 +123,7 @@ Viewer::Viewer(QGLFormat &glfmt, QWidget *parent) :
   m_backButtonPos = QPoint(10, 100);
 
   m_vrMode = false;
-
+  
 #ifdef USE_GLMEDIA
   m_movieWriter = 0;
 #endif // USE_GLMEDIA
@@ -198,6 +198,7 @@ Viewer::reset()
   m_vboLoadedAll = false;
   m_fastDraw = false;
 
+  m_skybox = false;
   m_pointType = true; // adaptive
   m_pointSize = 2;
 

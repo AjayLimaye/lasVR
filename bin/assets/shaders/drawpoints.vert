@@ -79,7 +79,7 @@ float getLOD(float tile, vec3 omin, vec3 omax, vec3 opos)
   vec3 offset = vec3(0.0);
   float ioffset = 0.0;
 
-  vec4 valueTop = texture2DRect(visTex, vec2(ioffset,tile)).rgba;
+  //vec4 valueTop = texture2DRect(visTex, vec2(ioffset,tile)).rgba;
 
   for(int i=0; i<20; i++) // assuming we do not have more than 20 levels
   {
@@ -100,10 +100,10 @@ float getLOD(float tile, vec3 omin, vec3 omax, vec3 opos)
       ioffset = ioffset + value.g * 255.0 + numberOfOnes(mask, index-1.0);
       depth ++;
     }
-    else // no mode visible child nodes at this position
+    else // no more visible child nodes at this position
     {
-      if (value.a > 0.0)
-        depth = max(depth, value.b*255.0);
+//      if (value.a > 0.0)
+//        depth = max(depth, value.b*255.0);
       return depth;
     }
 
