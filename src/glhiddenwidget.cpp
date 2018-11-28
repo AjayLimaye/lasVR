@@ -748,14 +748,6 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
       
       Vec bmin = node->bmin();
       Vec bmax = node->bmax(); 
-
-//      QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
-//      QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
-//      bmin = Vec(bminV.x(), bminV.y(), bminV.z());
-//      bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
-//      float screenProjectedSize = StaticFunctions::projectionSize(cpos,
-//								  bmin, bmax,
-//								  m_projFactor);
       
       float screenProjectedSize = StaticFunctions::projectionSize(cposMV,
 								  bmin, bmax,
@@ -793,14 +785,6 @@ GLHiddenWidget::genPriorityQueue(Vec cpos)
 									      bmin, bmax,
 									      m_projFactor);
 		  
-//		  QVector4D bminV = MV * QVector4D(bmin.x, bmin.y, bmin.z, 1);
-//		  QVector4D bmaxV = MV * QVector4D(bmax.x, bmax.y, bmax.z, 1);
-//		  bmin = Vec(bminV.x(), bminV.y(), bminV.z());
-//		  bmax = Vec(bmaxV.x(), bmaxV.y(), bmaxV.z());
-//		  
-//		  float screenProjectedSize = StaticFunctions::projectionSize(cpos,
-//									      bmin, bmax,
-//									      m_projFactor);
 //		  bool ignoreChildren = (screenProjectedSize < m_minNodePixelSize);
 //		  
 //		  if (!ignoreChildren)
